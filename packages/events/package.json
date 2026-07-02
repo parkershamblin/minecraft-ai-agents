@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Single source of truth for event contracts: JSON Schemas, fixtures, contract tests, TS/Python codegen",
+  "exports": {
+    "./ts": "./generated/ts/index.ts",
+    "./schemas/*": "./schemas/*",
+    "./fixtures/*": "./fixtures/*"
+  },
   "scripts": {
     "test": "node test/validate.mjs",
     "gen": "npm run gen:ts && npm run gen:py",

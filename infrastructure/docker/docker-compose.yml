@@ -112,6 +112,33 @@ services:
 
   # OpenSearch and Loki/Promtail arrive at their milestones (M2 / M1) — not before.
 
+  minecraft-service:
+    build:
+      context: ../..
+      dockerfile: services/minecraft-service/Dockerfile
+    profiles: [app]
+    ports: ["8003:8003"]
+    environment:
+      MC_HOST: ${MC_HOST:-host.docker.internal}
+      MC_PORT: ${MC_PORT:-25565}
+      MC_VERSION: ${MC_VERSION:-1.21.6}
+      KAFKA_BROKERS: redpanda:29092
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8003/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
   event-service:
     build: ../../services/event-service
     profiles: [app]

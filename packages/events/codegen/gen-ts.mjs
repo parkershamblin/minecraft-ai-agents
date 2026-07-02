@@ -1,7 +1,7 @@
 // TypeScript codegen: one .ts per schema into generated/ts/, plus an index.
 // Output is committed; CI's drift check re-runs this and fails on a dirty tree.
 // (Java codegen is deliberately absent until P2 — event-service is schema-agnostic.)
-import { readdirSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compileFromFile } from 'json-schema-to-typescript'
@@ -30,8 +30,11 @@ for (const entry of readdirSync(join(root, 'schemas'), { recursive: true, withFi
     cwd: entry.parentPath,
   })
   writeFileSync(join(outDir, `${moduleName}.ts`), ts)
-  exports_.push(`export * from './${moduleName}'`)
-  console.log(`ts: ${moduleName}.ts`)
+  // Barrel exports ONLY the schema's titled main type — shared $defs names
+  // (Position, ...) would collide under `export *` across modules.
+  const title = JSON.parse(readFileSync(join(entry.parentPath, entry.name), 'utf8')).title
+  exports_.push(`export type { ${title} } from './${moduleName}'`)
+  console.log(`ts: ${moduleName}.ts (${title})`)
 }
 
 writeFileSync(join(outDir, 'index.ts'), banner + '\n' + exports_.sort().join('\n') + '\n')
