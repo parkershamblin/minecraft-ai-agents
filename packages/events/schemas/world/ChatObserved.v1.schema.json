@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/ChatObserved.v1.schema.json",
+  "title": "ChatObservedPayload",
+  "description": "Raw in-game chat as observed by the world bridge (self-filtered: a bot never observes its own utterance). The enriched conversational fact is VillagerTalked on social.events. Envelope aggregateId = the OBSERVING villager. Producer: minecraft-service on world.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "The speaker's villagerId resolved via the mc:roster hash; null when the speaker is not a roster villager (e.g. a human player)."
+    },
+    "speakerUsername": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The raw in-game username of the speaker — always present, even when villagerId is null."
+    },
+    "message": { "type": "string" },
+    "heardByIds": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" },
+      "description": "Roster villagers in earshot (excluding the speaker)."
+    },
+    "position": { "$ref": "#/$defs/Position" }
+  },
+  "required": ["villagerId", "speakerUsername", "message", "heardByIds", "position"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    }
+  }
+}

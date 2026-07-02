@@ -41,9 +41,9 @@ tasks:
       - node scripts/smoke.js
 
   gen:
-    desc: Regenerate TS/Python types from packages/events schemas
+    desc: Regenerate TS/Python types from packages/events schemas (output is committed; CI drift-checks it)
     cmds:
-      - echo "codegen arrives with CIV-2 (packages/events)"
+      - npm run gen --workspace @civ/events
 
   seed:
     desc: Create villagers from the committed persona seed file
@@ -51,6 +51,6 @@ tasks:
       - echo "seed arrives with CIV-8 (agent-service POST /internal/seed)"
 
   test:
-    desc: Run all service test suites
+    desc: Run all test suites (currently the packages/events contract tests; services join from CIV-3)
     cmds:
-      - echo "test suites arrive with their services (CIV-3 onward)"
+      - npm test --workspace @civ/events

@@ -1,0 +1,17 @@
+{
+  "eventId": "019f8e2b-0000-7000-8000-00000000a001",
+  "eventType": "VillagerSpawned",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:40:12.041Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0000-7000-8000-c0de00000000",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "name": "Elara",
+    "position": { "x": 100.5, "y": 64, "z": -340.5 },
+    "spawnReason": "seed"
+  }
+}

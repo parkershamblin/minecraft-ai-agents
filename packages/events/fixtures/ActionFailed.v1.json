@@ -1,0 +1,19 @@
+{
+  "eventId": "019f8e2b-0009-7000-8000-00000000a009",
+  "eventType": "ActionFailed",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:42:31.007Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000b2a44",
+  "correlationId": "019f8e2b-000b-7000-8000-c0de00000002",
+  "causationId": "019f8e2b-000a-7000-8000-00000000a00a",
+  "payload": {
+    "commandId": "019f8e2b-000a-7000-8000-00000000a00a",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "action": "gather",
+    "errorCode": "NOT_IMPLEMENTED",
+    "errorMessage": "gather is stubbed until M1 (Sprint 1 ships move/chat/spawn/despawn)",
+    "retryable": false
+  }
+}

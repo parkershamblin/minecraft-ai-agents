@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/agent/MemoryFormed.v1.schema.json",
+  "title": "MemoryFormedPayload",
+  "description": "A memory was persisted to the villager's stream (REST-first flow: the memory row exists before this fact is published). Producer: agent-service on agent.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "memoryId": { "type": "string", "format": "uuid" },
+    "content": { "type": "string" },
+    "importance": { "type": "number", "minimum": 0, "maximum": 10 },
+    "sentiment": { "type": "number", "minimum": -1, "maximum": 1 }
+  },
+  "required": ["villagerId", "memoryId", "content", "importance", "sentiment"],
+  "additionalProperties": false
+}

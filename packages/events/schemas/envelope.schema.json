@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/envelope.schema.json",
+  "title": "EventEnvelope",
+  "description": "Wire format for every message on every topic, including commands. The payload is validated separately against schemas/<group>/<EventType>.v<schemaVersion>.schema.json. See docs/architecture/03-events-kafka.md.",
+  "type": "object",
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "description": "UUIDv7 (version nibble enforced) — globally unique, time-sortable. Deduplication key for all consumers."
+    },
+    "eventType": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]+$",
+      "description": "PascalCase, e.g. VillagerTalked. Selects the payload schema."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Version of the payload schema for this eventType."
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 UTC, domain time the fact occurred."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "minecraft-service",
+        "agent-service",
+        "memory-service",
+        "event-service",
+        "government-service",
+        "analytics-service",
+        "dashboard-service"
+      ]
+    },
+    "aggregateType": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]+$",
+      "description": "PascalCase: Villager, Election, Law, Faction, ..."
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identity of the aggregate; also the Kafka partition key."
+    },
+    "correlationId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Ties together one causal chain (e.g. one agent tick) across services."
+    },
+    "causationId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "eventId of the direct cause; null for root events."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Validated against the per-eventType schema at the declared schemaVersion."
+    }
+  },
+  "required": [
+    "eventId",
+    "eventType",
+    "schemaVersion",
+    "occurredAt",
+    "source",
+    "aggregateType",
+    "aggregateId",
+    "correlationId",
+    "causationId",
+    "payload"
+  ],
+  "additionalProperties": false
+}

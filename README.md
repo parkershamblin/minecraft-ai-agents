@@ -47,7 +47,7 @@ scripts/               repo-level utilities (smoke canary)
 
 - [x] CIV-0 environment bring-up
 - [x] CIV-1 monorepo scaffold + Compose infra
-- [ ] CIV-2 event contracts + TS/Py codegen
+- [x] CIV-2 event contracts + TS/Py codegen
 - [ ] CIV-3 event store ingest + read API + SSE
 - [ ] CIV-4 bot host + world bridge
 - [ ] CIV-5 command executor

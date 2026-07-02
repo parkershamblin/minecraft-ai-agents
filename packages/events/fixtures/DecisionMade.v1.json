@@ -1,0 +1,21 @@
+{
+  "eventId": "019f8e2b-0002-7000-8000-00000000a002",
+  "eventType": "DecisionMade",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:00.115Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "decision": "Walk to the oak tree by the pond and greet anyone nearby.",
+    "reasoning": "I am rested, the sun is up, and I remember Bram gathering wood near the pond yesterday. Company makes the work lighter.",
+    "llmProvider": "fake",
+    "llmModel": "fake-scripted-1",
+    "tokensUsed": 0,
+    "latencyMs": 3,
+    "error": false
+  }
+}

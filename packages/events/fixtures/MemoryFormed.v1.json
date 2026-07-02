@@ -1,0 +1,18 @@
+{
+  "eventId": "019f8e2b-0007-7000-8000-00000000a007",
+  "eventType": "MemoryFormed",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:10.551Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": "019f8e2b-0004-7000-8000-00000000a004",
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "memoryId": "019f8e2b-0008-7000-8000-00000000a008",
+    "content": "I walked to the oak tree by the pond and greeted Bram. He seemed pleased to see me.",
+    "importance": 3.5,
+    "sentiment": 0.4
+  }
+}

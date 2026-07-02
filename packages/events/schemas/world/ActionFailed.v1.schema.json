@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/ActionFailed.v1.schema.json",
+  "title": "ActionFailedPayload",
+  "description": "A command terminated unsuccessfully — including TIMEOUT from the watchdog, so the 'exactly one outcome per command' invariant holds through crashes. Producer: minecraft-service on world.events.",
+  "type": "object",
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The eventId of the ActionRequested command this outcome answers."
+    },
+    "villagerId": { "type": "string", "format": "uuid" },
+    "action": { "type": "string" },
+    "errorCode": {
+      "type": "string",
+      "enum": ["TIMEOUT", "NOT_IMPLEMENTED", "PATH_NOT_FOUND", "INVALID_PARAMS", "BOT_DISCONNECTED", "UNKNOWN_ACTION", "INTERNAL"],
+      "description": "Machine-readable failure class; consumers branch on this, never on errorMessage."
+    },
+    "errorMessage": { "type": "string" },
+    "retryable": { "type": "boolean" }
+  },
+  "required": ["commandId", "villagerId", "action", "errorCode", "errorMessage", "retryable"],
+  "additionalProperties": false
+}

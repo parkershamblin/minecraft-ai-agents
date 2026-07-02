@@ -1,0 +1,17 @@
+{
+  "eventId": "019f8e2b-0005-7000-8000-00000000a005",
+  "eventType": "VillagerMoved",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:08.395Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": "019f8e2b-0003-7000-8000-00000000a003",
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "from": { "x": 100.5, "y": 64, "z": -340.5 },
+    "to": { "x": 112.3, "y": 64, "z": -347.8 },
+    "distance": 13.9
+  }
+}

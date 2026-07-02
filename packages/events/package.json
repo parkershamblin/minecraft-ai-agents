@@ -1,0 +1,18 @@
+{
+  "name": "@civ/events",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Single source of truth for event contracts: JSON Schemas, fixtures, contract tests, TS/Python codegen",
+  "scripts": {
+    "test": "node test/validate.mjs",
+    "gen": "npm run gen:ts && npm run gen:py",
+    "gen:ts": "node codegen/gen-ts.mjs",
+    "gen:py": "node -e \"require('fs').mkdirSync('generated/py/civ_events',{recursive:true})\" && uvx --from datamodel-code-generator datamodel-codegen --input schemas --input-file-type jsonschema --output generated/py/civ_events --output-model-type pydantic_v2.BaseModel --target-python-version 3.12 --disable-timestamp"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "json-schema-to-typescript": "15.0.2"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/VillagerSpawned.v1.schema.json",
+  "title": "VillagerSpawnedPayload",
+  "description": "A bot session joined the world as this villager. Producer: minecraft-service on world.events. Distinct from VillagerCreated (identity provisioned in agent_db).",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "name": { "type": "string", "minLength": 1 },
+    "position": { "$ref": "#/$defs/Position" },
+    "spawnReason": {
+      "type": "string",
+      "enum": ["seed", "respawn", "reconnect"],
+      "description": "Why the bot session started: initial seeding, death respawn, or connection recovery."
+    }
+  },
+  "required": ["villagerId", "name", "position", "spawnReason"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "description": "Entity coordinates are doubles in Minecraft (catalog shorthand 'pos' says int; number is the truthful type).",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    }
+  }
+}

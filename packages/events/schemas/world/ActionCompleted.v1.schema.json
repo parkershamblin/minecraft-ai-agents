@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/ActionCompleted.v1.schema.json",
+  "title": "ActionCompletedPayload",
+  "description": "A command terminated successfully. Every ActionRequested terminates in exactly one ActionCompleted or ActionFailed; the envelope's causationId = the command's eventId. Producer: minecraft-service on world.events.",
+  "type": "object",
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The eventId of the ActionRequested command this outcome answers."
+    },
+    "villagerId": { "type": "string", "format": "uuid" },
+    "action": { "type": "string" },
+    "result": {
+      "type": "object",
+      "description": "Action-specific outcome data (e.g. finalPosition, blocksTraveled for move)."
+    },
+    "durationMs": { "type": "integer", "minimum": 0 }
+  },
+  "required": ["commandId", "villagerId", "action", "result", "durationMs"],
+  "additionalProperties": false
+}

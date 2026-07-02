@@ -1,0 +1,19 @@
+{
+  "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "capturedAt": "2026-07-02T18:41:05.000Z",
+  "position": { "x": 106.1, "y": 64, "z": -344.2 },
+  "health": 20,
+  "food": 18,
+  "inventory": [
+    { "item": "oak_log", "count": 12 },
+    { "item": "bread", "count": 3 }
+  ],
+  "nearbyVillagers": [
+    {
+      "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+      "name": "Bram",
+      "distance": 7.4
+    }
+  ],
+  "timeOfDay": 1000
+}

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/agent/DecisionMade.v1.schema.json",
+  "title": "DecisionMadePayload",
+  "description": "One deliberation's recorded output — the provenance record for every villager behavior. Producer: agent-service on agent.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "decision": {
+      "type": "string",
+      "description": "Human-readable statement of what the villager chose to do."
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "The LLM's stated rationale — episode gold and debugging gold alike."
+    },
+    "llmProvider": { "type": "string", "enum": ["openai", "ollama", "fake"] },
+    "llmModel": { "type": "string" },
+    "tokensUsed": { "type": "integer", "minimum": 0 },
+    "latencyMs": { "type": "integer", "minimum": 0 },
+    "error": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the LLM output failed schema validation and the tick fell back to idle (see CIV-7)."
+    }
+  },
+  "required": ["villagerId", "decision", "reasoning", "llmProvider", "llmModel", "tokensUsed", "latencyMs"],
+  "additionalProperties": false
+}

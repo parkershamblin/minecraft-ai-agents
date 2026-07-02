@@ -1,0 +1,11 @@
+{
+  "name": "ai-civilization-engine",
+  "private": true,
+  "workspaces": [
+    "packages/events"
+  ],
+  "scripts": {
+    "gen": "npm run gen --workspace @civ/events",
+    "test:contracts": "npm test --workspace @civ/events"
+  }
+}

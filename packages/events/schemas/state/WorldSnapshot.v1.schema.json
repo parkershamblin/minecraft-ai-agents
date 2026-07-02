@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/state/WorldSnapshot.v1.schema.json",
+  "title": "WorldSnapshot",
+  "description": "NOT a Kafka event — the shared-state contract for the Redis key world:{villagerId}. Written by minecraft-service every 1s with a 10s TTL; read by agent-service's perceive node. Shared state drifts silently without a schema; this one is validated in minecraft-service tests like any event.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "position": { "$ref": "#/$defs/Position" },
+    "health": { "type": "number", "minimum": 0, "maximum": 20 },
+    "food": { "type": "number", "minimum": 0, "maximum": 20 },
+    "inventory": {
+      "type": "array",
+      "description": "Summary, not the full 36-slot grid.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 }
+        },
+        "required": ["item", "count"],
+        "additionalProperties": false
+      }
+    },
+    "nearbyVillagers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "villagerId": { "type": "string", "format": "uuid" },
+          "name": { "type": "string" },
+          "distance": { "type": "number", "minimum": 0 }
+        },
+        "required": ["villagerId", "name", "distance"],
+        "additionalProperties": false
+      }
+    },
+    "timeOfDay": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 24000,
+      "description": "Minecraft ticks: 0 = dawn, 6000 = noon, 13000 = dusk, 18000 = midnight."
+    }
+  },
+  "required": ["villagerId", "capturedAt", "position", "health", "inventory", "nearbyVillagers", "timeOfDay"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    }
+  }
+}

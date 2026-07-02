@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/commands/ActionRequested.v1.schema.json",
+  "title": "ActionRequestedPayload",
+  "description": "A command, not a fact — asks minecraft-service to act and may be rejected or fail. Exactly one executor (minecraft-service.command-executor); event-service archives commands for causation chains. The LLM's deliberation output is validated against the per-action params shapes in $defs before a command is ever published (CIV-7). Producer: agent-service on commands.minecraft.",
+  "type": "object",
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Equal to the command's envelope eventId; carried into ActionCompleted/ActionFailed."
+    },
+    "villagerId": { "type": "string", "format": "uuid" },
+    "action": {
+      "type": "string",
+      "enum": ["spawn", "despawn", "move", "gather", "chat", "follow", "idle"],
+      "description": "spawn/despawn manage the bot session itself; the rest act in-world."
+    },
+    "params": {
+      "type": "object",
+      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams; despawn/gather/idle take {})."
+    },
+    "priority": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "description": "The executor's watchdog emits ActionFailed{TIMEOUT} if the command hasn't terminated by then."
+    }
+  },
+  "required": ["commandId", "villagerId", "action", "params", "timeoutMs"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    },
+    "SpawnParams": {
+      "type": "object",
+      "properties": {
+        "minecraftUsername": { "type": "string", "minLength": 1 },
+        "spawnPosition": { "$ref": "#/$defs/Position" }
+      },
+      "required": ["minecraftUsername"],
+      "additionalProperties": false
+    },
+    "MoveParams": {
+      "type": "object",
+      "properties": {
+        "to": { "$ref": "#/$defs/Position" },
+        "range": { "type": "number", "minimum": 0, "default": 1 }
+      },
+      "required": ["to"],
+      "additionalProperties": false
+    },
+    "ChatParams": {
+      "type": "object",
+      "properties": {
+        "message": { "type": "string", "minLength": 1, "maxLength": 256 }
+      },
+      "required": ["message"],
+      "additionalProperties": false
+    },
+    "FollowParams": {
+      "type": "object",
+      "properties": {
+        "targetVillagerId": { "type": "string", "format": "uuid" },
+        "range": { "type": "number", "minimum": 1, "default": 2 }
+      },
+      "required": ["targetVillagerId"],
+      "additionalProperties": false
+    }
+  }
+}

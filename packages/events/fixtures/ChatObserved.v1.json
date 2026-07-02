@@ -1,0 +1,18 @@
+{
+  "eventId": "019f8e2b-0006-7000-8000-00000000a006",
+  "eventType": "ChatObserved",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:09.020Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000b2a44",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "speakerUsername": "Elara",
+    "message": "Good morning, Bram! The oak by the pond looks ready for felling.",
+    "heardByIds": ["019f8e2a-0000-7000-8000-0000000b2a44"],
+    "position": { "x": 112.3, "y": 64, "z": -347.8 }
+  }
+}

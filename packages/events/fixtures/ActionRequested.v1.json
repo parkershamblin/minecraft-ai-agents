@@ -1,0 +1,19 @@
+{
+  "eventId": "019f8e2b-0003-7000-8000-00000000a003",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:00.128Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": "019f8e2b-0002-7000-8000-00000000a002",
+  "payload": {
+    "commandId": "019f8e2b-0003-7000-8000-00000000a003",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "action": "move",
+    "params": { "to": { "x": 112, "y": 64, "z": -348 }, "range": 1 },
+    "priority": 5,
+    "timeoutMs": 30000
+  }
+}
