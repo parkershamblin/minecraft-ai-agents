@@ -1,0 +1,8 @@
+# Normalize to LF in the repo; polyglot toolchains (sh in containers, CI on
+# Linux) break on CRLF. Editors on Windows handle LF fine.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text

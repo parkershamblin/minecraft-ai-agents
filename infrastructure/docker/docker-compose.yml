@@ -1,0 +1,138 @@
+name: ai-civilization-engine
+
+# Profiles (see docs/architecture/05-repository-devops.md §2):
+#   infra     — stateful/third-party backbone; started once, left running
+#   app       — the services (entries land in the PR that ships each service's
+#               first real feature — never before)
+#   minecraft — optional containerized PaperMC; off by default because a
+#               working host server already exists (MC_HOST=host.docker.internal)
+#
+# All images pinned to full patch tags — same discipline as MC_VERSION.
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.0-pg16
+    profiles: [infra]
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: civ
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-civ_dev}
+      POSTGRES_DB: civ
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U civ -d civ"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:7.4.2-alpine
+    profiles: [infra]
+    ports: ["6379:6379"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redpanda:
+    image: redpandadata/redpanda:v24.2.7
+    profiles: [infra]
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --kafka-addr=internal://0.0.0.0:29092,external://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://redpanda:29092,external://localhost:9092
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --default-log-level=warn
+    ports:
+      - "9092:9092"   # external Kafka listener (host-run services)
+      - "9644:9644"   # admin API (rpk, metrics)
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+
+  redpanda-console:
+    image: redpandadata/console:v2.7.2
+    profiles: [infra]
+    ports: ["8085:8080"]
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: [infra]
+    ports: ["9090:9090"]
+    volumes:
+      - ../prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    profiles: [infra]
+    ports: ["3001:3000"]   # 3000 is reserved for the Next.js dashboard
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # OpenSearch and Loki/Promtail arrive at their milestones (M2 / M1) — not before.
+
+  minecraft:
+    # Off by default (profile). Pin an exact image tag in the PR that first
+    # enables this profile (M1, when 20 bots outgrow the vanilla host server).
+    image: itzg/minecraft-server:java21
+    profiles: [minecraft]
+    environment:
+      EULA: "TRUE"
+      TYPE: PAPER
+      VERSION: ${MC_VERSION:-1.21.6}
+      ONLINE_MODE: "FALSE"
+      MEMORY: 3G
+      VIEW_DISTANCE: "4"
+      SIMULATION_DISTANCE: "4"
+    ports: ["25565:25565"]
+    volumes:
+      - minecraft-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:
+  redpanda-data:
+  prometheus-data:
+  grafana-data:
+  minecraft-data:

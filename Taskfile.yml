@@ -1,0 +1,56 @@
+# Cross-repo task orchestrator (go-task). Single binary, embeds its own POSIX
+# shell — the same task runs identically in PowerShell, Git Bash, and CI.
+# npm scripts stay inside each Node package for package-local concerns.
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  COMPOSE: docker compose -f infrastructure/docker/docker-compose.yml --env-file .env
+
+tasks:
+  up:
+    desc: Start the infra profile (Postgres, Redis, Redpanda, Prometheus, Grafana) — healthcheck-gated
+    cmds:
+      - "{{.COMPOSE}} --profile infra up -d --wait"
+
+  up:all:
+    desc: Infra + app profiles (app entries land with each service's first feature)
+    cmds:
+      - "{{.COMPOSE}} --profile infra --profile app up -d --wait"
+
+  down:
+    desc: Stop everything (volumes preserved)
+    cmds:
+      - "{{.COMPOSE}} --profile infra --profile app --profile minecraft down"
+
+  nuke:
+    desc: Stop everything AND delete volumes — fresh world
+    prompt: This deletes all local data volumes. Continue?
+    cmds:
+      - "{{.COMPOSE}} --profile infra --profile app --profile minecraft down -v"
+
+  logs:
+    desc: Tail all container logs
+    cmds:
+      - "{{.COMPOSE}} logs -f --tail=100"
+
+  smoke:
+    desc: "Version-pin canary: one throwaway bot connects to the MC server, chats, disconnects"
+    cmds:
+      - node scripts/smoke.js
+
+  gen:
+    desc: Regenerate TS/Python types from packages/events schemas
+    cmds:
+      - echo "codegen arrives with CIV-2 (packages/events)"
+
+  seed:
+    desc: Create villagers from the committed persona seed file
+    cmds:
+      - echo "seed arrives with CIV-8 (agent-service POST /internal/seed)"
+
+  test:
+    desc: Run all service test suites
+    cmds:
+      - echo "test suites arrive with their services (CIV-3 onward)"

@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Services scrape targets fill in as each service ships (CIV-3 onward).
+  # Host-run during `task dev` → host.docker.internal; containerized (app
+  # profile) targets are added alongside their compose entries.
+  # Spring services expose /actuator/prometheus; Python/Node expose /metrics.
+  - job_name: agent-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8001"]
+        labels: { run_mode: host }
+
+  - job_name: minecraft-service
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8003"]
+        labels: { run_mode: host }
+
+  - job_name: event-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8081"]
+        labels: { run_mode: host }
