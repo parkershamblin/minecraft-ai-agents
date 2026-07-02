@@ -51,6 +51,9 @@ tasks:
       - echo "seed arrives with CIV-8 (agent-service POST /internal/seed)"
 
   test:
-    desc: Run all test suites (currently the packages/events contract tests; services join from CIV-3)
+    desc: Run all test suites (contract tests + event-service; more services join as they ship)
+    vars:
+      GRADLEW: '{{if eq OS "windows"}}cmd /c gradlew.bat{{else}}./gradlew{{end}}'
     cmds:
       - npm test --workspace @civ/events
+      - cd services/event-service && {{.GRADLEW}} test

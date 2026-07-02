@@ -112,6 +112,28 @@ services:
 
   # OpenSearch and Loki/Promtail arrive at their milestones (M2 / M1) — not before.
 
+  event-service:
+    build: ../../services/event-service
+    profiles: [app]
+    ports: ["8081:8081"]
+    environment:
+      POSTGRES_HOST: postgres
+      EVENT_DB_USER: event_service
+      EVENT_DB_PASSWORD: event_service_dev
+      KAFKA_BROKERS: redpanda:29092
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
   minecraft:
     # Off by default (profile). Pin an exact image tag in the PR that first
     # enables this profile (M1, when 20 bots outgrow the vanilla host server).

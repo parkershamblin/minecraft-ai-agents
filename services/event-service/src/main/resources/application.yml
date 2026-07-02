@@ -1,0 +1,44 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: event-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/event_db
+    username: ${EVENT_DB_USER:event_service}
+    password: ${EVENT_DB_PASSWORD:event_service_dev}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    consumer:
+      group-id: event-service.event-store
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+  mvc:
+    problemdetails:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+civ:
+  # All event topics PLUS commands.minecraft — commands are archived for
+  # causation chains, never acted on (minecraft-service is the only executor).
+  topics: ${CIV_TOPICS:world.events,agent.events,social.events,commands.minecraft}
+  sse:
+    heartbeat-ms: 15000
+    timeout-ms: 1800000
