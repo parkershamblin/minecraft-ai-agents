@@ -50,7 +50,7 @@ scripts/               repo-level utilities (smoke canary)
 - [x] CIV-2 event contracts + TS/Py codegen
 - [x] CIV-3 event store ingest + read API + SSE (event-service)
 - [x] CIV-4 bot host + world bridge (minecraft-service)
-- [ ] CIV-5 command executor
+- [x] CIV-5 command executor
 - [ ] CIV-6 memory module (pgvector)
 - [ ] CIV-7 LLM provider chain + decision contract
 - [ ] CIV-8 LangGraph tick loop + seed

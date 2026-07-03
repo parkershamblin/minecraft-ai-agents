@@ -1,4 +1,6 @@
 import mineflayer, { type Bot } from 'mineflayer'
+// CJS default-import (same ESM-lexer caveat as kafkajs)
+import mineflayerPathfinder from 'mineflayer-pathfinder'
 import type Redis from 'ioredis'
 import type { Config } from '../config.ts'
 import { logger } from '../logging.ts'
@@ -7,7 +9,9 @@ import { buildEnvelope } from '../events/envelope.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { MovementTracker } from '../world/movementTracker.ts'
 import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
-import type { Position } from '../world/position.ts'
+import { type Position, distance, round1 } from '../world/position.ts'
+
+const { pathfinder, Movements, goals } = mineflayerPathfinder
 
 type SpawnReason = 'seed' | 'respawn' | 'reconnect'
 
@@ -90,6 +94,7 @@ export class BotSession {
   }
 
   private wire(bot: Bot): void {
+    bot.loadPlugin(pathfinder)
     bot.once('spawn', () => this.onSpawn())
     bot.on('death', () => {
       this.nextSpawnReason = 'respawn'
@@ -105,6 +110,9 @@ export class BotSession {
     this.log.info({ reason }, 'bot spawned')
     this.reconnectDelayMs = 1_000
     botSessions.inc()
+    if (this.bot) {
+      this.bot.pathfinder.setMovements(new Movements(this.bot))
+    }
 
     void this.deps.producer.publish(
       'world.events',
@@ -184,6 +192,44 @@ export class BotSession {
       clearInterval(this.snapshotTimer)
       this.snapshotTimer = null
     }
+  }
+
+  /**
+   * Pathfind to within `range` blocks of `to`. Resolves on arrival; the
+   * executor's watchdog owns the deadline and calls stopMoving() on timeout.
+   * Completion flushes the movement tracker — the catalog's "plus one
+   * VillagerMoved on path completion".
+   */
+  async moveTo(to: Position, range: number): Promise<{ finalPosition: Position; blocksTraveled: number }> {
+    if (!this.bot?.entity) {
+      throw new Error('bot has no entity — not spawned')
+    }
+    const start = this.position as Position
+    await this.bot.pathfinder.goto(new goals.GoalNear(to.x, to.y, to.z, range))
+    const finalPosition = this.position as Position
+    const emission = this.movement.flush(finalPosition, Date.now())
+    if (emission) {
+      void this.deps.producer.publish(
+        'world.events',
+        buildEnvelope({
+          eventType: 'VillagerMoved',
+          aggregateId: this.villagerId,
+          payload: { villagerId: this.villagerId, ...emission },
+        }),
+      )
+    }
+    return { finalPosition, blocksTraveled: round1(distance(start, finalPosition)) }
+  }
+
+  chat(message: string): void {
+    if (!this.bot) {
+      throw new Error('bot is not connected')
+    }
+    this.bot.chat(message)
+  }
+
+  stopMoving(): void {
+    this.bot?.pathfinder.setGoal(null)
   }
 
   /** Intentional teardown — wins over auto-reconnect. */

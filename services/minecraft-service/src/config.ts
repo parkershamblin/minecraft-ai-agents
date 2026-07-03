@@ -13,7 +13,9 @@ const schema = z.object({
   SNAPSHOT_INTERVAL_MS: z.coerce.number().int().min(250).default(1000),
   SNAPSHOT_TTL_SECONDS: z.coerce.number().int().min(2).default(10),
   MOVE_THROTTLE_MS: z.coerce.number().int().min(500).default(5000),
-  CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(16),
+  // Village-scale earshot: vanilla spawn scatter alone is ~20 blocks, and a
+  // village is ~64 across. 16 made villagers deaf to neighbors in practice.
+  CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(48),
   SPAWN_TIMEOUT_MS: z.coerce.number().int().default(30000),
 })
 

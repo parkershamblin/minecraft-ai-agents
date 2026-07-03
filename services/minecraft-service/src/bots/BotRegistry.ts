@@ -56,6 +56,10 @@ export class BotRegistry {
     return [...this.sessions.values()].filter((s) => s.active).length
   }
 
+  get(villagerId: string): BotSession | undefined {
+    return this.sessions.get(villagerId)
+  }
+
   othersFor(villagerId: string): NearbyVillager[] {
     return [...this.sessions.values()]
       .filter((s) => s.villagerId !== villagerId && s.active)

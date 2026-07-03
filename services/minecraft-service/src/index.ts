@@ -3,8 +3,11 @@ import { Redis } from 'ioredis'
 import { loadConfig } from './config.ts'
 import { logger } from './logging.ts'
 import { startAdminServer } from './metrics.ts'
+import { buildEnvelope } from './events/envelope.ts'
 import { EventProducer } from './kafka/producer.ts'
 import { CommandConsumer } from './kafka/commandConsumer.ts'
+import { CommandExecutor } from './actions/executor.ts'
+import { CommandDedupe } from './redis/dedupe.ts'
 import { BotRegistry } from './bots/BotRegistry.ts'
 
 const config = loadConfig()
@@ -16,7 +19,27 @@ logger.info(
 const redis = new Redis(config.REDIS_URL, { lazyConnect: true })
 const producer = new EventProducer(config.KAFKA_BROKERS.split(','))
 const registry = new BotRegistry(config, producer, redis)
-const consumer = new CommandConsumer(config.KAFKA_BROKERS.split(','), registry, producer)
+const dedupe = new CommandDedupe(redis)
+
+const executor = new CommandExecutor({
+  getSession: (villagerId) => registry.get(villagerId),
+  spawn: (villagerId, username) => registry.spawn(villagerId, username),
+  despawn: (villagerId) => registry.despawn(villagerId),
+  isFresh: (commandId) => dedupe.isFresh(commandId),
+  publishOutcome: (command, eventType, extra) =>
+    producer.publish(
+      'world.events',
+      buildEnvelope({
+        eventType,
+        aggregateId: command.aggregateId,
+        correlationId: command.correlationId,
+        causationId: command.eventId,
+        payload: extra,
+      }),
+    ),
+})
+
+const consumer = new CommandConsumer(config.KAFKA_BROKERS.split(','), executor)
 const admin = startAdminServer(config.PORT)
 
 await redis.connect()
