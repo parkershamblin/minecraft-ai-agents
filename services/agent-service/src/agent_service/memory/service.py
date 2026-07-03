@@ -1,0 +1,183 @@
+"""MemoryService — the module's public surface, shaped exactly like the future
+REST contract (store / search / reflect) so the M1 extraction is mechanical."""
+
+import time
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from uuid6 import uuid7
+
+from agent_service.logging import logger
+from agent_service.memory.embeddings import EmbeddingProvider
+from agent_service.memory.models import Memory
+from agent_service.memory.scoring import (
+    recency_score,
+    retrieval_score,
+    score_importance,
+    score_sentiment,
+)
+from agent_service.metrics import memories_stored_total, memory_retrieval_seconds
+from agent_service.settings import Settings
+
+
+@dataclass(frozen=True)
+class MemoryRecord:
+    id: uuid.UUID
+    villager_id: uuid.UUID
+    memory_type: str
+    content: str
+    importance: float
+    sentiment: float
+    occurred_at: datetime
+    embedding_model: str
+
+
+@dataclass(frozen=True)
+class RetrievedMemory:
+    record: MemoryRecord
+    relevance: float
+    recency: float
+    score: float
+
+
+@dataclass(frozen=True)
+class RetrievalWeights:
+    recency: float = 1.0
+    importance: float = 1.0
+    relevance: float = 1.0
+
+
+class MemoryService:
+    def __init__(
+        self,
+        session_factory: async_sessionmaker,
+        embeddings: EmbeddingProvider,
+        settings: Settings,
+    ):
+        self._sessions = session_factory
+        self._embeddings = embeddings
+        self._settings = settings
+
+    async def store(
+        self,
+        villager_id: uuid.UUID,
+        content: str,
+        memory_type: str = "observation",
+        occurred_at: datetime | None = None,
+        importance: float | None = None,
+        sentiment: float | None = None,
+        source_event_id: uuid.UUID | None = None,
+        source_memory_ids: list[uuid.UUID] | None = None,
+    ) -> MemoryRecord:
+        """Persist one memory. importance/sentiment may arrive from the
+        deliberation output (CIV-8); the heuristics are the fallback — never a
+        separate LLM scoring call."""
+        now = datetime.now(UTC)
+        occurred_at = occurred_at or now
+        importance = importance if importance is not None else score_importance(content, memory_type)
+        sentiment = sentiment if sentiment is not None else score_sentiment(content)
+
+        row = Memory(
+            id=uuid7(),
+            villager_id=villager_id,
+            memory_type=memory_type,
+            content=content,
+            importance_score=importance,
+            sentiment_score=sentiment,
+            embedding=await self._embeddings.embed(content),
+            embedding_model=self._embeddings.name,
+            source_event_id=source_event_id,
+            source_memory_ids=source_memory_ids,
+            occurred_at=occurred_at,
+            created_at=now,
+            last_accessed_at=now,
+            access_count=0,
+        )
+        async with self._sessions() as session:
+            session.add(row)
+            await session.commit()
+
+        memories_stored_total.labels(memory_type=memory_type).inc()
+        logger.debug("memory stored", villager_id=str(villager_id), memory_id=str(row.id), importance=importance)
+        return _to_record(row)
+
+    async def search(
+        self,
+        villager_id: uuid.UUID,
+        query: str,
+        k: int = 10,
+        weights: RetrievalWeights | None = None,
+    ) -> list[RetrievedMemory]:
+        """Top-k by recency x importance x relevance. ANN (cosine) narrows to
+        candidates; the full formula re-ranks in process. Access metadata on
+        the winners is touched (the recency term of future retrievals)."""
+        weights = weights or RetrievalWeights(
+            recency=self._settings.retrieval_w_recency,
+            importance=self._settings.retrieval_w_importance,
+            relevance=self._settings.retrieval_w_relevance,
+        )
+        started = time.perf_counter()
+        query_vector = await self._embeddings.embed(query)
+        now = datetime.now(UTC)
+
+        async with self._sessions() as session:
+            distance = Memory.embedding.cosine_distance(query_vector)
+            rows = (
+                await session.execute(
+                    select(Memory, distance.label("distance"))
+                    .where(Memory.villager_id == villager_id)
+                    .order_by(distance)
+                    .limit(max(k * self._settings.retrieval_candidate_factor, k))
+                )
+            ).all()
+
+            scored = []
+            for memory, dist in rows:
+                relevance = 1.0 - float(dist)
+                recency = recency_score(
+                    memory.last_accessed_at, now, self._settings.recency_decay_per_hour
+                )
+                score = retrieval_score(
+                    recency,
+                    memory.importance_score,
+                    relevance,
+                    weights.recency,
+                    weights.importance,
+                    weights.relevance,
+                )
+                scored.append(RetrievedMemory(_to_record(memory), round(relevance, 4), round(recency, 4), round(score, 4)))
+            scored.sort(key=lambda m: m.score, reverse=True)
+            winners = scored[:k]
+
+            if winners:
+                await session.execute(
+                    update(Memory)
+                    .where(Memory.id.in_([m.record.id for m in winners]))
+                    .values(last_accessed_at=now, access_count=Memory.access_count + 1)
+                )
+                await session.commit()
+
+        memory_retrieval_seconds.observe(time.perf_counter() - started)
+        return winners
+
+    async def reflect(self, villager_id: uuid.UUID) -> list[MemoryRecord]:
+        """Distill recent memories into higher-level reflections. Ships in M1
+        with the reflection job (needs the LLM port); the contract exists now
+        so the REST extraction never changes shape."""
+        raise NotImplementedError("reflection ships in M1 (needs the LLM port from CIV-7)")
+
+
+def _to_record(row: Memory) -> MemoryRecord:
+    return MemoryRecord(
+        id=row.id,
+        villager_id=row.villager_id,
+        memory_type=row.memory_type,
+        content=row.content,
+        importance=row.importance_score,
+        sentiment=row.sentiment_score,
+        occurred_at=row.occurred_at,
+        embedding_model=row.embedding_model,
+    )

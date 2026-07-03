@@ -368,10 +368,13 @@ CREATE TABLE memories (
     last_accessed_at  timestamptz NOT NULL DEFAULT now(),  -- recency term of the retrieval score
     access_count      integer     NOT NULL DEFAULT 0,
     CONSTRAINT memories_reflection_provenance
+        -- NULL-proof: CHECKs pass on NULL (three-valued logic), so the
+        -- reflection branch must assert IS NOT NULL explicitly.
         CHECK (
             (memory_type <> 'reflection' AND source_memory_ids IS NULL)
             OR
-            (memory_type = 'reflection' AND array_length(source_memory_ids, 1) >= 1)
+            (memory_type = 'reflection' AND source_memory_ids IS NOT NULL
+             AND array_length(source_memory_ids, 1) >= 1)
         )
 );
 

@@ -57,4 +57,5 @@ tasks:
     cmds:
       - npm test --workspace @civ/events
       - npm test --workspace @civ/minecraft-service
+      - cd services/agent-service && uv run pytest -q
       - cd services/event-service && {{.GRADLEW}} test
