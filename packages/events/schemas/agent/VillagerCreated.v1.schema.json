@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/agent/VillagerCreated.v1.schema.json",
+  "title": "VillagerCreatedPayload",
+  "description": "Identity provisioned in agent_db — distinct from VillagerSpawned (the bot joined the world). Producer: agent-service on agent.events, emitted by the seed flow.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "name": { "type": "string", "minLength": 1 },
+    "personality": {
+      "type": "object",
+      "description": "Traits, values, speech style, quirks — the prompt inputs."
+    },
+    "backstory": { "type": "string" }
+  },
+  "required": ["villagerId", "name", "personality", "backstory"],
+  "additionalProperties": false
+}

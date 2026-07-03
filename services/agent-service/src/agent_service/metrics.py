@@ -49,3 +49,15 @@ llm_budget_tripped = Gauge(
     "civ_llm_budget_tripped",
     "1 while the daily token budget circuit breaker is open (deliberation on fake)",
 )
+
+tick_seconds = Histogram(
+    "civ_tick_seconds",
+    "Full cognitive tick latency (perceive -> retrieve -> deliberate -> act -> reflect)",
+    buckets=(0.1, 0.5, 1.0, 2.0, 3.5, 5.0, 10.0, 20.0, 30.0),
+)
+
+ticks_total = Counter(
+    "civ_ticks_total",
+    "Cognitive ticks executed",
+    ["outcome"],  # ok | error
+)

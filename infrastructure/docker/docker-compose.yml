@@ -139,6 +139,39 @@ services:
       retries: 12
       start_period: 15s
 
+  agent-service:
+    build:
+      context: ../..
+      dockerfile: services/agent-service/Dockerfile
+    profiles: [app]
+    ports: ["8001:8001"]
+    environment:
+      POSTGRES_HOST: postgres
+      KAFKA_BROKERS: redpanda:29092
+      REDIS_URL: redis://redis:6379
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-2000000}
+      TICK_INTERVAL_SECONDS: ${TICK_INTERVAL_SECONDS:-60}
+      VILLAGER_COUNT: ${VILLAGER_COUNT:-1}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8001/healthz')"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
   event-service:
     build: ../../services/event-service
     profiles: [app]

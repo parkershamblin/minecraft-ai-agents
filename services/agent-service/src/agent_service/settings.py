@@ -6,12 +6,27 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="ignore")
 
-    # --- Postgres (database-per-service: agent_db later, memory_db now) -----
+    # --- Postgres (database-per-service: agent_db + hosted memory_db) -------
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     memory_db_user: str = "memory_service"
     memory_db_password: str = "memory_service_dev"
     memory_db_name: str = "memory_db"
+    agent_db_user: str = "agent_service"
+    agent_db_password: str = "agent_service_dev"
+    agent_db_name: str = "agent_db"
+
+    # --- Kafka / Redis -------------------------------------------------------
+    kafka_brokers: str = "localhost:9092"
+    redis_url: str = "redis://localhost:6379"
+
+    # --- The tick — the single number that drives cost and latency ----------
+    tick_interval_seconds: int = 60
+    villager_count: int = 1  # walking skeleton: ONE villager; CIV-10 sets 3
+    percepts_max_per_tick: int = 10
+    memories_per_tick: int = 6
+
+    port: int = 8001
 
     # --- LLM (chain: openai -> ollama -> fake, probed at boot) --------------
     # 'auto' walks the chain; an explicit value pins a provider (tests: fake).
@@ -47,4 +62,11 @@ class Settings(BaseSettings):
         return (
             f"postgresql+asyncpg://{self.memory_db_user}:{self.memory_db_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.memory_db_name}"
+        )
+
+    @property
+    def agent_db_url(self) -> str:
+        return (
+            f"postgresql+asyncpg://{self.agent_db_user}:{self.agent_db_password}"
+            f"@{self.postgres_host}:{self.postgres_port}/{self.agent_db_name}"
         )

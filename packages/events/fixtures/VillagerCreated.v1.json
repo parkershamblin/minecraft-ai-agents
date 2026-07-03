@@ -1,0 +1,21 @@
+{
+  "eventId": "019f8e2b-000d-7000-8000-00000000a00d",
+  "eventType": "VillagerCreated",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:39:00.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0000-7000-8000-c0de00000000",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "name": "Elara",
+    "personality": {
+      "traits": ["warm", "industrious", "nosy"],
+      "values": ["honest work", "community"],
+      "speechStyle": "friendly and direct, fond of weather talk"
+    },
+    "backstory": "Raised by the miller; believes a village that eats together stays together."
+  }
+}

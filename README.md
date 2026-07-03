@@ -53,6 +53,6 @@ scripts/               repo-level utilities (smoke canary)
 - [x] CIV-5 command executor
 - [x] CIV-6 memory module (pgvector, in agent-service)
 - [x] CIV-7 LLM provider chain + decision contract
-- [ ] CIV-8 LangGraph tick loop + seed
+- [x] CIV-8 LangGraph tick loop + seed + percept feedback
 - [ ] CIV-9 minimal dashboard
 - [ ] CIV-10 observability + scale to 3

@@ -1,0 +1,20 @@
+{
+  "eventId": "019f8e2b-000c-7000-8000-00000000a00c",
+  "eventType": "VillagerTalked",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:09.001Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": "019f8e2b-0002-7000-8000-00000000a002",
+  "payload": {
+    "speakerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "speakerName": "Elara",
+    "listenerIds": ["019f8e2a-0000-7000-8000-0000000b2a44"],
+    "message": "Good morning, Bram! The oak by the pond looks ready for felling.",
+    "topic": "smalltalk",
+    "sentiment": 0.4,
+    "location": { "x": 112.3, "y": 64, "z": -347.8 }
+  }
+}

@@ -46,9 +46,9 @@ tasks:
       - npm run gen --workspace @civ/events
 
   seed:
-    desc: Create villagers from the committed persona seed file
+    desc: Provision villagers.json (first VILLAGER_COUNT), emit VillagerCreated, spawn bots, start tick loops
     cmds:
-      - echo "seed arrives with CIV-8 (agent-service POST /internal/seed)"
+      - curl -s -X POST http://localhost:8001/internal/seed
 
   test:
     desc: Run all test suites (contract tests + event-service; more services join as they ship)
