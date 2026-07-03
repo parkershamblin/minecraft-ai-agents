@@ -52,7 +52,7 @@ scripts/               repo-level utilities (smoke canary)
 - [x] CIV-4 bot host + world bridge (minecraft-service)
 - [x] CIV-5 command executor
 - [x] CIV-6 memory module (pgvector, in agent-service)
-- [ ] CIV-7 LLM provider chain + decision contract
+- [x] CIV-7 LLM provider chain + decision contract
 - [ ] CIV-8 LangGraph tick loop + seed
 - [ ] CIV-9 minimal dashboard
 - [ ] CIV-10 observability + scale to 3

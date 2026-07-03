@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     memory_db_password: str = "memory_service_dev"
     memory_db_name: str = "memory_db"
 
+    # --- LLM (chain: openai -> ollama -> fake, probed at boot) --------------
+    # 'auto' walks the chain; an explicit value pins a provider (tests: fake).
+    llm_provider: str = "auto"
+    llm_model_openai: str = "gpt-4o-mini"
+    llm_model_ollama: str = "llama3.1:8b"
+    llm_temperature: float = 0.7
+    # Hard daily ceiling — hitting it flips deliberation to the fake provider
+    # (circuit breaker) so a forgotten overnight run cannot burn the wallet.
+    llm_daily_token_budget: int = 2_000_000
+
     # --- Embeddings (chain: openai -> ollama -> fake, probed at boot) -------
     openai_api_key: str = ""
     embedding_model_openai: str = "text-embedding-3-small"

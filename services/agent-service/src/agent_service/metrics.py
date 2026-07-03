@@ -1,6 +1,6 @@
 """Prometheus metrics — exposed via the FastAPI app from CIV-8 onward."""
 
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter, Gauge, Histogram
 
 memory_retrieval_seconds = Histogram(
     "civ_memory_retrieval_seconds",
@@ -19,4 +19,33 @@ embedding_seconds = Histogram(
     "Embedding call latency per provider",
     ["provider"],
     buckets=(0.005, 0.025, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0),
+)
+
+llm_tokens_total = Counter(
+    "civ_llm_tokens_total",
+    "LLM tokens consumed",
+    ["provider", "direction"],  # direction: input | output
+)
+
+llm_cost_dollars_total = Counter(
+    "civ_llm_cost_dollars_total",
+    "Estimated LLM spend in USD (0 for local/fake providers)",
+    ["provider"],
+)
+
+llm_latency_seconds = Histogram(
+    "civ_llm_latency_seconds",
+    "Deliberation call latency per provider",
+    ["provider"],
+    buckets=(0.01, 0.1, 0.5, 1.0, 2.0, 3.5, 5.0, 10.0, 20.0),
+)
+
+llm_malformed_total = Counter(
+    "civ_llm_malformed_total",
+    "LLM responses that failed decision-contract validation (tick fell back to idle)",
+)
+
+llm_budget_tripped = Gauge(
+    "civ_llm_budget_tripped",
+    "1 while the daily token budget circuit breaker is open (deliberation on fake)",
 )
