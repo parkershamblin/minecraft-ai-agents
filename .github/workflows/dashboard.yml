@@ -2,9 +2,9 @@ name: dashboard
 on:
   push:
     branches: [main]
-    paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml"]
+    paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml", ".github/workflows/dashboard.yml"]
   pull_request:
-    paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml"]
+    paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml", ".github/workflows/dashboard.yml"]
 permissions:
   contents: read
 concurrency:

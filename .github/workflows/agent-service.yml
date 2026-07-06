@@ -2,9 +2,9 @@ name: agent-service
 on:
   push:
     branches: [main]
-    paths: ["services/agent-service/**", "packages/events/**", ".github/workflows/_reusable-service.yml"]
+    paths: ["services/agent-service/**", "packages/events/**", ".github/workflows/_reusable-service.yml", ".github/workflows/agent-service.yml"]
   pull_request:
-    paths: ["services/agent-service/**", "packages/events/**", ".github/workflows/_reusable-service.yml"]
+    paths: ["services/agent-service/**", "packages/events/**", ".github/workflows/_reusable-service.yml", ".github/workflows/agent-service.yml"]
 permissions:
   contents: read
   packages: write
