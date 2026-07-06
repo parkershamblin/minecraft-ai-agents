@@ -5,6 +5,9 @@ on:
     paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml"]
   pull_request:
     paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml"]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   ci:
     uses: ./.github/workflows/_reusable-service.yml

@@ -36,10 +36,6 @@ on:
         type: string
         default: "."
 
-concurrency:
-  group: ${{ inputs.service }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   test:
     runs-on: ubuntu-latest # Docker daemon included — Testcontainers runs real Postgres/Redpanda

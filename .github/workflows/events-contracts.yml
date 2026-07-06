@@ -6,9 +6,9 @@ name: events-contracts
 on:
   push:
     branches: [main]
-    paths: ["packages/events/**", "package-lock.json"]
+    paths: ["packages/events/**", "package-lock.json", ".github/workflows/events-contracts.yml"]
   pull_request:
-    paths: ["packages/events/**", "package-lock.json"]
+    paths: ["packages/events/**", "package-lock.json", ".github/workflows/events-contracts.yml"]
 
 concurrency:
   group: events-contracts-${{ github.ref }}
