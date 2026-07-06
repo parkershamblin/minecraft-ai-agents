@@ -7,6 +7,7 @@ on:
     paths: ["apps/dashboard/**", "package-lock.json", ".github/workflows/_reusable-service.yml", ".github/workflows/dashboard.yml"]
 permissions:
   contents: read
+  packages: write # never used (image: false) but the nested job requests it and validation is static
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
