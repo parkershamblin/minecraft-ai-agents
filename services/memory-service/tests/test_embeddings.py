@@ -3,12 +3,12 @@ import math
 import httpx
 import pytest
 
-from agent_service.memory.embeddings import (
+from memory_service.embeddings import (
     FakeEmbeddingProvider,
     OllamaEmbeddingProvider,
     build_embedding_provider,
 )
-from agent_service.settings import Settings
+from memory_service.settings import Settings
 
 
 class TestFakeProvider:

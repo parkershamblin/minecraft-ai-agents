@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 
-from agent_service.memory.scoring import (
+from memory_service.scoring import (
     recency_score,
     retrieval_score,
     score_importance,

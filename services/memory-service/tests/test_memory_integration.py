@@ -12,10 +12,10 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy.exc import IntegrityError
 
-from agent_service.db import make_engine, make_session_factory
-from agent_service.memory.service import MemoryService, RetrievalWeights
-from agent_service.metrics import memory_retrieval_seconds
-from agent_service.settings import Settings
+from memory_service.db import make_engine, make_session_factory
+from memory_service.service import MemoryService, RetrievalWeights
+from memory_service.metrics import memory_retrieval_seconds
+from memory_service.settings import Settings
 from testcontainers.postgres import PostgresContainer
 
 ELARA = uuid.UUID("019f8e2a-0000-7000-8000-0000000e1a2a")
@@ -98,7 +98,7 @@ async def test_full_memory_lifecycle(service: MemoryService):
     async with service._sessions() as session:  # noqa: SLF001 — test peeks at storage
         from sqlalchemy import select
 
-        from agent_service.memory.models import Memory
+        from memory_service.models import Memory
 
         row = (await session.execute(select(Memory).where(Memory.id == old_oak.id))).scalar_one()
         assert row.access_count >= 2

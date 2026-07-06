@@ -10,17 +10,17 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from uuid6 import uuid7
 
-from agent_service.logging import logger
-from agent_service.memory.embeddings import EmbeddingProvider
-from agent_service.memory.models import Memory
-from agent_service.memory.scoring import (
+from memory_service.logging import logger
+from memory_service.embeddings import EmbeddingProvider
+from memory_service.models import Memory
+from memory_service.scoring import (
     recency_score,
     retrieval_score,
     score_importance,
     score_sentiment,
 )
-from agent_service.metrics import memories_stored_total, memory_retrieval_seconds
-from agent_service.settings import Settings
+from memory_service.metrics import memories_stored_total, memory_retrieval_seconds
+from memory_service.settings import Settings
 
 
 @dataclass(frozen=True)

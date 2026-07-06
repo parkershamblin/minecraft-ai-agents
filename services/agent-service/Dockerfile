@@ -14,5 +14,5 @@ COPY services/agent-service/ ./
 RUN uv sync --frozen --no-dev
 
 EXPOSE 8001
-# Migrations for both logical DBs, then the app. Idempotent by design.
-CMD ["sh", "-c", "uv run alembic upgrade head && uv run alembic -c alembic-agent.ini upgrade head && uv run uvicorn agent_service.main:app --host 0.0.0.0 --port 8001 --log-level warning"]
+# agent_db migrations, then the app. Idempotent by design.
+CMD ["sh", "-c", "uv run alembic upgrade head && uv run uvicorn agent_service.main:app --host 0.0.0.0 --port 8001 --log-level warning"]

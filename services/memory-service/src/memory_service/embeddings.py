@@ -13,9 +13,9 @@ from typing import Protocol
 
 import httpx
 
-from agent_service.logging import logger
-from agent_service.metrics import embedding_seconds
-from agent_service.settings import Settings
+from memory_service.logging import logger
+from memory_service.metrics import embedding_seconds
+from memory_service.settings import Settings
 
 
 class EmbeddingProvider(Protocol):

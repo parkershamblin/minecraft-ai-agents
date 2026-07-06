@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 
 from agent_service.brain.graph import TickDeps, VillagerBrief, build_tick_graph, run_tick
 from agent_service.llm.providers import FakeProvider
-from agent_service.memory.service import MemoryRecord
+from agent_service.memory_client import MemoryRecord
 
 ELARA = VillagerBrief(
     id=uuid.UUID("019f8e2a-0000-7000-8000-0000000e1a2a"),

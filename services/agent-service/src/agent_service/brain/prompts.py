@@ -4,7 +4,7 @@ words a villager thinks with are unit-testable and diffable in review."""
 import json
 from typing import Any
 
-from agent_service.memory.service import RetrievedMemory
+from agent_service.memory_client import RetrievedMemory
 
 SYSTEM_TEMPLATE = """You are {name}, a villager in a small Minecraft settlement.
 Personality traits: {traits}.

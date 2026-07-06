@@ -1,8 +1,9 @@
 """agent-service — the villager mind, assembled.
 
-Boot: engines (agent_db + memory_db), providers (embedding + LLM, both
-boot-probed; LLM wrapped in the daily budget breaker), Kafka publisher, the
-perception consumer, and the staggered tick scheduler.
+Boot: the agent_db engine, the memory-service HTTP client (extracted in
+Sprint 2 — same interface, network boundary), the boot-probed LLM chain in
+its budget breaker, the Kafka publisher, the perception consumer, and the
+staggered tick scheduler.
 """
 
 import uuid
@@ -21,8 +22,7 @@ from agent_service.kafka.producer import EventPublisher
 from agent_service.llm.budget import BudgetedProvider
 from agent_service.llm.providers import build_llm_provider
 from agent_service.logging import configure_logging, logger
-from agent_service.memory.embeddings import build_embedding_provider
-from agent_service.memory.service import MemoryService
+from agent_service.memory_client import MemoryClient
 from agent_service.settings import Settings
 from agent_service.villagers.repo import VillagerRepo
 from agent_service.villagers.seed import seed_villagers
@@ -50,13 +50,9 @@ async def lifespan(app: FastAPI):
     redis = aioredis.from_url(settings.redis_url, decode_responses=True)
 
     agent_engine = make_engine(settings.agent_db_url)
-    memory_engine = make_engine(settings.memory_db_url)
     repo = VillagerRepo(make_session_factory(agent_engine))
-    memory = MemoryService(
-        make_session_factory(memory_engine),
-        await build_embedding_provider(settings, http_client),
-        settings,
-    )
+    # Sprint 2 extraction: same interface, now across the network boundary
+    memory = MemoryClient(settings.memory_service_url, http_client)
     llm = BudgetedProvider(await build_llm_provider(settings, http_client), settings.llm_daily_token_budget)
 
     publisher = EventPublisher(settings.kafka_brokers)
@@ -89,7 +85,6 @@ async def lifespan(app: FastAPI):
     await redis.aclose()
     await http_client.aclose()
     await agent_engine.dispose()
-    await memory_engine.dispose()
 
 
 app = FastAPI(title="agent-service", lifespan=lifespan)

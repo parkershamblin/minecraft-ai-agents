@@ -150,7 +150,7 @@ Image tags above name the minor line; the compose file pins **full patch tags** 
 |---|---|---|---|---|
 | minecraft-service | local build (`node:22-slim`) | 8003 (health/metrics only) | `GET /healthz` | redpanda, redis |
 | agent-service | local build (`python:3.12-slim`) | 8001 | `GET /healthz` | redpanda, postgres, redis (+ memory-service once extracted at M1) |
-| memory-service *(from M1 — Sprint 1 runs Memory as an in-process module of agent-service over the same `memory_db`; the bounded context exists from day one, the network hop waits until reflections/embedding jobs justify it)* | local build (`python:3.12-slim`) | 8002 | `GET /healthz` | redpanda, postgres |
+| memory-service *(extracted from agent-service in Sprint 2 — the bounded context existed from day one as an in-process module; the network hop arrived once the contract was proven)* | local build (`python:3.12-slim`) | 8002 | `GET /healthz` | postgres |
 | event-service | local build (`eclipse-temurin:21-jre`) | 8081 | `GET /actuator/health` | redpanda, postgres — OpenSearch is an optional, feature-flagged adapter (M2+), never a startup dependency |
 | government-service *(from M2 — entry does not exist in compose until then)* | local build (temurin 21) | 8082 | `GET /actuator/health` | redpanda, postgres |
 | analytics-service *(from M1)* | local build (temurin 21) | 8083 | `GET /actuator/health` | redpanda, postgres |

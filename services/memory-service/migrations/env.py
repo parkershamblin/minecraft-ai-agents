@@ -3,7 +3,7 @@ import asyncio
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from agent_service.settings import Settings
+from memory_service.settings import Settings
 
 config = context.config
 target_metadata = None  # migrations are raw SQL — the DDL is the source of truth

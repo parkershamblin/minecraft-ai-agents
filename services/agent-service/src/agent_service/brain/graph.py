@@ -23,7 +23,7 @@ from agent_service.events.envelope import (
 )
 from agent_service.llm.decide import DecisionOutcome, decide_safely
 from agent_service.logging import logger
-from agent_service.memory.service import RetrievedMemory
+from agent_service.memory_client import RetrievedMemory
 
 
 @dataclass(frozen=True)
