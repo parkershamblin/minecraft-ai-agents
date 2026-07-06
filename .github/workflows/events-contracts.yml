@@ -1,0 +1,36 @@
+# The Published Language's own gate: every fixture validates, every schema has
+# a fixture, and the committed generated types are byte-identical to a fresh
+# codegen run (drift check — schemas are the single source of truth).
+name: events-contracts
+
+on:
+  push:
+    branches: [main]
+    paths: ["packages/events/**", "package-lock.json"]
+  pull_request:
+    paths: ["packages/events/**", "package-lock.json"]
+
+concurrency:
+  group: events-contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: astral-sh/setup-uv@v5 # gen:py runs via uvx datamodel-code-generator
+      - run: npm ci --no-audit --no-fund
+      - name: contract tests
+        run: npm test --workspace @civ/events
+      - name: codegen drift check
+        run: |
+          npm run gen --workspace @civ/events
+          git diff --exit-code -- packages/events/generated || {
+            echo '::error::generated types are stale — run `task gen` and commit the output'
+            exit 1
+          }

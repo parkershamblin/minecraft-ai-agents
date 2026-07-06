@@ -1,0 +1,112 @@
+# The shared lint->test->build->package pipeline. Thin path-filtered callers
+# (one per deployable) invoke this with their language; a schema change in
+# packages/events rebuilds every consumer, a service change rebuilds only
+# itself. Coverage is REPORT-ONLY during M0/Sprint 2 (the 80% gate is enforced
+# from M1 on the DoD-named paths).
+name: service-ci
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        required: true
+        type: string
+      language:
+        required: true
+        type: string # node | python | java
+      workdir:
+        required: true
+        type: string
+      npm-workspace:
+        required: false
+        type: string
+        default: ""
+      coverage-args:
+        required: false
+        type: string
+        default: ""
+      image:
+        required: false
+        type: boolean
+        default: false
+      # docker build context: monorepo root for workspace builds, the service
+      # dir for self-contained ones (event-service)
+      context:
+        required: false
+        type: string
+        default: "."
+
+concurrency:
+  group: ${{ inputs.service }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest # Docker daemon included — Testcontainers runs real Postgres/Redpanda
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------------- node ----------------
+      - if: inputs.language == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: inputs.language == 'node'
+        run: npm ci --no-audit --no-fund
+      - if: inputs.language == 'node'
+        run: npm run typecheck --workspace ${{ inputs.npm-workspace }} --if-present
+      - if: inputs.language == 'node'
+        run: npm test --workspace ${{ inputs.npm-workspace }} --if-present
+
+      # ---------------- python ----------------
+      - if: inputs.language == 'python'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - if: inputs.language == 'python'
+        working-directory: ${{ inputs.workdir }}
+        run: uv sync --frozen
+      - if: inputs.language == 'python'
+        working-directory: ${{ inputs.workdir }}
+        run: uv run pytest -q ${{ inputs.coverage-args }}
+
+      # ---------------- java ----------------
+      - if: inputs.language == 'java'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - if: inputs.language == 'java'
+        uses: gradle/actions/setup-gradle@v4
+      - if: inputs.language == 'java'
+        working-directory: ${{ inputs.workdir }}
+        run: ./gradlew test bootJar --console=plain
+
+  package:
+    # main only: immutable, traceable artifacts — any running container maps
+    # to exactly one commit via the sha tag
+    if: inputs.image && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.workdir }}/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ inputs.service }}:sha-${{ github.sha }}
+            ghcr.io/${{ github.repository }}/${{ inputs.service }}:latest
+          cache-from: type=gha,scope=${{ inputs.service }}
+          cache-to: type=gha,scope=${{ inputs.service }},mode=max
