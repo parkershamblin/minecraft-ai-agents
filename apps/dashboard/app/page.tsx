@@ -1,0 +1,29 @@
+import { EventFeed } from '@/components/EventFeed'
+import { VillagerGrid } from '@/components/VillagerGrid'
+
+export default function OverviewPage() {
+  return (
+    <main className="mx-auto max-w-7xl px-6 py-8">
+      <header className="mb-8 flex items-baseline justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">AI Civilization Engine</h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            Autonomous villagers on a live Minecraft server — every thought, word, and step is an event.
+          </p>
+        </div>
+        <span className="text-xs text-zinc-500">Sprint 1 · walking skeleton</span>
+      </header>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
+        <section className="lg:col-span-2">
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-400">Villagers</h2>
+          <VillagerGrid />
+        </section>
+        <section className="lg:col-span-3">
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-400">Live events</h2>
+          <EventFeed />
+        </section>
+      </div>
+    </main>
+  )
+}

@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "packages/events",
-    "services/minecraft-service"
+    "services/minecraft-service",
+    "apps/dashboard"
   ],
   "scripts": {
     "gen": "npm run gen --workspace @civ/events",
