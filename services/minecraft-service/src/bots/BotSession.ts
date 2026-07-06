@@ -9,6 +9,7 @@ import { buildEnvelope } from '../events/envelope.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { MovementTracker } from '../world/movementTracker.ts'
 import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
+import { RESOURCE_YIELD, blockNamesFor } from '../world/resources.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
@@ -226,6 +227,62 @@ export class BotSession {
       throw new Error('bot is not connected')
     }
     this.bot.chat(message)
+  }
+
+  /**
+   * Harvest the nearest block of a resource family: pathfind adjacent, dig,
+   * step onto the spot to collect the drop, report the inventory delta.
+   * Emits ResourceGathered (a world fact); the command outcome carries the
+   * same result back to the requesting mind.
+   */
+  async gather(
+    resource: string,
+    maxDistance: number,
+  ): Promise<{ resource: string; blockType: string; position: Position; collected: number }> {
+    const bot = this.bot
+    if (!bot?.entity) {
+      throw new Error('bot has no entity — not spawned')
+    }
+    const names = blockNamesFor(resource)
+    if (!names) {
+      throw new Error(`unknown resource family '${resource}'`)
+    }
+    const block = bot.findBlock({
+      matching: (candidate) => names.includes(candidate.name),
+      maxDistance,
+    })
+    if (!block) {
+      const err = new Error(`no ${resource} within ${maxDistance} blocks`)
+      ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
+      throw err
+    }
+
+    const yieldNames = RESOURCE_YIELD[resource] ?? names
+    const countYield = () =>
+      bot.inventory
+        .items()
+        .filter((item) => yieldNames.includes(item.name))
+        .reduce((sum, item) => sum + item.count, 0)
+    const before = countYield()
+
+    await bot.pathfinder.goto(new goals.GoalGetToBlock(block.position.x, block.position.y, block.position.z))
+    const blockType = block.name
+    await bot.dig(block)
+    // Step onto the dig site so the drop auto-collects, then give it a moment.
+    await bot.pathfinder.goto(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 0))
+    await new Promise((resolve) => setTimeout(resolve, 1_500))
+
+    const collected = Math.max(0, countYield() - before)
+    const position = { x: block.position.x, y: block.position.y, z: block.position.z }
+    void this.deps.producer.publish(
+      'world.events',
+      buildEnvelope({
+        eventType: 'ResourceGathered',
+        aggregateId: this.villagerId,
+        payload: { villagerId: this.villagerId, resourceType: blockType, quantity: collected, position },
+      }),
+    )
+    return { resource, blockType, position, collected }
   }
 
   stopMoving(): void {

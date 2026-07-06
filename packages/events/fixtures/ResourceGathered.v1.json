@@ -1,0 +1,17 @@
+{
+  "eventId": "019f8e2b-000e-7000-8000-00000000a00e",
+  "eventType": "ResourceGathered",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:45:12.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "resourceType": "oak_log",
+    "quantity": 1,
+    "position": { "x": 118, "y": 65, "z": -350 }
+  }
+}

@@ -34,7 +34,12 @@ DECISION_SCHEMA: dict[str, Any] = {
     "additionalProperties": False,
 }
 
-_PARAMS_DEF_BY_ACTION = {"move": "MoveParams", "chat": "ChatParams", "follow": "FollowParams"}
+_PARAMS_DEF_BY_ACTION = {
+    "move": "MoveParams",
+    "chat": "ChatParams",
+    "follow": "FollowParams",
+    "gather": "GatherParams",
+}
 
 
 class MalformedDecision(Exception):
@@ -92,7 +97,7 @@ def validate_decision(raw_text: str) -> Decision:
 
     action = data["action"]
     params_validator = per_action.get(action)
-    if params_validator:  # gather/idle legitimately take {}
+    if params_validator:  # idle legitimately takes {}
         param_errors = sorted(params_validator.iter_errors(data["params"]), key=lambda e: e.json_path)
         if param_errors:
             raise MalformedDecision(

@@ -10,69 +10,153 @@
       "format": "uuid",
       "description": "Equal to the command's envelope eventId; carried into ActionCompleted/ActionFailed."
     },
-    "villagerId": { "type": "string", "format": "uuid" },
+    "villagerId": {
+      "type": "string",
+      "format": "uuid"
+    },
     "action": {
       "type": "string",
-      "enum": ["spawn", "despawn", "move", "gather", "chat", "follow", "idle"],
+      "enum": [
+        "spawn",
+        "despawn",
+        "move",
+        "gather",
+        "chat",
+        "follow",
+        "idle"
+      ],
       "description": "spawn/despawn manage the bot session itself; the rest act in-world."
     },
     "params": {
       "type": "object",
-      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams; despawn/gather/idle take {})."
+      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams; despawn/idle take {})."
     },
-    "priority": { "type": "integer", "minimum": 1, "maximum": 10, "default": 5 },
+    "priority": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 5
+    },
     "timeoutMs": {
       "type": "integer",
       "minimum": 1000,
       "description": "The executor's watchdog emits ActionFailed{TIMEOUT} if the command hasn't terminated by then."
     }
   },
-  "required": ["commandId", "villagerId", "action", "params", "timeoutMs"],
+  "required": [
+    "commandId",
+    "villagerId",
+    "action",
+    "params",
+    "timeoutMs"
+  ],
   "additionalProperties": false,
   "$defs": {
     "Position": {
       "type": "object",
       "properties": {
-        "x": { "type": "number" },
-        "y": { "type": "number" },
-        "z": { "type": "number" }
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
       },
-      "required": ["x", "y", "z"],
+      "required": [
+        "x",
+        "y",
+        "z"
+      ],
       "additionalProperties": false
     },
     "SpawnParams": {
       "type": "object",
       "properties": {
-        "minecraftUsername": { "type": "string", "minLength": 1 },
-        "spawnPosition": { "$ref": "#/$defs/Position" }
+        "minecraftUsername": {
+          "type": "string",
+          "minLength": 1
+        },
+        "spawnPosition": {
+          "$ref": "#/$defs/Position"
+        }
       },
-      "required": ["minecraftUsername"],
+      "required": [
+        "minecraftUsername"
+      ],
       "additionalProperties": false
     },
     "MoveParams": {
       "type": "object",
       "properties": {
-        "to": { "$ref": "#/$defs/Position" },
-        "range": { "type": "number", "minimum": 0, "default": 1 }
+        "to": {
+          "$ref": "#/$defs/Position"
+        },
+        "range": {
+          "type": "number",
+          "minimum": 0,
+          "default": 1
+        }
       },
-      "required": ["to"],
+      "required": [
+        "to"
+      ],
       "additionalProperties": false
     },
     "ChatParams": {
       "type": "object",
       "properties": {
-        "message": { "type": "string", "minLength": 1, "maxLength": 256 }
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        }
       },
-      "required": ["message"],
+      "required": [
+        "message"
+      ],
       "additionalProperties": false
     },
     "FollowParams": {
       "type": "object",
       "properties": {
-        "targetVillagerId": { "type": "string", "format": "uuid" },
-        "range": { "type": "number", "minimum": 1, "default": 2 }
+        "targetVillagerId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "range": {
+          "type": "number",
+          "minimum": 1,
+          "default": 2
+        }
       },
-      "required": ["targetVillagerId"],
+      "required": [
+        "targetVillagerId"
+      ],
+      "additionalProperties": false
+    },
+    "GatherParams": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string",
+          "enum": [
+            "wood",
+            "stone",
+            "dirt"
+          ],
+          "default": "wood",
+          "description": "Resource family; the executor maps it to concrete block types."
+        },
+        "maxDistance": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 64,
+          "default": 32
+        }
+      },
       "additionalProperties": false
     }
   }

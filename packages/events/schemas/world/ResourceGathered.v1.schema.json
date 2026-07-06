@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/ResourceGathered.v1.schema.json",
+  "title": "ResourceGatheredPayload",
+  "description": "A villager harvested a resource from the world — the primitive the P5 economy is built on. Producer: minecraft-service on world.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "resourceType": {
+      "type": "string",
+      "description": "The concrete block harvested (oak_log, stone, ...), not the requested family."
+    },
+    "quantity": { "type": "integer", "minimum": 0 },
+    "position": { "$ref": "#/$defs/Position" }
+  },
+  "required": ["villagerId", "resourceType", "quantity", "position"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    }
+  }
+}

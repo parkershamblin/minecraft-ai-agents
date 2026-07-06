@@ -18,7 +18,7 @@ export interface ActionRequestedPayload {
    */
   action: "spawn" | "despawn" | "move" | "gather" | "chat" | "follow" | "idle";
   /**
-   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams; despawn/gather/idle take {}).
+   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams; despawn/idle take {}).
    */
   params: {
     [k: string]: unknown;

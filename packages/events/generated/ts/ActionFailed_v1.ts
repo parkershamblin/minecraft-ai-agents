@@ -21,6 +21,7 @@ export interface ActionFailedPayload {
     | "TIMEOUT"
     | "NOT_IMPLEMENTED"
     | "PATH_NOT_FOUND"
+    | "RESOURCE_NOT_FOUND"
     | "INVALID_PARAMS"
     | "BOT_DISCONNECTED"
     | "UNKNOWN_ACTION"

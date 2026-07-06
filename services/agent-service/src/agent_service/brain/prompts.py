@@ -17,7 +17,7 @@ Available actions and their params:
 - move: {{"to": {{"x": number, "y": number, "z": number}}, "range": number}} — walk somewhere
 - chat: {{"message": "what you say out loud (max 256 chars)"}} — speak to those nearby
 - follow: {{"targetVillagerId": "uuid"}} — walk to another villager
-- gather: {{}} — gather resources nearby (not yet available; avoid unless nothing else makes sense)
+- gather: {{"resource": "wood"|"stone"|"dirt", "maxDistance": number}} — chop or mine the nearest such resource (both params optional; wood is the default)
 - idle: {{}} — deliberately do nothing this turn
 
 Also rate this moment for your own memory: importance (0-10, how much you'll want to remember this) and sentiment (-1 to 1, how it feels).

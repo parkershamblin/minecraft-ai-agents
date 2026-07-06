@@ -9,6 +9,10 @@ export interface SessionActions {
   position: Position | null
   moveTo(to: Position, range: number): Promise<{ finalPosition: Position; blocksTraveled: number }>
   chat(message: string): void
+  gather(
+    resource: string,
+    maxDistance: number,
+  ): Promise<{ resource: string; blockType: string; position: Position; collected: number }>
   stopMoving(): void
 }
 
@@ -163,7 +167,18 @@ export class CommandExecutor {
         return { idled: true } // a deliberate choice to do nothing still terminates
       }
       case 'gather': {
-        throw new ActionError('NOT_IMPLEMENTED', 'gather ships with M1', false)
+        const session = this.requireSession(payload.villagerId)
+        const { resource, maxDistance } = payload.params as { resource?: string; maxDistance?: number }
+        try {
+          return await session.gather(resource ?? 'wood', Math.min(Math.max(maxDistance ?? 32, 4), 64))
+        } catch (err) {
+          if ((err as Error & { code?: string }).code === 'RESOURCE_NOT_FOUND') {
+            // honest outcome: the world simply has none nearby — retryable
+            // from a different spot on a future tick
+            throw new ActionError('RESOURCE_NOT_FOUND', (err as Error).message, true)
+          }
+          throw err
+        }
       }
       default: {
         throw new ActionError('UNKNOWN_ACTION', `no handler for action '${payload.action}'`, false)

@@ -35,7 +35,7 @@ class ActionRequestedPayload(BaseModel):
     )
     params: dict[str, Any] = Field(
         ...,
-        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams; despawn/gather/idle take {}).',
+        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams; despawn/idle take {}).',
     )
     priority: conint(ge=1, le=10) | None = 5
     timeoutMs: conint(ge=1000) = Field(
@@ -82,3 +82,20 @@ class FollowParams(BaseModel):
     )
     targetVillagerId: UUID
     range: confloat(ge=1.0) | None = 2
+
+
+class Resource(StrEnum):
+    wood = 'wood'
+    stone = 'stone'
+    dirt = 'dirt'
+
+
+class GatherParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    resource: Resource | None = Field(
+        'wood',
+        description='Resource family; the executor maps it to concrete block types.',
+    )
+    maxDistance: confloat(ge=4.0, le=64.0) | None = 32

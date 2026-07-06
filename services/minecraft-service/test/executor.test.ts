@@ -32,6 +32,7 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
     position: { x: 0, y: 64, z: 0 },
     moveTo: vi.fn(async () => ({ finalPosition: { x: 10, y: 64, z: 0 }, blocksTraveled: 10 })),
     chat: vi.fn(),
+    gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
     stopMoving: vi.fn(),
     ...sessionOverrides,
   }
@@ -125,6 +126,7 @@ describe('CommandExecutor', () => {
       position: { x: 50, y: 64, z: 50 },
       moveTo: vi.fn(),
       chat: vi.fn(),
+      gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
       stopMoving: vi.fn(),
     }
     const mover: SessionActions = {
@@ -132,6 +134,7 @@ describe('CommandExecutor', () => {
       position: { x: 0, y: 64, z: 0 },
       moveTo: vi.fn(async () => ({ finalPosition: { x: 49, y: 64, z: 50 }, blocksTraveled: 70 })),
       chat: vi.fn(),
+      gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
       stopMoving: vi.fn(),
     }
     const h = harness({ getSession: (id) => (id === 'bram-id' ? target : mover) })
@@ -146,9 +149,34 @@ describe('CommandExecutor', () => {
     expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
   })
 
-  it('gather is honestly NOT_IMPLEMENTED until M1', async () => {
+  it('gather defaults to wood within 32 blocks and completes with the yield', async () => {
     const h = harness()
     await h.executor.execute(command('gather'))
-    expect(h.outcomes[0]!.extra.errorCode).toBe('NOT_IMPLEMENTED')
+    expect(h.session.gather).toHaveBeenCalledWith('wood', 32)
+    expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
+    const result = h.outcomes[0]!.extra.result as { blockType: string; collected: number }
+    expect(result.blockType).toBe('oak_log')
+  })
+
+  it('gather clamps maxDistance to the contract bounds', async () => {
+    const h = harness()
+    await h.executor.execute(command('gather', { resource: 'stone', maxDistance: 999 }))
+    expect(h.session.gather).toHaveBeenCalledWith('stone', 64)
+  })
+
+  it('an empty world is an honest RESOURCE_NOT_FOUND, retryable', async () => {
+    const h = harness(
+      {},
+      {
+        gather: vi.fn(async () => {
+          const err = new Error('no wood within 32 blocks')
+          ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
+          throw err
+        }),
+      },
+    )
+    await h.executor.execute(command('gather'))
+    expect(h.outcomes[0]!.extra.errorCode).toBe('RESOURCE_NOT_FOUND')
+    expect(h.outcomes[0]!.extra.retryable).toBe(true)
   })
 })
