@@ -16,6 +16,8 @@ scrape_configs:
     static_configs:
       - targets: ["host.docker.internal:8001"]
         labels: { run_mode: host }
+      - targets: ["agent-service:8001"]
+        labels: { run_mode: compose }
 
   - job_name: minecraft-service
     metrics_path: /metrics

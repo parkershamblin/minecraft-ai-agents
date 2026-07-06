@@ -54,5 +54,5 @@ scripts/               repo-level utilities (smoke canary)
 - [x] CIV-6 memory module (pgvector, in agent-service)
 - [x] CIV-7 LLM provider chain + decision contract
 - [x] CIV-8 LangGraph tick loop + seed + percept feedback
-- [ ] CIV-9 minimal dashboard
-- [ ] CIV-10 observability + scale to 3
+- [x] CIV-9 minimal dashboard (Next.js + live SSE feed)
+- [x] CIV-10 observability + scale to 3 — **Sprint 1 complete** ([demo script](docs/demo-sprint-1.md))
