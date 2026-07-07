@@ -4,16 +4,14 @@ list_edges — exercised through the actual DDL (migration 0002 included).
 
 Kept out of the offline suite by its testcontainers dependency, like
 memory-service's integration test; CI's runner ships a Docker daemon.
+The session-scoped `database` fixture lives in conftest.py (shared with the
+seed suite).
 """
 
-import os
 import uuid
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from sqlalchemy import text
-from testcontainers.postgres import PostgresContainer
 
 from agent_service.db import make_engine, make_session_factory
 from agent_service.settings import Settings
@@ -23,25 +21,6 @@ from agent_service.villagers.repo import VillagerRepo
 ELARA = uuid.UUID("019f8e2a-0000-7000-8000-0000000e1a2a")
 BRAM = uuid.UUID("019f8e2a-0000-7000-8000-0000000b2a44")
 WREN = uuid.UUID("019f8e2a-0000-7000-8000-0000000c3e55")
-
-
-@pytest.fixture(scope="session")
-def database():
-    with PostgresContainer(
-        image="pgvector/pgvector:0.8.0-pg16",
-        username="test",
-        password="test",
-        dbname="agent_db",
-    ) as container:
-        os.environ.update(
-            POSTGRES_HOST=container.get_container_host_ip(),
-            POSTGRES_PORT=str(container.get_exposed_port(5432)),
-            AGENT_DB_USER="test",
-            AGENT_DB_PASSWORD="test",
-            AGENT_DB_NAME="agent_db",
-        )
-        command.upgrade(Config("alembic.ini"), "head")
-        yield Settings()
 
 
 @pytest.fixture()

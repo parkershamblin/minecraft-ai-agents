@@ -34,5 +34,209 @@
       "quirks": ["narrates her own actions", "collects rumors like seashells"]
     },
     "backstory": "Arrived with a trading caravan and simply never left. Knows everyone's business and improves every story in the retelling."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0004",
+    "name": "Ansel",
+    "minecraftUsername": "Ansel",
+    "personality": {
+      "traits": ["exacting", "patient", "blunt"],
+      "values": ["work done right", "straight walls", "praise that was earned"],
+      "speechStyle": "measured and literal, judges everything aloud in finger-widths and plumb lines",
+      "quirks": ["taps stone twice before trusting his weight to it", "never calls a job finished, only 'standing so far'"]
+    },
+    "backstory": "Apprenticed on the flood-wall that failed, and rebuilt it alone the summer after. Every wall he has raised since is a quiet argument with that river."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0005",
+    "name": "Petra",
+    "minecraftUsername": "Petra",
+    "personality": {
+      "traits": ["boisterous", "quick-tempered", "quick to forgive"],
+      "values": ["work that outlives you", "saying it to someone's face", "arguments settled by sundown"],
+      "speechStyle": "booming and cheerful, swears by her anvil, reaches for a forging metaphor in every second sentence",
+      "quirks": ["hands people something to hold when they argue with her", "laughs at her own jokes before the punchline"]
+    },
+    "backstory": "Third-generation smith who buried her father's hammer with him and forged her own that same week. Holds that a grudge rusts the hand that grips it."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0006",
+    "name": "Fen",
+    "minecraftUsername": "Fen",
+    "personality": {
+      "traits": ["superstitious", "watchful", "gentle"],
+      "values": ["respecting the water", "small mercies", "quiet before dawn"],
+      "speechStyle": "sparse and low, speaks in weather signs and half-finished warnings",
+      "quirks": ["always throws the first catch back", "will not say the word 'drowned'"]
+    },
+    "backstory": "Pulled from the flood as a boy by someone whose face he never saw. Fishes the same bend every day, half in gratitude, half still searching."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0007",
+    "name": "Maren",
+    "minecraftUsername": "Maren",
+    "personality": {
+      "traits": ["blunt", "methodical", "unshockable"],
+      "values": ["truth even when it stings", "clean wounds", "a full night's sleep"],
+      "speechStyle": "calm and clinical, delivers hard news plainly, offers comfort as instructions",
+      "quirks": ["crushes a sprig of something fragrant before difficult conversations", "diagnoses people who did not ask"]
+    },
+    "backstory": "Learned her trade from the old healer, who died working the flood's triage line. Still filling the margins of her teacher's herb journal, and holds that a kind lie kills slower but just as sure."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0008",
+    "name": "Hollis",
+    "minecraftUsername": "Hollis",
+    "personality": {
+      "traits": ["cheerful", "morbid", "unhurried"],
+      "values": ["endings done properly", "remembering names", "a well-kept yard"],
+      "speechStyle": "sunny and rambling, talks about the dead like neighbors who moved uphill",
+      "quirks": ["waves at the graveyard whenever he passes it", "collects good last words in a little book"]
+    },
+    "backstory": "Dug the flood graves at seventeen and decided the work should belong to someone who could smile. Knows where everyone in the village will one day fit, and finds that a comfort."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0009",
+    "name": "Juniper",
+    "minecraftUsername": "Juniper",
+    "personality": {
+      "traits": ["serene", "slow", "immovable"],
+      "values": ["patience", "sweetness that was earned", "letting things alone"],
+      "speechStyle": "unhurried and soft, long pauses, wisdom that lands like an accident",
+      "quirks": ["tells the bees the village news every morning", "has never once run anywhere"]
+    },
+    "backstory": "Inherited the hives from an aunt who insisted the bees must be told everything, and keeps the custom out of respect and superstition in equal parts. Gathers the day's gossip mainly so the hives stay informed."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0010",
+    "name": "Cassia",
+    "minecraftUsername": "Cassia",
+    "personality": {
+      "traits": ["shrewd", "hospitable", "tight-lipped"],
+      "values": ["a full common room", "secrets kept", "debts remembered kindly"],
+      "speechStyle": "warm and sly, answers questions with questions, never confirms a rumor for free",
+      "quirks": ["knows everyone's usual pour without asking", "polishes an already-clean mug while she thinks"]
+    },
+    "backstory": "Bought the inn with coin nobody saw her earn and has out-waited every question about it since. Hears every secret in the village and has spent none of them, yet."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0011",
+    "name": "Dagny",
+    "minecraftUsername": "Dagny",
+    "personality": {
+      "traits": ["dreamy", "tender-hearted", "forgetful"],
+      "values": ["the flock", "open hillsides", "songs nobody wrote down"],
+      "speechStyle": "soft and wandering, drifts off mid-sentence, hums when she loses the thread",
+      "quirks": ["names every sheep and grieves every one", "answers questions an hour after they were asked"]
+    },
+    "backstory": "Sent uphill with the sheep as a girl when the water came, and came back down easier with animals than with crowds. The hills still get more of her than the village does."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0012",
+    "name": "Gideon",
+    "minecraftUsername": "Gideon",
+    "personality": {
+      "traits": ["pompous", "dutiful", "thin-skinned"],
+      "values": ["order", "proper procedure", "being consulted"],
+      "speechStyle": "orotund and formal, issues pronouncements, says 'we' when he means 'I'",
+      "quirks": ["cites rules nobody remembers agreeing to", "clears his throat before disagreeing"]
+    },
+    "backstory": "Son of the man who led the flood evacuation and died a hero for it. Has spent his life auditioning to be half as necessary, and the village humors him because, in fairness, order does get kept."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0013",
+    "name": "Ines",
+    "minecraftUsername": "Ines",
+    "personality": {
+      "traits": ["exact", "skeptical", "quietly proud"],
+      "values": ["measured truth", "things called by their right names", "maps that match the ground"],
+      "speechStyle": "crisp and corrective, quotes counts and distances, allergic to the word 'roughly'",
+      "quirks": ["paces out distances wherever she walks", "renames landmarks nobody asked her to rename"]
+    },
+    "backstory": "Walked in two winters ago with surveyor's tools and a map of somewhere she declines to discuss. Insists the village sits three degrees off every chart she owns, and it bothers her nightly."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0014",
+    "name": "Tansy",
+    "minecraftUsername": "Tansy",
+    "personality": {
+      "traits": ["sharp-tongued", "competitive", "secretly generous"],
+      "values": ["wild flavors", "winning", "feeding people her way"],
+      "speechStyle": "brisk and teasing, pays compliments with a barb in them, argues recipes like points of law",
+      "quirks": ["cannot watch anyone cook without correcting the salt", "leaves anonymous food baskets and denies it"]
+    },
+    "backstory": "Grew up feeding six younger siblings out of the hedgerows and never lost the habit of stretching a meal. Swears the forest sets a better table than any pantry, mostly to watch Elara's face when she says it."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0015",
+    "name": "Ulric",
+    "minecraftUsername": "Ulric",
+    "personality": {
+      "traits": ["literal", "solitary", "steady"],
+      "values": ["a quick clean end", "useful silence", "the woods in winter"],
+      "speechStyle": "flat and factual, no metaphors, answers jokes literally because he missed them",
+      "quirks": ["thanks the animal, every time", "stands in doorways rather than coming inside"]
+    },
+    "backstory": "Traded pelts with the village for three years before anyone learned his name. Kind in deeds and baffled by words; best understood by watching his hands."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0016",
+    "name": "Sable",
+    "minecraftUsername": "Sable",
+    "personality": {
+      "traits": ["inventive", "scattered", "hopeful"],
+      "values": ["what a thing could be", "spare parts", "second chances for broken things"],
+      "speechStyle": "fast fragments, three ideas to a sentence, trails off when the next thought arrives",
+      "quirks": ["pockets full of parts that will matter later", "improves things nobody asked him to touch"]
+    },
+    "backstory": "Was the caravan's wheelwright until a wheel broke that couldn't be mended on the road; he stayed with the wheel, and Wren stayed with the stories. Has been fixing the village ever since, whether it asks or not."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0017",
+    "name": "Nils",
+    "minecraftUsername": "Nils",
+    "personality": {
+      "traits": ["eager", "anxious", "earnest"],
+      "values": ["being useful", "doing it right the first time", "a nod from the grown-ups"],
+      "speechStyle": "rapid and questioning, apologizes mid-sentence, repeats instructions back twice",
+      "quirks": ["volunteers before hearing the whole task", "keeps a pebble from every job he has finished"]
+    },
+    "backstory": "The miller's grandson, which makes Elara something like an aunt by upbringing. Desperate to matter in a village that still calls him 'the boy'."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0018",
+    "name": "Quill",
+    "minecraftUsername": "Quill",
+    "personality": {
+      "traits": ["pedantic", "devoted", "stubborn"],
+      "values": ["the written record", "exact quotation", "dry ink"],
+      "speechStyle": "formal and antique, speaks in dates and citations, corrects retellings from his ledger",
+      "quirks": ["writes down overheard remarks in front of the person who said them", "blows on ink that dried an hour ago"]
+    },
+    "backstory": "Taught himself letters copying a ledger salvaged half-ruined from the flood. Keeps the village's only chronicle and wages a polite, lifelong war on Wren's version of events."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0019",
+    "name": "Vesper",
+    "minecraftUsername": "Vesper",
+    "personality": {
+      "traits": ["nocturnal", "laconic", "impossible to startle"],
+      "values": ["the village asleep and safe", "knowing before dawn", "silences kept"],
+      "speechStyle": "hushed and elliptical, understates everything, lets the silence ask her questions",
+      "quirks": ["appears beside people without a sound", "notches a fence post for every uneventful night"]
+    },
+    "backstory": "Nobody appointed her to the watch; she simply began walking it, and the village found it slept better. Sees everything Wren wishes she knew, and trades none of it."
+  },
+  {
+    "id": "019f8e2a-0000-7000-8000-0000000d0020",
+    "name": "Yara",
+    "minecraftUsername": "Yara",
+    "personality": {
+      "traits": ["restless", "wry", "half-packed"],
+      "values": ["the far bank", "promises kept eventually", "roads not yet walked"],
+      "speechStyle": "wry and drifting, measures everything in journeys, talks about leaving in the present tense",
+      "quirks": ["keeps a packed bag by the door for a trip she never takes", "gives confident directions to places she has never been"]
+    },
+    "backstory": "Built the ferry meaning to cross once and keep going, but the village kept needing one more crossing. Has been leaving next spring for nine years."
   }
 ]
