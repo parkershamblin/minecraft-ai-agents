@@ -451,6 +451,16 @@ the watchdog; regression test added; CLAUDE.md corollary 3.
 - Next session candidates: M2 planning; episode-edit support (ledger pulls
   for overlays); the still-open organic grudge (Tansy's campaign against
   Bram is the live thread — his incoming edges were sliding all session).
+- **M2 planning input ready (2026-07-07 evening):**
+  `docs/research/emergent-garden-lessons.md` — deep study of Emergent
+  Garden's five videos + the three canon papers (Generative Agents, Project
+  Sid/PIANO, Mindcraft/MineCollab) cross-checked against our architecture.
+  §7 has M2 backlog candidates in five tracks (A physical competence,
+  B plans/reflection, C social dynamics, D government via Sid's
+  constitutional loop, E ledger analytics) plus rulings-to-carry (no live
+  codegen, no vision, single-call tick stays). Recommended M2 core set:
+  A1–A3 + C1–C2 + D1–D2. The gather fix is Track A (composite verbs +
+  prescriptive failures + nearbyResources percept — evidence-backed).
 
 Deferred to M2 by review: dashboard-service BFF, analytics-service, Loki, k6.
 New M2 candidates from this session: packages/shared-py (two envelope-builder
