@@ -145,13 +145,20 @@ services:
     ports: ["8002:8002"]
     environment:
       POSTGRES_HOST: postgres
+      KAFKA_BROKERS: redpanda:29092
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      REFLECTION_ENABLED: ${REFLECTION_ENABLED:-true}
+      REFLECTION_DAILY_TOKEN_BUDGET: ${REFLECTION_DAILY_TOKEN_BUDGET:-200000}
+      REFLECTIONS_PER_HOUR_CAP: ${REFLECTIONS_PER_HOUR_CAP:-12}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       postgres:
+        condition: service_healthy
+      redpanda:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8002/healthz')"]

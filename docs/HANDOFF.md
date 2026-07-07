@@ -1,11 +1,11 @@
-# Session Handoff — Sprint 4 (M1) COMPLETE
+# Session Handoff — Sprint 5: M1-8 + M1-9 COMPLETE, M1-10 remains
 
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **Sprint 4 is complete — M1-4 + M1-5 + M1-6 +
-> M1-7 all done. Sprint 5 M1-8 is COMPLETE: PaperMC spike GREEN AND the
-> 20-bot fleet soak GREEN (see "M1-8 fleet soak result" below — all three
-> acceptance criteria passed).**
+> without asking questions. **Sprint 4 complete (M1-4…M1-7). Sprint 5: M1-8
+> COMPLETE (PaperMC spike + 20-bot fleet soak, all AC passed) and M1-9
+> COMPLETE (reflections in memory-service — see "What M1-9 shipped"). Only
+> M1-10 (coverage gate + filming run) remains in M1.**
 
 ## Project status
 
@@ -15,24 +15,19 @@
 - **78 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
   added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
   CI runs typecheck). Other suites unchanged and green.
-- Test totals: **78 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
-  14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
-- **Machine state (2026-07-07 ~5:15am, after M1-8 fleet soak):** the FULL
-  stack is **running** — infra + all app services (rebuilt with `up --build`,
-  so images now bake the M1-7 20-villager seed) + the `minecraft` (Paper)
-  container. Paper was **restarted post-soak** (user request) and came back
-  healthy; bots auto-reconnected via the executor's reconnect loop. Vanilla
-  host server **stopped** and **untouched** (fallback via
-  `MC_HOST=host.docker.internal`). `.env` now holds **`VILLAGER_COUNT=20`**
-  and **`MC_HOST=minecraft`** (uncommitted, as `.env` always is — a fresh
-  clone gets `.env.example` defaults). `agent_db` now holds **all 20
-  villagers** (seed response: 17 seeded + 3 pre-existing Elara/Bram/Wren);
-  the Sprint 3 Elara→Bram edge survives, plus whatever edges the soak's
-  20-bot chatter formed. LLM provider during the soak was **ollama
-  (llama3.1:8b)** — blank `OPENAI_API_KEY` walked the chain, Ollama warmed,
-  so the soak exercised REAL LLM deliberation across 20 concurrent villagers
-  (personality-driven chatter observed: Ines correcting Wren's flood dates
-  from her ledger, etc.).
+- Test totals: **78 py-agent**, **42 py-memory** (was 19 — M1-9 added 23),
+  29 ts-minecraft, 8 java-event, **15 contract fixtures** (ReflectionCreated
+  joined). Coverage gate is still report-only (turns ON in M1-10). `task test`
+  now runs the memory-service suite too (it was missing — fifth line).
+- **Machine state (2026-07-07 ~6:35am, M1-9 session):** the stack is **fully
+  DOWN** — the M1-8 session ended with a clean shutdown (world saved via RCON
+  `save-all`, then `down` across all profiles; 0 containers). All volumes
+  intact: `agent_db` holds all 20 villagers + the Sprint 3 Elara→Bram edge
+  plus soak-formed edges; memory_db + ledger + Paper world untouched.
+  `.env` still holds **`VILLAGER_COUNT=20`** and **`MC_HOST=minecraft`**
+  (uncommitted, as `.env` always is). Vanilla host server stopped/untouched
+  (fallback via `MC_HOST=host.docker.internal`). NOTE: next `up` MUST be
+  `up --build` for memory-service — its image predates M1-9.
 - Sprint 3 live proof achieved: Bram said "Elara, still on about the pantry?"
   in-game (multi-day characterization via memory), Elara's reply tick fired
   `trigger=reactive`, relationships formed from interactions
@@ -229,8 +224,79 @@ deliberation. M1-8 is COMPLETE.**
   healthy; bots auto-reconnected via the executor's reconnect loop. Stack
   left running.
 
-Sprint 5 after that: reflections in memory-service (own budget breaker —
-designated slip candidate), coverage gate ON, the 20-villager filming run.
+### What M1-9 shipped (commit `M1-9: reflections…`)
+
+- **ReflectionCreated.v1** schema + fixture in `packages/events` (payload
+  `villagerId/reflectionId/summary/sourceMemoryIds[]`; producer memory-service
+  on `agent.events`, aggregateId = villagerId, per the 03-events catalog);
+  types regenerated and committed. No registry edits needed — contract tests,
+  TS barrel, and the Python package are all directory-scanned.
+- **memory-service LLM port** (`llm.py`): openai → ollama chain mirroring
+  agent-service's boot probe/warmup, with one deliberate divergence — **no
+  fake fallback**. No real LLM ⇒ reflections stay OFF (fake insights would
+  pollute narrative truth in memory_db). Explicit `LLM_PROVIDER=fake` still
+  opts in for tests/dev sandboxes.
+- **BudgetedSummarizer**: `REFLECTION_DAILY_TOKEN_BUDGET` (default 200k),
+  UTC-day rollover; a trip RAISES `BudgetExhausted` → `reflect()` skips
+  (outcome=skipped_budget) instead of flipping to fake — same reasoning.
+  Own `civ_llm_*` metric family (names intentionally identical to
+  agent-service's: budgets are per service, and the M1-10 Grafana spend
+  panel sums both services' cost counters). New `civ_reflections_total`
+  counter labeled by outcome (created/empty/skipped_cap/skipped_budget/
+  malformed).
+- **Trigger** (`reflection.py::villagers_due_for_reflection`): per villager,
+  SUM(importance) of **non-reflection** memories created since the last
+  reflection > 30 (`REFLECTION_IMPORTANCE_THRESHOLD`). Excluding reflections
+  from the pressure is loop-proof — they floor at importance 7, so counting
+  them would let reflections beget reflections. `ReflectionJob` polls every
+  `REFLECTION_INTERVAL_SECONDS` (300); job errors are logged, never fatal.
+- **Generation** (`MemoryService.reflect()` — the frozen contract, now real):
+  ≤20 unreflected memories, numbered oldest-first → strict-JSON
+  `{insights:[{insight, sourceIndices}]}` (all-required +
+  additionalProperties:false — OpenAI strict-safe per the M1-3 ruling) →
+  tolerant parse (out-of-range citations dropped, citation-less insights
+  dropped whole — the provenance CHECK would reject them anyway) → stored as
+  `memory_type=reflection` with `source_memory_ids` → one ReflectionCreated
+  per insight, one correlationId per pass, causationId null (job runs are
+  root events). Global `HourlyCap` (`REFLECTIONS_PER_HOUR_CAP`, 12/h fixed
+  UTC-hour window) bounds GPU load on the Ollama path.
+- **Kafka**: memory-service's first producer — `EventPublisher` + envelope
+  builder copied from agent-service (`source: "memory-service"`). **The
+  promised packages/shared-py extraction is now due** (a second copy exists);
+  flagged, deliberately not done inside M1-9. Publisher + job only start when
+  a real summarizer is armed; `REFLECTION_ENABLED=false` is the kill switch.
+  A publish failure after store is a logged ledger gap (no outbox at this
+  scale — accepted).
+- **REST**: `POST /villagers/{id}/reflections` now real (was a 501 stub):
+  forces one pass (budget/cap still apply), 503 when no LLM is armed,
+  `{"data": [...]}` of created reflection records.
+- **Wiring**: compose memory-service gains `KAFKA_BROKERS: redpanda:29092`,
+  `depends_on: redpanda`, `LLM_PROVIDER`/`REFLECTION_*` env; `.env.example`
+  documents the reflection block; `task test` gained the memory-service
+  suite (it was missing). Dockerfile unchanged — envelope/payload validation
+  is tests-only, so the service-dir build context still works.
+- **Tests 19 → 42** in memory-service: LLM chain/transports/breaker offline;
+  prompt/parse/cap/envelope-vs-contract offline; integration vs real pgvector
+  (pressure trigger select/reset/no-self-feed; provenance + contract-valid
+  emission with shared correlationId; and the AC test — **a fresh reflection
+  outranks week-stale raw memories at default retrieval weights**).
+  Integration fixtures moved to `tests/conftest.py` (shared, same move
+  agent-service made in M1-7).
+- **Also fixed in passing**: `test_percept_fanout.py` had hardcoded
+  `occurredAt: 2026-07-07T10:00:0xZ` envelopes — a time bomb that expired
+  this morning when the wall clock passed them and the 10-minute percept
+  freshness guard started (correctly) dropping them as stale backlog. Now
+  stamped `datetime.now(UTC)` at test time. Gotcha added to CLAUDE.md.
+- **NOT live-verified end-to-end** (stack down all session; nothing running
+  to disturb). First `up --build` should watch memory-service's ready log
+  for `reflections=on` and expect ReflectionCreated events in the ledger
+  once 20-villager chatter builds pressure — a natural first check for the
+  M1-10 filming-run session.
+
+Sprint 5 remainder: **M1-10** — coverage gate ON (agent brain/llm, memory
+service/scoring, event ingest/read), Grafana reactive-ratio + per-service $
+panels (summing both services' `civ_llm_cost_dollars_total`),
+`docs/demo-m1.md`, the recorded in-game day + Episode 1 shot list.
 Deferred to M2 by review: dashboard-service BFF, analytics-service, Loki, k6.
 
 ## Key decisions & gotchas from Sprint 3 (all shipped, all tested)

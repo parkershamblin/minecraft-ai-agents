@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/agent/ReflectionCreated.v1.schema.json",
+  "title": "ReflectionCreatedPayload",
+  "description": "A higher-level insight distilled from raw memories — the generative-agents reflection step. Producer: memory-service on agent.events (its first producer), aggregateId = villagerId. reflectionId is the reflection's own memory row; sourceMemoryIds is its provenance (mirrors the memories_reflection_provenance CHECK).",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "reflectionId": { "type": "string", "format": "uuid" },
+    "summary": { "type": "string", "minLength": 1 },
+    "sourceMemoryIds": {
+      "type": "array",
+      "items": { "type": "string", "format": "uuid" },
+      "minItems": 1,
+      "description": "The raw memories this insight was distilled from."
+    }
+  },
+  "required": ["villagerId", "reflectionId", "summary", "sourceMemoryIds"],
+  "additionalProperties": false
+}

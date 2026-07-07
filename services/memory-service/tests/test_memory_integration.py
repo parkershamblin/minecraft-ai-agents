@@ -1,70 +1,21 @@
 """Integration proof against REAL pgvector (same image compose uses):
 store -> HNSW search -> full-formula re-rank -> access metadata touched;
 schema constraints enforced; retrieval latency observed.
+
+(The pgvector container + stub-embedding fixtures live in conftest.py —
+shared with the reflection integration suite since M1-9.)
 """
 
-import os
 import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from sqlalchemy.exc import IntegrityError
 
-from memory_service.db import make_engine, make_session_factory
 from memory_service.service import MemoryService, RetrievalWeights
 from memory_service.metrics import memory_retrieval_seconds
-from memory_service.settings import Settings
-from testcontainers.postgres import PostgresContainer
 
 ELARA = uuid.UUID("019f8e2a-0000-7000-8000-0000000e1a2a")
-
-
-class StubEmbeddings:
-    """Known vectors per topic so ranking assertions are deterministic."""
-
-    name = "stub"
-    dim = 768
-
-    _topics = {"oak": 0, "fish": 1, "election": 2}
-
-    async def embed(self, text: str) -> list[float]:
-        vector = [0.0] * 768
-        for topic, axis in self._topics.items():
-            if topic in text.lower():
-                vector[axis] = 1.0
-        if not any(vector):
-            vector[3] = 1.0
-        norm = sum(v * v for v in vector) ** 0.5
-        return [v / norm for v in vector]
-
-
-@pytest.fixture(scope="session")
-def database():
-    with PostgresContainer(
-        image="pgvector/pgvector:0.8.0-pg16",
-        username="test",
-        password="test",
-        dbname="memory_db",
-    ) as container:
-        host = container.get_container_host_ip()
-        port = container.get_exposed_port(5432)
-        os.environ.update(
-            POSTGRES_HOST=host,
-            POSTGRES_PORT=str(port),
-            MEMORY_DB_USER="test",
-            MEMORY_DB_PASSWORD="test",
-        )
-        command.upgrade(Config("alembic.ini"), "head")
-        yield Settings()
-
-
-@pytest.fixture()
-async def service(database: Settings):
-    engine = make_engine(database.memory_db_url)
-    yield MemoryService(make_session_factory(engine), StubEmbeddings(), database)
-    await engine.dispose()
 
 
 async def test_full_memory_lifecycle(service: MemoryService):

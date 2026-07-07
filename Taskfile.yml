@@ -51,11 +51,15 @@ tasks:
       - curl -s -X POST http://localhost:8001/internal/seed
 
   test:
-    desc: Run all test suites (contract tests + event-service; more services join as they ship)
+    desc: Run all test suites (contracts, minecraft, agent, memory, event)
     vars:
-      GRADLEW: '{{if eq OS "windows"}}cmd /c gradlew.bat{{else}}./gradlew{{end}}'
+      # .\gradlew.bat (explicit path, double-backslash survives the POSIX
+      # shell): bare batch names fail under NoDefaultCurrentDirectoryInExePath=1
+      # (agent/hardened shells); the explicit form works everywhere.
+      GRADLEW: '{{if eq OS "windows"}}cmd /c .\\gradlew.bat{{else}}./gradlew{{end}}'
     cmds:
       - npm test --workspace @civ/events
       - npm test --workspace @civ/minecraft-service
       - cd services/agent-service && uv run pytest -q
+      - cd services/memory-service && uv run pytest -q
       - cd services/event-service && {{.GRADLEW}} test

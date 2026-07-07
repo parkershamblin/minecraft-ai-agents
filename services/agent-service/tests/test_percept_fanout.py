@@ -1,8 +1,16 @@
 """M1-1: ChatObserved fanout rules, unit-tested against a fake Redis."""
 
 import json
+from datetime import UTC, datetime
 
 from agent_service.kafka.percepts import PerceptConsumer
+
+
+def _now() -> str:
+    """Envelopes must be freshly stamped: the consumer's 10-minute freshness
+    guard treats hardcoded timestamps as a time bomb (they pass until the
+    wall clock catches up, then everything reads as stale backlog)."""
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 ELARA = "019f8e2a-0000-7000-8000-0000000e1a2a"
 BRAM = "019f8e2a-0000-7000-8000-0000000b2a44"
@@ -55,7 +63,7 @@ def chat_envelope(speaker_id, heard_by, message="the harvest looks thin"):
         "eventId": "019f8e2b-1111-7000-8000-000000000001",
         "eventType": "ChatObserved",
         "correlationId": "019f8e2b-1111-7000-8000-00000000c0de",
-        "occurredAt": "2026-07-07T10:00:00Z",
+        "occurredAt": _now(),
         "payload": {
             "villagerId": speaker_id,
             "speakerUsername": "Elara",
@@ -113,7 +121,7 @@ async def test_action_percepts_carry_identity_thread_too():
             "eventId": "019f8e2b-2222-7000-8000-000000000002",
             "eventType": "ActionCompleted",
             "correlationId": "019f8e2b-2222-7000-8000-00000000c0de",
-            "occurredAt": "2026-07-07T10:00:01Z",
+            "occurredAt": _now(),
             "payload": {"villagerId": ELARA, "action": "move", "result": {"blocksTraveled": 5}},
         }
     )

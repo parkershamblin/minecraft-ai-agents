@@ -67,6 +67,10 @@ else fake), `OPENAI_API_KEY` (optional — never required).
 - Bare `python` on this box is a stale 3.8 — always `uv run` / `uvx` / `py`.
 - New `gradlew` files need `git update-index --chmod=+x` (Windows can't store
   the exec bit; Linux CI fails without it).
+- Agent/hardened shells set `NoDefaultCurrentDirectoryInExePath=1`, so cmd.exe
+  won't resolve bare batch names from the CWD: `cmd /c gradlew.bat` fails with
+  "not recognized" there while working fine in a normal terminal. Use the
+  explicit form `cmd /c .\gradlew.bat` (the Taskfile does since M1-9).
 - Git Bash mangles `/paths` in `docker run -v` args — use PowerShell for
   Docker volume mounts.
 - kafkajs has no built-in Snappy codec (rpk produces snappy by default) —
@@ -78,6 +82,10 @@ else fake), `OPENAI_API_KEY` (optional — never required).
 - Kafka consumer groups keep committed offsets across deploys: consumers that
   turn events into *time-sensitive* state need a freshness guard (see
   `agent_service/kafka/percepts.py`).
+- Corollary: tests feeding envelopes through that freshness guard must stamp
+  `occurredAt` at runtime (`datetime.now(UTC)`) — a hardcoded "fresh" date is
+  a time bomb: green until the wall clock passes it, then silently dropped as
+  stale backlog (bit `test_percept_fanout.py` on 2026-07-07).
 - GitHub Actions: called workflows can't escalate `GITHUB_TOKEN` permissions
   (callers must grant, even for statically-skipped jobs); caller workflows
   must include **their own file** in `paths:` filters.

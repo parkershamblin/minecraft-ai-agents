@@ -27,6 +27,21 @@ class Settings(BaseSettings):
     recency_decay_per_hour: float = 0.995
     retrieval_candidate_factor: int = 3
 
+    # --- Reflections (M1-9): own LLM port, own breaker — budgets are per
+    # service. No fake fallback in the chain: no real LLM means reflections OFF.
+    reflection_enabled: bool = True
+    llm_provider: str = "auto"
+    llm_model_openai: str = "gpt-4o-mini"
+    llm_model_ollama: str = "llama3.1:8b"
+    llm_temperature: float = 0.7
+    reflection_daily_token_budget: int = 200_000
+    reflections_per_hour_cap: int = 12  # global, not per villager — bounds GPU load
+    reflection_importance_threshold: float = 30.0
+    reflection_interval_seconds: int = 300
+    reflection_recent_limit: int = 20  # memories per reflection prompt
+
+    kafka_brokers: str = "localhost:9092"
+
     port: int = 8002
     log_level: str = "info"
 

@@ -1,0 +1,20 @@
+{
+  "eventId": "019f8e2b-0010-7000-8000-00000000b010",
+  "eventType": "ReflectionCreated",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-07T05:00:00.000Z",
+  "source": "memory-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0011-7000-8000-c0de00000011",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "reflectionId": "019f8e2b-0012-7000-8000-00000000c012",
+    "summary": "I keep returning to the pantry ledger because I do not trust the village's stores to survive another flood.",
+    "sourceMemoryIds": [
+      "019f8e2b-0013-7000-8000-00000000d013",
+      "019f8e2b-0014-7000-8000-00000000d014"
+    ]
+  }
+}

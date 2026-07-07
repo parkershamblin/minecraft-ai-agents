@@ -17,8 +17,11 @@ from sqlalchemy import select
 
 from memory_service.db import make_engine, make_session_factory
 from memory_service.embeddings import build_embedding_provider
+from memory_service.kafka import EventPublisher
+from memory_service.llm import BudgetedSummarizer, build_summarizer_provider
 from memory_service.logging import configure_logging, logger
 from memory_service.models import Memory
+from memory_service.reflection import ReflectionJob, ReflectionUnavailable
 from memory_service.service import MemoryService, RetrievalWeights
 from memory_service.settings import Settings
 
@@ -33,10 +36,36 @@ async def lifespan(app: FastAPI):
     engine = make_engine(settings.memory_db_url)
     sessions = make_session_factory(engine)
     embeddings = await build_embedding_provider(settings, http_client)
+
+    # Reflections (M1-9): armed only when a real summarizer exists — the chain
+    # has no fake fallback (scripted insights would pollute narrative truth).
+    # Kafka starts with it: the publisher's only client is reflection emission.
+    summarizer = publisher = job = None
+    if settings.reflection_enabled:
+        base_summarizer = await build_summarizer_provider(settings, http_client)
+        if base_summarizer is not None:
+            summarizer = BudgetedSummarizer(base_summarizer, settings.reflection_daily_token_budget)
+            publisher = EventPublisher(settings.kafka_brokers)
+            await publisher.start()
+
+    service = MemoryService(sessions, embeddings, settings, summarizer=summarizer, publisher=publisher)
     app.state.sessions = sessions
-    app.state.service = MemoryService(sessions, embeddings, settings)
-    logger.info("memory-service ready", embeddings=embeddings.name)
+    app.state.service = service
+
+    if summarizer is not None:
+        job = ReflectionJob(service, sessions, settings)
+        job.start()
+
+    logger.info(
+        "memory-service ready",
+        embeddings=embeddings.name,
+        reflections="on" if summarizer is not None else "off",
+    )
     yield
+    if job is not None:
+        await job.stop()
+    if publisher is not None:
+        await publisher.stop()
     await http_client.aclose()
     await engine.dispose()
 
@@ -169,7 +198,14 @@ def _record_dto_from_row(row: Memory) -> MemoryRecordDto:
     )
 
 
-@app.post("/villagers/{villager_id}/reflections", status_code=501)
+@app.post("/villagers/{villager_id}/reflections")
 async def reflect(villager_id: uuid.UUID) -> dict:
-    """Contract frozen now; the reflection job ships in M1 with the LLM port."""
-    return {"detail": "reflection ships in M1"}
+    """Force one reflection pass now (the background job fires these on
+    importance pressure; this is the dev/demo lever). The budget breaker and
+    hourly cap still apply — an empty list means nothing to reflect on, a
+    capped run, or unusable LLM output."""
+    try:
+        records = await app.state.service.reflect(villager_id)
+    except ReflectionUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    return {"data": [_record_dto(r).model_dump(mode="json") for r in records]}

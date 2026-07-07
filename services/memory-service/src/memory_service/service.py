@@ -3,23 +3,34 @@ REST contract (store / search / reflect) so the M1 extraction is mechanical."""
 
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from uuid6 import uuid7
 
 from memory_service.logging import logger
 from memory_service.embeddings import EmbeddingProvider
+from memory_service.envelope import TOPIC_AGENT, build_envelope
+from memory_service.kafka import EventPublisher
+from memory_service.llm import BudgetExhausted, SummarizerProvider
 from memory_service.models import Memory
+from memory_service.reflection import (
+    REFLECTION_SYSTEM_PROMPT,
+    HourlyCap,
+    ReflectionUnavailable,
+    build_reflection_prompt,
+    parse_insights,
+)
 from memory_service.scoring import (
     recency_score,
     retrieval_score,
     score_importance,
     score_sentiment,
 )
-from memory_service.metrics import memories_stored_total, memory_retrieval_seconds
+from memory_service.metrics import memories_stored_total, memory_retrieval_seconds, reflections_total
 from memory_service.settings import Settings
 
 
@@ -56,10 +67,16 @@ class MemoryService:
         session_factory: async_sessionmaker,
         embeddings: EmbeddingProvider,
         settings: Settings,
+        summarizer: SummarizerProvider | None = None,
+        publisher: EventPublisher | None = None,
+        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     ):
         self._sessions = session_factory
         self._embeddings = embeddings
         self._settings = settings
+        self._summarizer = summarizer
+        self._publisher = publisher
+        self._hourly_cap = HourlyCap(settings.reflections_per_hour_cap, clock)
 
     async def store(
         self,
@@ -164,10 +181,99 @@ class MemoryService:
         return winners
 
     async def reflect(self, villager_id: uuid.UUID) -> list[MemoryRecord]:
-        """Distill recent memories into higher-level reflections. Ships in M1
-        with the reflection job (needs the LLM port); the contract exists now
-        so the REST extraction never changes shape."""
-        raise NotImplementedError("reflection ships in M1 (needs the LLM port from CIV-7)")
+        """Distill unreflected recent memories into 1-3 higher-level insight
+        memories (provenance-linked; the schema CHECK enforces it) and emit a
+        ReflectionCreated per insight. Returns [] when there is nothing to
+        reflect on, the hourly cap is hit, the budget breaker is open, or the
+        LLM output was unusable — the caller never has to care which."""
+        if self._summarizer is None:
+            raise ReflectionUnavailable("reflections are disabled: no real LLM provider is armed")
+
+        async with self._sessions() as session:
+            last_at = (
+                await session.execute(
+                    select(func.max(Memory.created_at))
+                    .where(Memory.villager_id == villager_id)
+                    .where(Memory.memory_type == "reflection")
+                )
+            ).scalar()
+            query = (
+                select(Memory)
+                .where(Memory.villager_id == villager_id)
+                .where(Memory.memory_type != "reflection")
+            )
+            if last_at is not None:
+                query = query.where(Memory.created_at > last_at)
+            rows = list(
+                (
+                    await session.execute(
+                        query.order_by(Memory.occurred_at.desc()).limit(self._settings.reflection_recent_limit)
+                    )
+                ).scalars()
+            )
+        rows.reverse()  # chronological for the prompt
+
+        if not rows:
+            reflections_total.labels(outcome="empty").inc()
+            return []
+        if not self._hourly_cap.try_acquire():
+            reflections_total.labels(outcome="skipped_cap").inc()
+            logger.info("reflection skipped — hourly cap", villager_id=str(villager_id))
+            return []
+
+        correlation = uuid7()
+        try:
+            response = await self._summarizer.complete(
+                REFLECTION_SYSTEM_PROMPT, build_reflection_prompt([r.content for r in rows])
+            )
+        except BudgetExhausted as exc:
+            reflections_total.labels(outcome="skipped_budget").inc()
+            logger.warning("reflection skipped — budget breaker open", villager_id=str(villager_id), error=str(exc))
+            return []
+
+        insights = parse_insights(response.text, [r.id for r in rows])
+        if not insights:
+            reflections_total.labels(outcome="malformed").inc()
+            logger.warning(
+                "reflection discarded — unusable LLM output",
+                villager_id=str(villager_id),
+                provider=response.provider,
+            )
+            return []
+
+        records: list[MemoryRecord] = []
+        for content, source_ids in insights:
+            record = await self.store(
+                villager_id, content, memory_type="reflection", source_memory_ids=source_ids
+            )
+            records.append(record)
+            reflections_total.labels(outcome="created").inc()
+            if self._publisher is not None:
+                envelope = build_envelope(
+                    "ReflectionCreated",
+                    villager_id,
+                    {
+                        "villagerId": str(villager_id),
+                        "reflectionId": str(record.id),
+                        "summary": content,
+                        "sourceMemoryIds": [str(i) for i in source_ids],
+                    },
+                    correlation_id=correlation,
+                )
+                try:
+                    await self._publisher.publish(TOPIC_AGENT, envelope)
+                except Exception as exc:  # the row is truth; a ledger gap is logged, not fatal
+                    logger.error(
+                        "ReflectionCreated publish failed", villager_id=str(villager_id), error=str(exc)
+                    )
+        logger.info(
+            "reflection complete",
+            villager_id=str(villager_id),
+            insights=len(records),
+            provider=response.provider,
+            correlationId=str(correlation),
+        )
+        return records
 
 
 def _to_record(row: Memory) -> MemoryRecord:
