@@ -74,6 +74,10 @@ class ChatParams(BaseModel):
         extra='forbid',
     )
     message: constr(min_length=1, max_length=256)
+    targetVillagerId: str | None = Field(
+        None,
+        description='Optional: whom the speaker is addressing (models naturally emit this; the executor ignores it, the social layer may use it).',
+    )
 
 
 class FollowParams(BaseModel):

@@ -29,8 +29,25 @@ DECISION_SCHEMA: dict[str, Any] = {
         "reasoning": {"type": "string", "maxLength": 600},
         "importance": {"type": "number", "minimum": 0, "maximum": 10},
         "sentiment": {"type": "number", "minimum": -1, "maximum": 1},
+        # REQUIRED-NULLABLE, not optional: OpenAI strict structured outputs
+        # reject any property missing from `required` (M1 review blocker).
+        "relationshipUpdates": {
+            "type": ["array", "null"],
+            "maxItems": 3,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "villagerId": {"type": "string"},
+                    "affinityDelta": {"type": "number", "minimum": -20, "maximum": 20},
+                    "trustDelta": {"type": "number", "minimum": -20, "maximum": 20},
+                    "reason": {"type": "string", "maxLength": 200},
+                },
+                "required": ["villagerId", "affinityDelta", "trustDelta", "reason"],
+                "additionalProperties": False,
+            },
+        },
     },
-    "required": ["action", "params", "reasoning", "importance", "sentiment"],
+    "required": ["action", "params", "reasoning", "importance", "sentiment", "relationshipUpdates"],
     "additionalProperties": False,
 }
 
@@ -46,6 +63,41 @@ class MalformedDecision(Exception):
     """The LLM's output violates the decision contract."""
 
 
+# Tolerant-reader normalization: small models reliably drift toward these
+# near-miss keys (observed live: llama3.1 emits params.villagerId for chat).
+# Known-safe aliases are rewritten and counted; everything else stays strict.
+_PARAM_ALIASES: dict[str, dict[str, str]] = {
+    "chat": {"villagerId": "targetVillagerId"},
+    "follow": {"villagerId": "targetVillagerId"},
+}
+
+
+# Decision-level keys are never legitimate params — small models duplicate
+# them into params under nesting confusion (observed live, drift pattern #2).
+_DECISION_LEVEL_KEYS = frozenset(["action", "reasoning", "importance", "sentiment", "relationshipUpdates"])
+
+
+def _normalize_params(action: str, params: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    normalized = dict(params)
+    changed = False
+    for junk in _DECISION_LEVEL_KEYS & normalized.keys():
+        normalized.pop(junk)
+        changed = True
+    for wrong, right in _PARAM_ALIASES.get(action, {}).items():
+        if wrong in normalized and right not in normalized:
+            normalized[right] = normalized.pop(wrong)
+            changed = True
+    return normalized, changed
+
+
+@dataclass(frozen=True)
+class RelationshipUpdate:
+    villager_id: str
+    affinity_delta: float
+    trust_delta: float
+    reason: str
+
+
 @dataclass(frozen=True)
 class Decision:
     action: str
@@ -53,6 +105,7 @@ class Decision:
     reasoning: str
     importance: float
     sentiment: float
+    relationship_updates: tuple[RelationshipUpdate, ...] = ()
 
     @staticmethod
     def idle(reasoning: str) -> "Decision":
@@ -96,17 +149,31 @@ def validate_decision(raw_text: str) -> Decision:
         raise MalformedDecision("; ".join(e.message for e in errors[:3]))
 
     action = data["action"]
+    params, normalized = _normalize_params(action, data["params"])
+    if normalized:
+        from agent_service.metrics import llm_normalized_total
+
+        llm_normalized_total.inc()
     params_validator = per_action.get(action)
     if params_validator:  # idle legitimately takes {}
-        param_errors = sorted(params_validator.iter_errors(data["params"]), key=lambda e: e.json_path)
+        param_errors = sorted(params_validator.iter_errors(params), key=lambda e: e.json_path)
         if param_errors:
             raise MalformedDecision(
                 f"params invalid for {action}: " + "; ".join(e.message for e in param_errors[:3])
             )
     return Decision(
         action=action,
-        params=data["params"],
+        params=params,
         reasoning=data["reasoning"],
         importance=float(data["importance"]),
         sentiment=float(data["sentiment"]),
+        relationship_updates=tuple(
+            RelationshipUpdate(
+                villager_id=u["villagerId"],
+                affinity_delta=float(u["affinityDelta"]),
+                trust_delta=float(u["trustDelta"]),
+                reason=u["reason"],
+            )
+            for u in (data.get("relationshipUpdates") or [])
+        ),
     )

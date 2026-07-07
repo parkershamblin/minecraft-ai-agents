@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     tick_interval_seconds: int = 60
     villager_count: int = 1  # walking skeleton: ONE villager; CIV-10 sets 3
     percepts_max_per_tick: int = 10
+    reactive_cooldown_seconds: float = 15.0
+    max_reactive_per_5min: int = 3
+    reactive_imminent_seconds: float = 10.0
     memories_per_tick: int = 6
 
     port: int = 8001

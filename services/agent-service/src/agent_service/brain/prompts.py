@@ -21,6 +21,7 @@ Available actions and their params:
 - idle: {{}} — deliberately do nothing this turn
 
 Also rate this moment for your own memory: importance (0-10, how much you'll want to remember this) and sentiment (-1 to 1, how it feels).
+If this moment changed how you feel about someone, set relationshipUpdates to a list of {{"villagerId", "affinityDelta" (-20..20), "trustDelta" (-20..20), "reason"}} — otherwise set it to null. Only include villagers whose villagerId you can see in the snapshot or overheard lines.
 Stay in character. Prefer small, concrete, social actions over grand plans."""
 
 
@@ -58,14 +59,24 @@ def user_prompt(
             "You cannot sense the world right now (no snapshot) — you may still think, speak, or wait."
         )
 
-    if percepts:
-        lines = []
-        for percept in percepts:
-            if percept["type"] == "ActionCompleted":
-                lines.append(f"- your '{percept['action']}' completed: {json.dumps(percept['detail'])}")
-            else:
-                lines.append(f"- your '{percept['action']}' FAILED: {json.dumps(percept['detail'])}")
-        sections.append("Since your last turn:\n" + "\n".join(lines))
+    # Type-dispatch: unknown percept types are skipped, never a KeyError —
+    # the queue outlives any single deploy's vocabulary.
+    action_lines = []
+    overheard_lines = []
+    for percept in percepts:
+        kind = percept.get("type")
+        if kind == "ActionCompleted":
+            action_lines.append(f"- your '{percept['action']}' completed: {json.dumps(percept['detail'])}")
+        elif kind == "ActionFailed":
+            action_lines.append(f"- your '{percept['action']}' FAILED: {json.dumps(percept['detail'])}")
+        elif kind == "ChatObserved" and len(overheard_lines) < 5:
+            overheard_lines.append(f'- {percept.get("speakerName", "someone")} said: "{percept.get("message", "")}"')
+    if action_lines:
+        sections.append("Since your last turn:\n" + "\n".join(action_lines))
+    if overheard_lines:
+        sections.append(
+            "Recently overheard (you may want to respond, in your own voice):\n" + "\n".join(overheard_lines)
+        )
 
     if memories:
         sections.append(

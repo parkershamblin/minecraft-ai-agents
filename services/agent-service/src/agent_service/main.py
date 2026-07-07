@@ -24,6 +24,7 @@ from agent_service.llm.providers import build_llm_provider
 from agent_service.logging import configure_logging, logger
 from agent_service.memory_client import MemoryClient
 from agent_service.settings import Settings
+from agent_service.villagers.relationships import RelationshipRepo
 from agent_service.villagers.repo import VillagerRepo
 from agent_service.villagers.seed import seed_villagers
 from agent_service.world.gateway import WorldGateway
@@ -50,7 +51,9 @@ async def lifespan(app: FastAPI):
     redis = aioredis.from_url(settings.redis_url, decode_responses=True)
 
     agent_engine = make_engine(settings.agent_db_url)
-    repo = VillagerRepo(make_session_factory(agent_engine))
+    agent_sessions = make_session_factory(agent_engine)
+    repo = VillagerRepo(agent_sessions)
+    relationships = RelationshipRepo(agent_sessions)
     # Sprint 2 extraction: same interface, now across the network boundary
     memory = MemoryClient(settings.memory_service_url, http_client)
     llm = BudgetedProvider(await build_llm_provider(settings, http_client), settings.llm_daily_token_budget)
@@ -66,12 +69,20 @@ async def lifespan(app: FastAPI):
             memory=memory,
             llm=llm,
             publish=publisher.publish,
+            relationships=relationships,
             percepts_max=settings.percepts_max_per_tick,
             memories_k=settings.memories_per_tick,
         )
     )
-    scheduler = TickScheduler(graph, settings.tick_interval_seconds)
+    scheduler = TickScheduler(
+        graph,
+        settings.tick_interval_seconds,
+        reactive_cooldown_s=settings.reactive_cooldown_seconds,
+        max_reactive_per_5min=settings.max_reactive_per_5min,
+        imminent_s=settings.reactive_imminent_seconds,
+    )
     scheduler.ensure([_brief(v) for v in await repo.list_alive(settings.villager_count)])
+    percepts.on_chat_percept = scheduler.request_reactive  # ears -> mind (M1-2)
 
     app.state.repo = repo
     app.state.publisher = publisher

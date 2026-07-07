@@ -21,6 +21,11 @@ llm_latency_seconds = Histogram(
     buckets=(0.01, 0.1, 0.5, 1.0, 2.0, 3.5, 5.0, 10.0, 20.0),
 )
 
+llm_normalized_total = Counter(
+    "civ_llm_normalized_total",
+    "Decisions accepted after tolerant-reader param normalization (known alias drift)",
+)
+
 llm_malformed_total = Counter(
     "civ_llm_malformed_total",
     "LLM responses that failed decision-contract validation (tick fell back to idle)",
@@ -40,5 +45,5 @@ tick_seconds = Histogram(
 ticks_total = Counter(
     "civ_ticks_total",
     "Cognitive ticks executed",
-    ["outcome"],  # ok | error
+    ["outcome", "trigger"],  # outcome: ok|error; trigger: scheduled|reactive (label change: M1-2)
 )

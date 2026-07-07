@@ -12,6 +12,7 @@ def decision(**overrides) -> str:
         "reasoning": "Being friendly.",
         "importance": 2.0,
         "sentiment": 0.4,
+        "relationshipUpdates": None,  # required-nullable (OpenAI strict mode)
     }
     base.update(overrides)
     return json.dumps(base)
@@ -80,6 +81,67 @@ def test_idle_factory_is_always_contract_valid():
                 "reasoning": fallback.reasoning,
                 "importance": fallback.importance,
                 "sentiment": fallback.sentiment,
+                "relationshipUpdates": None,
             }
         )
     )
+
+
+class TestRelationshipUpdates:
+    def test_valid_updates_parse(self):
+        parsed = validate_decision(
+            decision(
+                relationshipUpdates=[
+                    {
+                        "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+                        "affinityDelta": -12,
+                        "trustDelta": -5,
+                        "reason": "He lied about the diamonds.",
+                    }
+                ]
+            )
+        )
+        assert parsed.relationship_updates[0].affinity_delta == -12
+        assert parsed.relationship_updates[0].reason == "He lied about the diamonds."
+
+    def test_null_means_no_updates(self):
+        assert validate_decision(decision(relationshipUpdates=None)).relationship_updates == ()
+
+    def test_missing_field_is_malformed_now(self):
+        raw = json.loads(decision())
+        del raw["relationshipUpdates"]
+        with pytest.raises(MalformedDecision):
+            validate_decision(json.dumps(raw))
+
+    def test_delta_out_of_range_is_malformed(self):
+        with pytest.raises(MalformedDecision):
+            validate_decision(
+                decision(
+                    relationshipUpdates=[
+                        {"villagerId": "x", "affinityDelta": 50, "trustDelta": 0, "reason": "too much"}
+                    ]
+                )
+            )
+
+    def test_more_than_three_is_malformed(self):
+        update = {"villagerId": "x", "affinityDelta": 1, "trustDelta": 1, "reason": "r"}
+        with pytest.raises(MalformedDecision):
+            validate_decision(decision(relationshipUpdates=[update] * 4))
+
+
+class TestToleranReaderNormalization:
+    def test_chat_villagerid_alias_normalizes(self):
+        parsed = validate_decision(
+            decision(params={"villagerId": "abc", "message": "hello"})
+        )
+        assert parsed.params == {"targetVillagerId": "abc", "message": "hello"}
+
+    def test_decision_level_keys_stripped_from_params(self):
+        parsed = validate_decision(
+            decision(params={"message": "hi", "importance": 5, "sentiment": 0.2})
+        )
+        assert parsed.params == {"message": "hi"}
+
+    def test_genuinely_unknown_params_still_rejected(self):
+        with pytest.raises(MalformedDecision):
+            validate_decision(decision(params={"message": "hi", "flightSpeed": 9000}))

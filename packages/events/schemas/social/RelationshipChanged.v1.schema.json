@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/social/RelationshipChanged.v1.schema.json",
+  "title": "RelationshipChangedPayload",
+  "description": "A directed opinion moved — the drama primitive. Carries BOTH relationship dimensions (asymmetric edges are the design; see docs/architecture/02-database.md). Producer: agent-service on social.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The opinion holder (directed edge source)."
+    },
+    "targetId": { "type": "string", "format": "uuid" },
+    "previousAffinity": { "type": "number", "minimum": -100, "maximum": 100 },
+    "newAffinity": { "type": "number", "minimum": -100, "maximum": 100 },
+    "previousTrust": { "type": "number", "minimum": 0, "maximum": 100 },
+    "newTrust": { "type": "number", "minimum": 0, "maximum": 100 },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why the feeling moved — episode gold, verbatim from deliberation or the heuristic."
+    },
+    "source": {
+      "type": "string",
+      "enum": ["deliberation", "heuristic"],
+      "description": "LLM-decided delta vs the sentiment fallback."
+    }
+  },
+  "required": ["villagerId", "targetId", "previousAffinity", "newAffinity", "previousTrust", "newTrust", "reason", "source"],
+  "additionalProperties": false
+}

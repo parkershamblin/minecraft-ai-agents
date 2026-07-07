@@ -112,6 +112,10 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 256
+        },
+        "targetVillagerId": {
+          "type": "string",
+          "description": "Optional: whom the speaker is addressing (models naturally emit this; the executor ignores it, the social layer may use it)."
         }
       },
       "required": [

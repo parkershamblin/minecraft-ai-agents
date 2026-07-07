@@ -1,0 +1,21 @@
+{
+  "eventId": "019f8e2b-000f-7000-8000-00000000a00f",
+  "eventType": "RelationshipChanged",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-02T18:41:11.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": "019f8e2b-0002-7000-8000-00000000a002",
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "targetId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "previousAffinity": 12,
+    "newAffinity": 20,
+    "previousTrust": 50,
+    "newTrust": 54,
+    "reason": "He shared his bread with me when I was hungry.",
+    "source": "deliberation"
+  }
+}

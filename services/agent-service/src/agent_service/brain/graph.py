@@ -42,6 +42,7 @@ class TickDeps:
     memory: Any  # MemoryService-shaped: search(), store()
     llm: Any  # LLMProvider-shaped: complete()
     publish: Any  # async (topic, envelope) -> None
+    relationships: Any = None  # RelationshipRepo-shaped: apply_update() (None: feature off, e.g. old tests)
     percepts_max: int = 10
     memories_k: int = 6
 
@@ -49,6 +50,7 @@ class TickDeps:
 class TickState(TypedDict, total=False):
     villager: VillagerBrief
     correlation_id: str
+    cause_event_id: str | None  # the heard ChatObserved that triggered a reactive tick
     snapshot: dict[str, Any] | None
     percepts: list[dict[str, Any]]
     memories: list[RetrievedMemory]
@@ -101,6 +103,7 @@ def build_tick_graph(deps: TickDeps):
                 "error": outcome.error,
             },
             correlation_id=correlation,
+            causation_id=state.get("cause_event_id"),
         )
         await deps.publish(TOPIC_AGENT, decision_event)
 
@@ -144,7 +147,78 @@ def build_tick_graph(deps: TickDeps):
                 ),
             )
 
+        await _apply_relationships(state, decision_event["eventId"])
         return {"decision_event_id": decision_event["eventId"]}
+
+    async def _apply_relationships(state: TickState, decision_event_id: str) -> None:
+        """LLM-decided deltas, else the hearer-sentiment heuristic: the
+        hearer's own reaction moves the hearer's edge (design ruling — zero
+        extra plumbing, and arguably more correct)."""
+        if deps.relationships is None:
+            return
+        villager = state["villager"]
+        decision = state["outcome"].decision
+
+        updates: list[tuple[str, float, float, str, str]] = [
+            (u.villager_id, u.affinity_delta, u.trust_delta, u.reason, "deliberation")
+            for u in decision.relationship_updates[:3]
+        ]
+        if not updates:
+            for percept in state.get("percepts", []):
+                if percept.get("type") != "ChatObserved" or not percept.get("speakerVillagerId"):
+                    continue  # players have no edges (FK to villagers)
+                directly_addressed = villager.name.lower() in str(percept.get("message", "")).lower()
+                magnitude = 8.0 if directly_addressed else 3.0
+                if decision.sentiment > 0.1:
+                    delta = magnitude
+                elif decision.sentiment < -0.1:
+                    delta = -magnitude
+                else:
+                    continue
+                updates.append(
+                    (
+                        percept["speakerVillagerId"],
+                        delta,
+                        delta / 2,
+                        f'heard {percept.get("speakerName", "them")} say: "{percept.get("message", "")}"'[:200],
+                        "heuristic",
+                    )
+                )
+
+        for target_id, affinity_delta, trust_delta, reason, source in updates:
+            if target_id == str(villager.id):
+                continue  # no self-edges, even if the LLM tries
+            try:
+                change = await deps.relationships.apply_update(
+                    villager.id, uuid.UUID(target_id), affinity_delta, trust_delta
+                )
+            except Exception as exc:  # noqa: BLE001 — hallucinated ids must not kill the tick
+                logger.warning(
+                    "relationship update rejected",
+                    villager=villager.name,
+                    target=target_id,
+                    error=str(exc),
+                )
+                continue
+            await deps.publish(
+                TOPIC_SOCIAL,
+                build_envelope(
+                    "RelationshipChanged",
+                    villager.id,
+                    {
+                        "villagerId": str(villager.id),
+                        "targetId": target_id,
+                        "previousAffinity": change.previous_affinity,
+                        "newAffinity": change.new_affinity,
+                        "previousTrust": change.previous_trust,
+                        "newTrust": change.new_trust,
+                        "reason": reason,
+                        "source": source,
+                    },
+                    correlation_id=state["correlation_id"],
+                    causation_id=decision_event_id,
+                ),
+            )
 
     async def reflect(state: TickState) -> TickState:
         villager = state["villager"]
@@ -153,8 +227,13 @@ def build_tick_graph(deps: TickDeps):
 
         content = f"I decided to {decision.action}. {decision.reasoning}"
         for percept in state.get("percepts", []):
-            verb = "completed" if percept["type"] == "ActionCompleted" else "failed"
-            content += f" (Earlier, my {percept['action']} {verb}.)"
+            kind = percept.get("type")
+            if kind == "ActionCompleted":
+                content += f" (Earlier, my {percept['action']} completed.)"
+            elif kind == "ActionFailed":
+                content += f" (Earlier, my {percept['action']} failed.)"
+            elif kind == "ChatObserved":
+                content += f' (I heard {percept.get("speakerName", "someone")} say: "{percept.get("message", "")}")'
 
         record = await deps.memory.store(
             villager.id,
@@ -197,16 +276,25 @@ def build_tick_graph(deps: TickDeps):
     return graph.compile()
 
 
-async def run_tick(compiled_graph, villager: VillagerBrief) -> TickState:
-    """One turn of one villager's mind, under one correlationId."""
+async def run_tick(
+    compiled_graph,
+    villager: VillagerBrief,
+    *,
+    cause: str | None = None,
+    trigger: str = "scheduled",
+) -> TickState:
+    """One turn of one villager's mind, under one correlationId. A reactive
+    tick carries the heard ChatObserved's eventId as `cause` — threading the
+    conversation: ChatObserved -> DecisionMade -> chat -> next ChatObserved."""
     correlation = str(uuid7())
     started = time.perf_counter()
-    state: TickState = {"villager": villager, "correlation_id": correlation}
+    state: TickState = {"villager": villager, "correlation_id": correlation, "cause_event_id": cause}
     result = await compiled_graph.ainvoke(state)
     logger.info(
         "tick complete",
         villager=villager.name,
         correlationId=correlation,
+        trigger=trigger,
         action=result["outcome"].decision.action,
         error=result["outcome"].error,
         seconds=round(time.perf_counter() - started, 2),

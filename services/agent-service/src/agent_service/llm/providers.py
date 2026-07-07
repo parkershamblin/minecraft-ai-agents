@@ -63,6 +63,14 @@ class FakeProvider:
             "reasoning": "Someone is nearby; a greeting builds goodwill.",
             "importance": 2.5,
             "sentiment": 0.5,
+            "relationshipUpdates": [
+                {
+                    "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+                    "affinityDelta": 3,
+                    "trustDelta": 1,
+                    "reason": "A pleasant exchange in the morning sun.",
+                }
+            ],
         },
         {
             "action": "move",
@@ -70,6 +78,7 @@ class FakeProvider:
             "reasoning": "I should stretch my legs and see the village.",
             "importance": 1.5,
             "sentiment": 0.1,
+            "relationshipUpdates": None,
         },
         {
             "action": "idle",
@@ -77,6 +86,7 @@ class FakeProvider:
             "reasoning": "A moment of rest to watch the clouds.",
             "importance": 1.0,
             "sentiment": 0.2,
+            "relationshipUpdates": None,
         },
     ]
 
