@@ -101,3 +101,15 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   is ~2–4 ms). Point bots at it with **`MC_HOST=minecraft`** (the compose
   service name); the vanilla host server stays the fallback via
   `MC_HOST=host.docker.internal`.
+- Paper's `bukkit.yml` `connection-throttle: 4000` (per-IP) chokes the bot
+  fleet after any server restart: all 20 bots share the minecraft-service
+  container IP and reconnect in a synchronized 60s-backoff herd, so the
+  throttle admits **one bot per minute** (~20 min to full recovery). Set
+  `connection-throttle: -1` in `/data/bukkit.yml` — done Jul 2026; survives
+  restarts (volume) but NOT `task nuke`, so re-apply after a nuke.
+- Paper persists difficulty per-world in `level.dat`, which overrides
+  `server.properties` on boot for existing worlds. An RCON `difficulty` change
+  is in-memory until a world save — run `save-all` after it, or the container's
+  10s stop window can discard it. `DIFFICULTY` env in compose only seeds new
+  worlds. Both servers run offline mode: op entries need the offline UUID
+  (derived from the name), not the Mojang one.
