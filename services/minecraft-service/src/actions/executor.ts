@@ -106,37 +106,54 @@ export class CommandExecutor {
       return true
     }
 
-    const watchdog = setTimeout(() => {
-      this.deps.getSession(payload.villagerId)?.stopMoving()
-      commandsProcessed.inc({ action: payload.action, outcome: 'timeout' })
-      log.warn({ timeoutMs: payload.timeoutMs }, 'command timed out — watchdog emitted the outcome')
-      void outcome('ActionFailed', {
-        errorCode: 'TIMEOUT',
-        errorMessage: `no outcome within ${payload.timeoutMs}ms`,
-        retryable: true,
-      })
-    }, payload.timeoutMs)
+    let watchdog: NodeJS.Timeout | undefined
+    const watchdogFired = new Promise<void>((resolve) => {
+      watchdog = setTimeout(() => {
+        this.deps.getSession(payload.villagerId)?.stopMoving()
+        commandsProcessed.inc({ action: payload.action, outcome: 'timeout' })
+        log.warn({ timeoutMs: payload.timeoutMs }, 'command timed out — watchdog emitted the outcome')
+        void outcome('ActionFailed', {
+          errorCode: 'TIMEOUT',
+          errorMessage: `no outcome within ${payload.timeoutMs}ms`,
+          retryable: true,
+        }).finally(resolve)
+      }, payload.timeoutMs)
+    })
 
-    try {
-      const result = await this.run(payload)
-      if (await outcome('ActionCompleted', { result, durationMs: Date.now() - startedAt })) {
-        commandsProcessed.inc({ action: payload.action, outcome: 'completed' })
-        log.info({ durationMs: Date.now() - startedAt }, 'command completed')
+    // The action runs in its own closure that handles BOTH outcomes, so a
+    // late settle after a timeout is silent (the latch suppresses it) and
+    // can never produce an unhandled rejection.
+    const running = (async () => {
+      try {
+        const result = await this.run(payload)
+        if (await outcome('ActionCompleted', { result, durationMs: Date.now() - startedAt })) {
+          commandsProcessed.inc({ action: payload.action, outcome: 'completed' })
+          log.info({ durationMs: Date.now() - startedAt }, 'command completed')
+        }
+      } catch (err) {
+        const failure =
+          err instanceof ActionError
+            ? err
+            : new ActionError('INTERNAL', err instanceof Error ? err.message : String(err), true)
+        const emitted = await outcome('ActionFailed', {
+          errorCode: failure.errorCode,
+          errorMessage: failure.message,
+          retryable: failure.retryable,
+        })
+        if (emitted) {
+          commandsProcessed.inc({ action: payload.action, outcome: 'failed' })
+          log.warn({ errorCode: failure.errorCode, err: failure.message }, 'command failed')
+        } // else: the watchdog already settled this command; the late error is expected fallout of cancellation
       }
-    } catch (err) {
-      const failure =
-        err instanceof ActionError
-          ? err
-          : new ActionError('INTERNAL', err instanceof Error ? err.message : String(err), true)
-      const emitted = await outcome('ActionFailed', {
-        errorCode: failure.errorCode,
-        errorMessage: failure.message,
-        retryable: failure.retryable,
-      })
-      if (emitted) {
-        commandsProcessed.inc({ action: payload.action, outcome: 'failed' })
-        log.warn({ errorCode: failure.errorCode, err: failure.message }, 'command failed')
-      } // else: the watchdog already settled this command; the late error is expected fallout of cancellation
+    })()
+
+    // Race, don't await: an action whose underlying promise NEVER settles (a
+    // pathfinder mid-server-restart, a dead connection) must not wedge
+    // eachMessage — one partition means one hung promise freezes EVERY bot
+    // (it did, on 2026-07-07, twice). The watchdog emits the outcome; the
+    // executor moves on; the zombie promise is abandoned by design.
+    try {
+      await Promise.race([running, watchdogFired])
     } finally {
       clearTimeout(watchdog)
     }

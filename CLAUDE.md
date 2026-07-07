@@ -102,6 +102,13 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   (dedupe can't help — never-executed commands have no dedupe keys), and the
   consumer `exit(1)`s on unrecoverable crash with `restart: on-failure` so
   failure shows up in restart counts instead of as silence.
+- Corollary 3 (same day, second wedge): the executor must `Promise.race` the
+  action against the watchdog, NEVER `await` the action promise directly — a
+  pathfinder promise never settles on a connection that died mid-move (any MC
+  server restart can cause one), and with a single-partition command topic ONE
+  pending promise freezes eachMessage and therefore EVERY bot, with no crash
+  event for the exit-handler to see. Bots keep thinking; bodies freeze.
+  Regression-tested in executor.test.ts ("wedge regression").
 - GitHub Actions: called workflows can't escalate `GITHUB_TOKEN` permissions
   (callers must grant, even for statically-skipped jobs); caller workflows
   must include **their own file** in `paths:` filters.

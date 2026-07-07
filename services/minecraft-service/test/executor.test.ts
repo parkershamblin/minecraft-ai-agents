@@ -89,7 +89,10 @@ describe('CommandExecutor', () => {
     expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
     expect(h.outcomes[0]!.extra.errorCode).toBe('TIMEOUT')
     expect(h.session.stopMoving).toHaveBeenCalled()
-    void run // intentionally unresolved — the hanging promise never settles
+    // THE WEDGE REGRESSION (2026-07-07, twice): execute() must RESOLVE once
+    // the watchdog settles the command — a never-settling action promise
+    // previously froze eachMessage and, with one partition, every bot.
+    await expect(run).resolves.toBeUndefined()
   })
 
   it('a late completion after timeout is suppressed — exactly one outcome', async () => {
