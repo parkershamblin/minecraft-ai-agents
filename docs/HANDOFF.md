@@ -1,11 +1,12 @@
-# Session Handoff — Sprint 5 COMPLETE: M1-10 done, M1 DoD 5.5/6
+# Session Handoff — Sprint 5 COMPLETE: M1-10 done, M1 DoD 6/6 (evidence in ledger)
 
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue from this file + `docs/architecture/07-m1-plan.md`
 > without asking questions. **All M1 tickets complete (M1-1…M1-10). M1 DoD:
-> 5 of 6 items verified with evidence, one half-item open (no organic grudge
-> at |affinity|>40 yet) plus the actual episode recording (Parker's filming
-> session — everything is staged for it, see "What M1-10 shipped").**
+> all 6 items verified with evidence — the organic grudge closed on
+> 2026-07-07 afternoon (Yara→Cassia peaked −54 in the clean window; see
+> "Afternoon session" section) and Episode 1 footage is recorded (editing
+> is Parker's post-production work, not an engine DoD item).**
 
 ## Project status
 
@@ -347,12 +348,16 @@ deliberation. M1-8 is COMPLETE.**
      MINUTES (single-partition executor queue) — reconstruction windows
      must allow ~10 min, not 30s. 142 real llama lines heard in-game in the
      final 20 minutes; 76 reactive chat replies.
-  3. 🟡 HALF: friendship ✅ — Wren→Quill affinity +100 / trust 100, fully
-     organic (the chronicler keeps publicly correcting the rumor-monger and
-     she loves it), survives all repair passes. Grudge |affinity|>40: NOT
-     YET — post-repair min is −9. The negative-delta mechanics are live;
-     the village just hasn't had a real falling-out. Candidate episode
-     beat (Tansy↔Elara pantry rivalry was designed for this).
+  3. ✅ (closed 2026-07-07 afternoon): friendship — Wren→Quill affinity
+     +100 / trust 100, fully organic, survives all repair passes. Grudge
+     |affinity|>40 — **Yara→Cassia peaked −54 at 13:08Z**, formed 0→−54
+     entirely inside the verified clean window (12:11Z onward), all 49
+     RelationshipChanged deltas `source: agent-service` / heuristic on
+     real llama sentiment, zero fake fingerprints; still standing at −42
+     live at 19:15Z. Quill→Wren independently touched −40 / trust 0 the
+     same afternoon — the mechanic reproduces. (The "NOT YET / min −9"
+     reading was stale: the late filming window kept running after that
+     measurement.)
   4. ✅ Live graph verified in-browser during the day (345 clean edges,
      reasoned tooltips) + populated leaderboard.
   5. ✅ Coverage gate enforced; correlation trace: one id greps across
@@ -402,7 +407,36 @@ when a connection dies mid-move (any Paper restart), freezing eachMessage
 and, with one partition, EVERY bot, with no crash event. Now `Promise.race`s
 the watchdog; regression test added; CLAUDE.md corollary 3.
 
-## Machine state at session end (2026-07-07 ~13:40Z)
+## Afternoon session (2026-07-07 ~19:10–20:00Z) — grudge DoD closed, gather diagnosis
+
+- **Stack brought back up** (Paper + infra + app, all healthy first try; seed
+  re-embodied 20/20 bots; agent on warmed llama3.1; reflections on; command
+  executor lag 0 — the wedge fix holding).
+- **DoD #3 grudge: CLOSED with ledger evidence** (see DoD list above). Key
+  dynamics finding: **grudges mean-revert under ambient positive chatter** —
+  a 40-min watch saw Yara→Cassia decay −45→−30 and Quill→Wren −40→−30;
+  the ±3 hearer-sentiment heuristic oscillates toward zero without fresh
+  conflict. Sustained grudges need negative-memory reinforcement or real
+  conflict events → M2 design note.
+- **"Bots don't move around / never gather" (Parker's observation) —
+  diagnosed, three compounding causes, all M1-scope design, no bug:**
+  1. System prompt line "Prefer small, concrete, social actions over grand
+     plans" (`brain/prompts.py`) steers llama away from material action.
+  2. The world snapshot carries NO environment info (only position, health,
+     food, time, nearby villagers, inventory) — the only coordinates the
+     LLM ever sees are villagers', so all move targets stay inside the
+     plaza cluster. Bots DO move (positions verified matching move targets;
+     267 moves since restart), just locally.
+  3. All 3 gather attempts failed `RESOURCE_NOT_FOUND` — no wood within
+     reach of the y≈120–130 plaza, and llama self-supplies `maxDistance:
+     10` (executor default is 32, cap 64).
+  Cheap M2 levers, in impact order: nearby-resources line in the snapshot
+  (contract change: schema + fixture + `task gen`), soften the
+  social-actions prompt line, prompt-doc `maxDistance: 48`. Minor: Ulric
+  repeatedly TIMEOUTs on moves (unreachable target?) — retryable,
+  non-fatal, worth a look if it persists.
+
+## Machine state at session end (2026-07-07 ~13:40Z) — SUPERSEDED: stack is RUNNING (afternoon session brought it back up; Parker in-game, 21/30 players)
 
 - **Stack fully DOWN** — clean shutdown after filming: world saved
   (`save-all flush`, Petra's meeting is canon), all profiles down,
