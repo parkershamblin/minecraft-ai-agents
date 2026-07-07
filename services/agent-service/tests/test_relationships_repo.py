@@ -107,3 +107,24 @@ async def test_affinity_clamps_at_bounds(repos: RelationshipRepo):
     await repos.apply_update(ELARA, WREN, 200, 0, reason="overflow")
     [edge] = await repos.edges_for(ELARA, [WREN])
     assert edge.affinity == 100  # clamped from 0+200
+
+
+async def test_leaderboard_sums_incoming_affinity(repos: RelationshipRepo):
+    # Bram: loved twice (+30, +20 = 50). Elara: divisive (-40, +10 = -30).
+    # Wren: nobody has an edge toward her -> charts nowhere.
+    await repos.apply_update(ELARA, BRAM, 30, 0, reason="he helped")
+    await repos.apply_update(WREN, BRAM, 20, 0, reason="good stories")
+    await repos.apply_update(BRAM, ELARA, -40, 0, reason="she lied")
+    await repos.apply_update(WREN, ELARA, 10, 0, reason="kind enough")
+
+    popular = await repos.leaderboard("popular")
+    assert [(r.name, r.score, r.edge_count) for r in popular] == [("Bram", 50, 2), ("Elara", -30, 2)]
+
+    hated = await repos.leaderboard("hated")
+    assert [(r.name, r.score) for r in hated] == [("Elara", -30), ("Bram", 50)]
+
+    assert "Wren" not in {r.name for r in popular}
+
+
+async def test_leaderboard_empty_when_no_edges(repos: RelationshipRepo):
+    assert await repos.leaderboard("popular") == []

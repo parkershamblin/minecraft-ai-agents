@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Leaderboard } from '@/components/Leaderboard'
 import { RelationshipGraph } from '@/components/RelationshipGraph'
 
 export default function RelationshipsPage() {
@@ -18,7 +19,15 @@ export default function RelationshipsPage() {
         </nav>
       </header>
 
-      <RelationshipGraph />
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+        <section className="lg:col-span-3">
+          <RelationshipGraph />
+        </section>
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-400">Standing</h2>
+          <Leaderboard />
+        </section>
+      </div>
     </main>
   )
 }

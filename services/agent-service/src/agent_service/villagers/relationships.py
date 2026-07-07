@@ -8,13 +8,14 @@ database (CHECK + FK) and surface as ValueError."""
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Literal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from uuid6 import uuid7
 
-from agent_service.villagers.models import Relationship
+from agent_service.villagers.models import Relationship, Villager
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,18 @@ class RelationshipEdge:
             last_interaction_at=row.last_interaction_at,
             updated_at=row.updated_at,
         )
+
+
+@dataclass(frozen=True)
+class LeaderboardRow:
+    """One villager as the village sees them: the sum of everyone's incoming
+    affinity. Sum, not average — being loved by five neighbors should outrank
+    being loved intensely by one."""
+
+    villager_id: uuid.UUID
+    name: str
+    score: int
+    edge_count: int
 
 
 def _clamp(value: float, low: int, high: int) -> int:
@@ -150,3 +163,34 @@ class RelationshipRepo:
                 .order_by(Relationship.affinity.desc())
             )
             return [RelationshipEdge.of(r) for r in rows.scalars()]
+
+    async def leaderboard(
+        self, metric: Literal["popular", "hated"], limit: int = 10
+    ) -> list[LeaderboardRow]:
+        """The interim M1 leaderboard: one SQL aggregate over incoming edges
+        (idx_relationships_target serves it). Villagers nobody has an edge
+        toward don't chart — you can't be popular or hated unseen.
+        analytics-service takes this job over in M2."""
+        score = func.sum(Relationship.affinity)
+        async with self._sessions() as session:
+            rows = await session.execute(
+                select(
+                    Relationship.target_villager_id,
+                    Villager.name,
+                    score.label("score"),
+                    func.count().label("edge_count"),
+                )
+                .join(Villager, Villager.id == Relationship.target_villager_id)
+                .group_by(Relationship.target_villager_id, Villager.name)
+                .order_by(score.desc() if metric == "popular" else score.asc())
+                .limit(limit)
+            )
+            return [
+                LeaderboardRow(
+                    villager_id=row.target_villager_id,
+                    name=row.name,
+                    score=int(row.score),
+                    edge_count=int(row.edge_count),
+                )
+                for row in rows
+            ]

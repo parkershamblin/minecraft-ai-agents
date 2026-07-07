@@ -8,6 +8,7 @@ staggered tick scheduler.
 
 import uuid
 from contextlib import asynccontextmanager
+from typing import Literal
 
 import httpx
 import redis.asyncio as aioredis
@@ -125,6 +126,22 @@ async def list_villagers() -> list[dict]:
             "backstory": v.backstory,
         }
         for v in villagers
+    ]
+
+
+@app.get("/leaderboard")
+async def leaderboard(metric: Literal["popular", "hated"] = "popular") -> list[dict]:
+    """Interim M1 leaderboard (one SQL aggregate over incoming affinity);
+    analytics-service takes this over in M2. score = sum of incoming affinity."""
+    rows = await app.state.relationships.leaderboard(metric)
+    return [
+        {
+            "villagerId": str(row.villager_id),
+            "name": row.name,
+            "score": row.score,
+            "edgeCount": row.edge_count,
+        }
+        for row in rows
     ]
 
 
