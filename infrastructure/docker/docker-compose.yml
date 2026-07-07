@@ -231,6 +231,8 @@ services:
       TYPE: PAPER
       VERSION: ${MC_VERSION:-1.21.6}
       ONLINE_MODE: "FALSE"          # bots auth 'offline' (BotSession.ts) — must match
+      DIFFICULTY: peaceful          # no hostile mobs — villagers can't be killed
+      OPS: ParkerShamblin           # offline mode: helper derives the offline UUID
       MEMORY: 3G
       VIEW_DISTANCE: "4"            # low sim/view distance keeps MSPT down at 20 bots
       SIMULATION_DISTANCE: "4"
