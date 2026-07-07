@@ -26,6 +26,7 @@ const executor = new CommandExecutor({
   spawn: (villagerId, username) => registry.spawn(villagerId, username),
   despawn: (villagerId) => registry.despawn(villagerId),
   isFresh: (commandId) => dedupe.isFresh(commandId),
+  maxCommandAgeMs: config.COMMAND_MAX_AGE_SECONDS * 1_000,
   publishOutcome: (command, eventType, extra) =>
     producer.publish(
       'world.events',

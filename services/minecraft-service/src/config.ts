@@ -17,6 +17,9 @@ const schema = z.object({
   // village is ~64 across. 16 made villagers deaf to neighbors in practice.
   CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(48),
   SPAWN_TIMEOUT_MS: z.coerce.number().int().default(30000),
+  // Freshness guard on commands.minecraft (same failure class as the percept
+  // guard): a stale committed offset must never replay the past into the world.
+  COMMAND_MAX_AGE_SECONDS: z.coerce.number().int().min(1).default(600),
 })
 
 export type Config = z.infer<typeof schema>

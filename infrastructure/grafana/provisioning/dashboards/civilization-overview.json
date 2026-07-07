@@ -51,7 +51,7 @@
       "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 } },
       "targets": [
         {
-          "expr": "sum(increase(civ_llm_cost_dollars_total[$__range]))",
+          "expr": "sum(increase(civ_llm_cost_dollars_total{run_mode=\"compose\"}[$__range]))",
           "legendFormat": "spend"
         }
       ]
@@ -113,6 +113,44 @@
         { "expr": "civ_bot_sessions", "legendFormat": "bots" },
         { "expr": "civ_sse_clients", "legendFormat": "sse clients" },
         { "expr": "civ_llm_budget_tripped", "legendFormat": "budget tripped" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Reactive tick ratio (cap arithmetic says < ~0.4 sustained)",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "max": 1, "min": 0 } },
+      "targets": [
+        {
+          "expr": "sum(rate(civ_ticks_total{trigger=\"reactive\"}[5m])) / sum(rate(civ_ticks_total[5m]))",
+          "legendFormat": "reactive / all ticks"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "LLM spend by service (range, USD)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 4 } },
+      "targets": [
+        {
+          "expr": "sum by (job) (increase(civ_llm_cost_dollars_total{run_mode=\"compose\"}[$__range]))",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Reflections by outcome (memory-service)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(civ_reflections_total{run_mode=\"compose\"}[$__range]))",
+          "legendFormat": "{{outcome}}"
+        }
       ]
     }
   ]

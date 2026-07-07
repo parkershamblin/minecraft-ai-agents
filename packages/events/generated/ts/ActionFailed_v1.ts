@@ -25,6 +25,7 @@ export interface ActionFailedPayload {
     | "INVALID_PARAMS"
     | "BOT_DISCONNECTED"
     | "UNKNOWN_ACTION"
+    | "STALE_COMMAND"
     | "INTERNAL";
   errorMessage: string;
   retryable: boolean;

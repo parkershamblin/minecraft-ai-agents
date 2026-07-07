@@ -48,6 +48,7 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
     publishOutcome: async (_command, eventType, extra) => {
       outcomes.push({ eventType, extra })
     },
+    maxCommandAgeMs: 600_000,
     ...overrides,
   }
   return { executor: new CommandExecutor(deps), outcomes, session, seen }
@@ -56,6 +57,18 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
 describe('CommandExecutor', () => {
   beforeEach(() => vi.useFakeTimers())
   afterEach(() => vi.useRealTimers())
+
+  it('stale commands drop with ActionFailed{STALE_COMMAND} before touching the world', async () => {
+    const h = harness()
+    const stale = command('chat', { message: 'hello from the distant past' })
+    ;(stale as { occurredAt: string }).occurredAt = new Date(Date.now() - 3_600_000).toISOString()
+    await h.executor.execute(stale)
+    expect(h.session.chat).not.toHaveBeenCalled()
+    expect(h.outcomes).toHaveLength(1)
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('STALE_COMMAND')
+    expect(h.outcomes[0]!.extra.retryable).toBe(false)
+  })
 
   it('duplicate commandIds never execute twice (idempotent executor)', async () => {
     const h = harness()

@@ -22,6 +22,16 @@ export class CommandConsumer {
   }
 
   async start(): Promise<void> {
+    // A consumer that dies quietly leaves a healthy-looking container with a
+    // frozen world (M1-8's connect storm did exactly that). If kafkajs won't
+    // self-restart, fail LOUD and let the restart policy recover — a restart
+    // is visible in `docker ps`; a zombie isn't.
+    this.consumer.on(this.consumer.events.CRASH, ({ payload }) => {
+      logger.error({ err: payload.error?.message, willRestart: payload.restart }, 'kafka consumer crashed')
+      if (!payload.restart) {
+        process.exit(1)
+      }
+    })
     await this.consumer.connect()
     await this.consumer.subscribe({ topic: 'commands.minecraft' })
     await this.consumer.run({

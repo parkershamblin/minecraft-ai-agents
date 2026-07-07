@@ -13,9 +13,9 @@ import pytest
 from sqlalchemy import select, update
 
 from memory_service.db import make_engine, make_session_factory
-from memory_service.llm import LLMResponse
+from memory_service.llm import BudgetExhausted, LLMResponse
 from memory_service.models import Memory
-from memory_service.reflection import villagers_due_for_reflection
+from memory_service.reflection import ReflectionUnavailable, villagers_due_for_reflection
 from memory_service.service import MemoryService
 from memory_service.settings import Settings
 
@@ -151,6 +151,74 @@ async def test_reflect_stores_provenance_and_emits_reflection_created(reflective
         assert envelope["aggregateId"] == str(villager)
     assert {e["payload"]["reflectionId"] for e in envelopes} == {str(r.id) for r in records}
     assert len({e["correlationId"] for e in envelopes}) == 1
+
+
+async def test_reflect_raises_when_no_summarizer_armed(database, embeddings):
+    bare = MemoryService(None, embeddings, database)  # no summarizer, no publisher
+    with pytest.raises(ReflectionUnavailable):
+        await bare.reflect(uuid.uuid4())
+
+
+async def test_reflect_returns_empty_when_nothing_to_reflect_on(reflective_service):
+    service, publisher = reflective_service([{"insight": "x", "sourceIndices": [1]}])
+    assert await service.reflect(uuid.uuid4()) == []
+    assert publisher.published == []
+
+
+async def test_reflect_respects_hourly_cap(database, embeddings):
+    capped = database.model_copy(update={"reflections_per_hour_cap": 0})
+    engine = make_engine(database.memory_db_url)
+    try:
+        service = MemoryService(
+            make_session_factory(engine),
+            embeddings,
+            capped,
+            summarizer=ScriptedSummarizer([{"insight": "x", "sourceIndices": [1]}]),
+            publisher=CapturingPublisher(),
+        )
+        villager = uuid.uuid4()
+        await service.store(villager, "something happened")
+        assert await service.reflect(villager) == []
+    finally:
+        await engine.dispose()
+
+
+async def test_reflect_skips_on_open_budget_and_on_malformed_output(database, embeddings):
+    class ExhaustedSummarizer:
+        name = model = "exhausted"
+
+        async def complete(self, system, user):
+            raise BudgetExhausted("spent")
+
+    class RamblingSummarizer:
+        name = model = "rambling"
+
+        async def complete(self, system, user):
+            return LLMResponse(
+                text="I refuse to emit JSON today.",
+                tokens_in=1,
+                tokens_out=1,
+                latency_seconds=0.0,
+                provider="rambling",
+                model="rambling",
+            )
+
+    engine = make_engine(database.memory_db_url)
+    try:
+        sessions = make_session_factory(engine)
+        villager = uuid.uuid4()
+        exhausted = MemoryService(
+            sessions, embeddings, database, summarizer=ExhaustedSummarizer(), publisher=CapturingPublisher()
+        )
+        await exhausted.store(villager, "a memory to reflect on")
+        assert await exhausted.reflect(villager) == []  # skipped, not raised
+
+        rambling = MemoryService(
+            sessions, embeddings, database, summarizer=RamblingSummarizer(), publisher=CapturingPublisher()
+        )
+        assert await rambling.reflect(villager) == []  # discarded, nothing stored
+    finally:
+        await engine.dispose()
 
 
 async def test_reflection_outranks_stale_raw_memories(reflective_service):

@@ -77,6 +77,13 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   minecraft-service registers `kafkajs-snappy`; keep that import first.
 - OpenAI strict structured outputs reject optional schema properties — new
   decision-contract fields must be **required-nullable** (`type: ["x","null"]`).
+- `LLM_DAILY_TOKEN_BUDGET=2000000` is sized for PAID providers. On free local
+  Ollama, 20 villagers burn it in ~30 minutes and the breaker silently flips
+  deliberation to the FakeProvider — whose scripted chat + relationshipUpdates
+  then POLLUTE narrative state (it manufactured a +100 "friendship" toward
+  Bram on 2026-07-07; repaired from the ledger). For Ollama runs set the
+  budget to 100000000. Fake-pollution fingerprints: reason "A pleasant
+  exchange in the morning sun.", the greeting "Good day! The weather holds…".
 - Postgres CHECK constraints pass on NULL (three-valued logic) — write
   NULL-proof constraints (see `memories_reflection_provenance`).
 - Kafka consumer groups keep committed offsets across deploys: consumers that
@@ -86,6 +93,15 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   `occurredAt` at runtime (`datetime.now(UTC)`) — a hardcoded "fresh" date is
   a time bomb: green until the wall clock passes it, then silently dropped as
   stale backlog (bit `test_percept_fanout.py` on 2026-07-07).
+- Corollary 2 (M1-10): the COMMAND topic needed the same guard. A kafkajs
+  consumer can die silently inside a healthy-looking container (the M1-8
+  connect storm did — crash without restart), freezing committed offsets;
+  the next boot then replays hours of dead intents INTO THE LIVE WORLD (bots
+  spoke 3.5h-old chat lines on camera day). The executor now drops commands
+  older than `COMMAND_MAX_AGE_SECONDS` (600) with `ActionFailed{STALE_COMMAND}`
+  (dedupe can't help — never-executed commands have no dedupe keys), and the
+  consumer `exit(1)`s on unrecoverable crash with `restart: on-failure` so
+  failure shows up in restart counts instead of as silence.
 - GitHub Actions: called workflows can't escalate `GITHUB_TOKEN` permissions
   (callers must grant, even for statically-skipped jobs); caller workflows
   must include **their own file** in `paths:` filters.

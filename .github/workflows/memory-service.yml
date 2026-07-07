@@ -18,6 +18,7 @@ jobs:
       service: memory-service
       language: python
       workdir: services/memory-service
-      coverage-args: "--cov=memory_service --cov-report=term"
+      # M1-10: gate ON, scoped to the DoD-named paths (service + scoring)
+      coverage-args: "--cov=memory_service.service --cov=memory_service.scoring --cov-report=term --cov-fail-under=80"
       image: true
       context: services/memory-service

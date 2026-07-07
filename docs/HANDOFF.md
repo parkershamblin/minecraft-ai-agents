@@ -1,11 +1,11 @@
-# Session Handoff — Sprint 5: M1-8 + M1-9 COMPLETE, M1-10 remains
+# Session Handoff — Sprint 5 COMPLETE: M1-10 done, M1 DoD 5.5/6
 
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **Sprint 4 complete (M1-4…M1-7). Sprint 5: M1-8
-> COMPLETE (PaperMC spike + 20-bot fleet soak, all AC passed) and M1-9
-> COMPLETE (reflections in memory-service — see "What M1-9 shipped"). Only
-> M1-10 (coverage gate + filming run) remains in M1.**
+> without asking questions. **All M1 tickets complete (M1-1…M1-10). M1 DoD:
+> 5 of 6 items verified with evidence, one half-item open (no organic grudge
+> at |affinity|>40 yet) plus the actual episode recording (Parker's filming
+> session — everything is staged for it, see "What M1-10 shipped").**
 
 ## Project status
 
@@ -15,19 +15,13 @@
 - **78 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
   added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
   CI runs typecheck). Other suites unchanged and green.
-- Test totals: **78 py-agent**, **42 py-memory** (was 19 — M1-9 added 23),
-  29 ts-minecraft, 8 java-event, **15 contract fixtures** (ReflectionCreated
-  joined). Coverage gate is still report-only (turns ON in M1-10). `task test`
-  now runs the memory-service suite too (it was missing — fifth line).
-- **Machine state (2026-07-07 ~6:35am, M1-9 session):** the stack is **fully
-  DOWN** — the M1-8 session ended with a clean shutdown (world saved via RCON
-  `save-all`, then `down` across all profiles; 0 containers). All volumes
-  intact: `agent_db` holds all 20 villagers + the Sprint 3 Elara→Bram edge
-  plus soak-formed edges; memory_db + ledger + Paper world untouched.
-  `.env` still holds **`VILLAGER_COUNT=20`** and **`MC_HOST=minecraft`**
-  (uncommitted, as `.env` always is). Vanilla host server stopped/untouched
-  (fallback via `MC_HOST=host.docker.internal`). NOTE: next `up` MUST be
-  `up --build` for memory-service — its image predates M1-9.
+- Test totals: **78 py-agent**, **46 py-memory** (19 → 42 in M1-9, +4
+  reflect-guard tests in M1-10), **30 ts-minecraft** (+1 stale-command),
+  8 java-event, **15 contract fixtures**. Coverage gate is **ON since M1-10**
+  (agent brain/llm 96.4%, memory service/scoring 98.0%, event ingest/read
+  87.8% — all ≥80 enforced). `task test` runs all five suites.
+- Machine state: **superseded — see "Machine state at session end" below**
+  (M1-10 session brought the full stack up with `up --build`; it is RUNNING).
 - Sprint 3 live proof achieved: Bram said "Elara, still on about the pantry?"
   in-game (multi-day characterization via memory), Elara's reply tick fired
   `trigger=reactive`, relationships formed from interactions
@@ -293,11 +287,121 @@ deliberation. M1-8 is COMPLETE.**
   once 20-villager chatter builds pressure — a natural first check for the
   M1-10 filming-run session.
 
-Sprint 5 remainder: **M1-10** — coverage gate ON (agent brain/llm, memory
-service/scoring, event ingest/read), Grafana reactive-ratio + per-service $
-panels (summing both services' `civ_llm_cost_dollars_total`),
-`docs/demo-m1.md`, the recorded in-game day + Episode 1 shot list.
+### What M1-10 shipped (commit `M1-10: coverage gate + verified in-game day…`)
+
+- **Coverage gate ON** (was report-only since M0): agent-service
+  `--cov=agent_service.brain --cov=agent_service.llm --cov-fail-under=80`
+  (actual 96.4%); memory-service `service`+`scoring` scoped (actual 98.0% —
+  four reflect()-guard-path tests added to get there honestly); event-service
+  jacoco `jacocoTestCoverageVerification` over adapter.in/application/
+  persistence classes (actual 87.8%), wired `finalizedBy(test)` so CI's fixed
+  `gradlew test bootJar` enforces it. Python gates live in the caller
+  workflows' `coverage-args`.
+- **Grafana**: 3 new panels (reactive tick ratio; LLM spend by service; 
+  reflections by outcome) + fixed a pre-existing double-count: every service
+  has TWO Prometheus targets (run_mode host|compose) that both scrape the
+  same process when ports are published — absolute-sum panels now filter
+  `{run_mode="compose"}` (ratios/quantiles are unaffected by uniform 2×).
+- **docs/demo-m1.md** — the M1 demo run-through + Episode 1 shot list
+  (6 money shots: wake-up, conversation-with-causation, first grudge,
+  a villager reflects, the trace, the wallet).
+- **THE BIG ONE — the verification day found two production bugs** (this is
+  why the ticket says "filming run"; both fixed, tested, deployed):
+  1. **Silent command-consumer death + stale replay**: during M1-8's connect
+     storm the kafkajs consumer in minecraft-service crashed WITHOUT
+     restarting — container looked healthy, bots stayed online, but no
+     command executed in-game from ~08:45Z on, and committed offsets froze.
+     Today's boot resumed at the frozen offset and REPLAYED ~3.5h of dead
+     intents into the live world (bots reciting hours-old chat). Dedupe
+     can't guard this (never-executed commands have no keys). Fix: freshness
+     guard in the executor — commands older than `COMMAND_MAX_AGE_SECONDS`
+     (600) drop with `ActionFailed{STALE_COMMAND}` (additive enum value,
+     types regenerated), preserving exactly-one-outcome; consumer now
+     `exit(1)`s on unrecoverable crash + `restart: on-failure` in compose
+     (loud, visible in restart counts). Deployed live: chewed 747 stale
+     commands in seconds, lag 0 since. Regression test added (30 ts tests).
+  2. **Budget breaker trip on free Ollama → fake pollution**: the 2M daily
+     token budget (sized for OpenAI dollars) lasts ~30 min at 20 villagers
+     on Ollama; when it tripped (mid-soak in M1-8 too — reconciliation
+     below), deliberation silently became the FakeProvider, whose scripted
+     chat + relationshipUpdates POLLUTED narrative state: a manufactured
+     +100 "friendship" toward Bram (the script's hardcoded target), 1,745
+     scripted memories (53% of memory_db!), and greeting-driven heuristic
+     inflation. **Repaired from the ledger** (the restore-point pattern):
+     replayed every RelationshipChanged per edge excluding (a) fake-script
+     deltas, (b) pre-clean-window greeting-heuristic nudges, (c) source
+     ≠ agent-service (dev-tool test events — the replay initially
+     resurrected an M1-5 synthetic −60 grudge; excluded). 306 edges
+     repaired, 28 fake-only edges deleted, 1,745 scripted memories purged.
+     `.env` now carries `LLM_DAILY_TOKEN_BUDGET=100000000` for Ollama runs
+     (.env.example documents the sizing trap).
+- **The verified in-game day (12:12:52Z + surrounding clean windows), all
+  20 villagers on real llama3.1 deliberation — M1 DoD status:**
+  1. ✅ 20 bots, 28×60s monitor samples all 20/20, MSPT avg 5.2–11.0 ms,
+     zero container restarts; p95 tick 32.8s < interval (120s configured for
+     the verification day; also < the old 60s bar).
+  2. ✅ ≥3-turn conversation chain reconstructed from the ledger: reply
+     DecisionMade.causationId → heard ChatObserved (the identity thread),
+     consecutive turns joined on the utterance. NOTE: under load the gap
+     between VillagerTalked (decision time) and ChatObserved (spoken) runs
+     MINUTES (single-partition executor queue) — reconstruction windows
+     must allow ~10 min, not 30s. 142 real llama lines heard in-game in the
+     final 20 minutes; 76 reactive chat replies.
+  3. 🟡 HALF: friendship ✅ — Wren→Quill affinity +100 / trust 100, fully
+     organic (the chronicler keeps publicly correcting the rumor-monger and
+     she loves it), survives all repair passes. Grudge |affinity|>40: NOT
+     YET — post-repair min is −9. The negative-delta mechanics are live;
+     the village just hasn't had a real falling-out. Candidate episode
+     beat (Tansy↔Elara pantry rivalry was designed for this).
+  4. ✅ Live graph verified in-browser during the day (345 clean edges,
+     reasoned tooltips) + populated leaderboard.
+  5. ✅ Coverage gate enforced; correlation trace: one id greps across
+     agent-service logs + full ledger chain (Decision→ActionRequested→
+     VillagerTalked→9×RelationshipChanged→MemoryFormed).
+  6. ⬜ Episode-1 segment: Parker's filming session; demo-m1.md +
+     shot list + a verified dress rehearsal are staged for it.
+- **M1-9 live-verified during the day**: memory-service booted
+  `reflections=on` (chain walked to warmed Ollama), the pressure trigger
+  fired naturally on the first job pass (Elara pressure 1021!), 12
+  reflections at exactly the hourly cap (+8 cap-skips, 0 malformed),
+  provenance-linked rows, ReflectionCreated in the ledger end-to-end.
+- **Paper `MAX_PLAYERS: "30"`** in compose (was 20 = bots filled every
+  slot): Parker can now join and spectate; fleet auto-reconnected 20/20.
+
+### M1-8 record reconciliation (honesty note)
+
+The soak's three ACs (bots online / MSPT / zero restarts) genuinely passed —
+but "real Ollama deliberation for the full 37 min" needs a correction: the
+budget breaker tripped mid-soak (~2M tokens ≈ 30 min in), silently flipping
+deliberation to fake, AND the command consumer died during the connect storm
+(~08:45Z), so in-game actuation stopped partway through. Ledger-side
+activity (VillagerTalked, DecisionMade) continued and is what the soak
+evidence cited. The in-game chatter observed early in the soak was real.
+Both failure modes are now fixed and loudly observable (M1-10 above).
+
+## Machine state at session end (2026-07-07 ~12:45Z)
+
+- **Full stack RUNNING** (infra + app + Paper), all healthy, fleet 20/20,
+  reflections currently OFF and tick interval 120s via `.env`
+  (`REFLECTION_ENABLED=false`, `TICK_INTERVAL_SECONDS=120`,
+  `LLM_DAILY_TOKEN_BUDGET=100000000`) — the conservative local-verification
+  preset. **For the filming run**: restore `TICK_INTERVAL_SECONDS=60`, set
+  `REFLECTION_ENABLED=true`, and ideally set `OPENAI_API_KEY` (the plan's
+  filming preset — local Ollama serializes deliberation + embeddings +
+  reflections through one GPU).
+- agent_db + memory_db are **narrative-clean** (post-repair): 345 edges,
+  1,599 real memories incl. 66 reflections. The append-only ledger keeps the
+  polluted events as history (by design); the repair script pattern lives in
+  this session's transcript if needed again.
+- Dashboard dev server may still be running on :3000 (started for DoD-4
+  verification).
+
 Deferred to M2 by review: dashboard-service BFF, analytics-service, Loki, k6.
+New M2 candidates from this session: packages/shared-py (two envelope-builder
+copies exist), per-provider LLM budgets (a $0 Ollama run shouldn't trip a
+cost breaker into narrative-polluting fake), multi-partition commands.minecraft
+(single partition serializes all bots' actions — the decision→speech gap),
+and quirks into the system prompt (the M1-7 one-liner, still pending).
 
 ## Key decisions & gotchas from Sprint 3 (all shipped, all tested)
 

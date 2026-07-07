@@ -1,8 +1,10 @@
 # The shared lint->test->build->package pipeline. Thin path-filtered callers
 # (one per deployable) invoke this with their language; a schema change in
 # packages/events rebuilds every consumer, a service change rebuilds only
-# itself. Coverage is REPORT-ONLY during M0/Sprint 2 (the 80% gate is enforced
-# from M1 on the DoD-named paths).
+# itself. Coverage gate is ON since M1-10 on the DoD-named paths: python
+# callers pass scoped --cov + --cov-fail-under=80 via coverage-args; the java
+# gate lives in event-service's build (jacocoTestCoverageVerification runs
+# via `test`'s finalizedBy, so the fixed `gradlew test bootJar` enforces it).
 name: service-ci
 
 on:

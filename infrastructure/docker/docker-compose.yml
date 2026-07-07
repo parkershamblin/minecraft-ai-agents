@@ -117,6 +117,9 @@ services:
       context: ../..
       dockerfile: services/minecraft-service/Dockerfile
     profiles: [app]
+    # the command consumer exits(1) on an unrecoverable Kafka crash — restart
+    # LOUDLY (visible in restart counts) instead of zombie-idling the world
+    restart: on-failure
     ports: ["8003:8003"]
     environment:
       MC_HOST: ${MC_HOST:-host.docker.internal}
@@ -142,6 +145,7 @@ services:
   memory-service:
     build: ../../services/memory-service
     profiles: [app]
+    restart: on-failure
     ports: ["8002:8002"]
     environment:
       POSTGRES_HOST: postgres
@@ -240,6 +244,7 @@ services:
       ONLINE_MODE: "FALSE"          # bots auth 'offline' (BotSession.ts) — must match
       DIFFICULTY: peaceful          # no hostile mobs — villagers can't be killed
       OPS: ParkerShamblin           # offline mode: helper derives the offline UUID
+      MAX_PLAYERS: "30"             # 20 bot slots + room for Parker to spectate
       MEMORY: 3G
       VIEW_DISTANCE: "4"            # low sim/view distance keeps MSPT down at 20 bots
       SIMULATION_DISTANCE: "4"

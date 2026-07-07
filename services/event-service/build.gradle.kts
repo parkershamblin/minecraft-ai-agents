@@ -1,5 +1,6 @@
 plugins {
     java
+    jacoco
     id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
 }
@@ -43,3 +44,41 @@ tasks.withType<Test> {
     // default is older and gets HTTP 400 from the npipe. Engines >= 25 all accept 1.44.
     systemProperty("api.version", "1.44")
 }
+
+// M1-10: the coverage gate, ON, scoped to the DoD-named paths (event
+// ingest/read): Kafka in + REST in + application core + the JDBC store they
+// share. One aggregate ratio over those classes — DTOs and carriers smooth
+// out inside it instead of each needing 80% alone. config/, domain records,
+// SSE relay and the boot class stay measured-but-ungated.
+jacoco { toolVersion = "0.8.12" }
+
+private fun org.gradle.api.tasks.SourceSetContainer.gatedClasses() =
+    getByName("main").output.asFileTree.matching {
+        include(
+            "ai/civ/eventservice/adapter/in/**",
+            "ai/civ/eventservice/application/**",
+            "ai/civ/eventservice/adapter/out/persistence/**",
+        )
+    }
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports { csv.required.set(true) }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.test)
+    classDirectories.setFrom(sourceSets.gatedClasses())
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+}
+
+// `test` alone enforces the gate — CI's fixed `gradlew test bootJar` needs no change.
+tasks.test { finalizedBy(tasks.jacocoTestCoverageVerification) }

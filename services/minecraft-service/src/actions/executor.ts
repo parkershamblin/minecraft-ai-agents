@@ -22,6 +22,8 @@ export interface ExecutorDeps {
   despawn(villagerId: string): Promise<boolean>
   /** true = fresh commandId (now marked); false = duplicate delivery, skip */
   isFresh(commandId: string): Promise<boolean>
+  /** commands older than this are dead intents — dropped with STALE_COMMAND */
+  maxCommandAgeMs: number
   publishOutcome(
     command: EventEnvelope,
     eventType: 'ActionCompleted' | 'ActionFailed',
@@ -60,6 +62,27 @@ export class CommandExecutor {
     if (!(await this.deps.isFresh(payload.commandId))) {
       commandsProcessed.inc({ action: payload.action, outcome: 'duplicate' })
       log.info('duplicate command skipped (idempotent executor)')
+      return
+    }
+
+    // Freshness guard: a command is an intent for NOW. Committed consumer
+    // offsets survive crashes/redeploys, and dedupe only covers commands that
+    // already executed — a stale-offset resume would otherwise replay the
+    // past into the live world (the M1-8 connect storm killed the consumer
+    // silently; the next boot replayed 3.5h of dead intents). Same failure
+    // class as agent-service's percept guard, other topic.
+    const ageMs = Date.now() - Date.parse(command.occurredAt)
+    if (ageMs > this.deps.maxCommandAgeMs) {
+      commandsProcessed.inc({ action: payload.action, outcome: 'stale' })
+      log.warn({ ageMs }, 'stale command dropped — intent expired unexecuted')
+      await this.deps.publishOutcome(command, 'ActionFailed', {
+        commandId: payload.commandId,
+        villagerId: payload.villagerId,
+        action: payload.action,
+        errorCode: 'STALE_COMMAND',
+        errorMessage: `command aged ${Math.round(ageMs / 1_000)}s in the queue (max ${Math.round(this.deps.maxCommandAgeMs / 1_000)}s)`,
+        retryable: false,
+      })
       return
     }
 

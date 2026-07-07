@@ -23,3 +23,4 @@ Thumbs.db
 # The local Minecraft server (world data + server jar) lives beside the repo
 # but is not part of it — multi-GB world saves don't belong in git.
 Minecraft 1.21.6 Server/
+.coverage
