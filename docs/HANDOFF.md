@@ -2,17 +2,18 @@
 
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue Sprint 4 from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **M1-4 + M1-5 done; next up is M1-6.**
+> without asking questions. **M1-4 + M1-5 + M1-6 done; next up is M1-7
+> (20 personas — the last Sprint 4 ticket).**
 
 ## Project status
 
-- **Sprint 3 complete** + **M1-4 complete** (`M1-4: relationship read path +
-  feelings in prompts`) + **M1-5 complete** (`M1-5: live relationship graph
-  page`), both on `main`.
-- **69 agent-service tests green locally** (was 59; M1-4 added 5 prompt
-  snapshot + 5 testcontainers repo tests). Dashboard typecheck clean (it has
-  no test suite — CI runs typecheck). Other suites unchanged and green.
-- Test totals: **69 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
+- **Sprint 3 complete** + **M1-4, M1-5, M1-6 complete** (commits `M1-4:
+  relationship read path…`, `M1-5: live relationship graph page`, `M1-6:
+  interim leaderboard…`), all on `main`.
+- **71 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
+  added 2). Dashboard typecheck clean (it has no test suite — CI runs
+  typecheck). Other suites unchanged and green.
+- Test totals: **71 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
   14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
 - **Machine state (2026-07-07 ~3:00am):** infra containers (postgres, redis,
   redpanda, prometheus, grafana) **running**; all app-service containers
@@ -44,7 +45,7 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
 |---|---|---|
 | ✅ M1-4 | Relationship read path + feelings in prompts | **DONE** — see "What M1-4 shipped" below |
 | ✅ M1-5 | Relationships graph page | **DONE** — see "What M1-5 shipped" below |
-| M1-6 | Leaderboard (interim) | `GET /leaderboard?metric=popular\|hated` on **agent-service** = SQL aggregate over relationships (`idx_relationships_target` exists); dashboard panel; analytics-service takes this over in M2 |
+| ✅ M1-6 | Leaderboard (interim) | **DONE** — see "What M1-6 shipped" below |
 | M1-7 | 20 personas | `services/agent-service/seed/villagers.json` → 20 distinct voices (traits/values/speechStyle/quirks/backstory); keep the 3 existing UUIDs stable; seed idempotence test at 20; read-aloud taste pass |
 
 ### What M1-4 shipped (commit `M1-4: relationship read path + feelings…`)
@@ -109,6 +110,23 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
 - Dashboard still has no test runner (CI = typecheck) — unchanged by review
   ruling; the graph's logic seams (upsert, color/width fns) are small and
   pure if we add vitest later.
+
+### What M1-6 shipped (commit `M1-6: interim leaderboard…`)
+
+- **`RelationshipRepo.leaderboard(metric, limit=10)`** — one SQL aggregate:
+  SUM of incoming affinity per target (served by `idx_relationships_target`),
+  joined to `villagers.name`, ordered DESC (popular) / ASC (hated). **Sum,
+  not average** (breadth should count). No incoming edges → doesn't chart.
+  Returns frozen `LeaderboardRow(villager_id, name, score, edge_count)`.
+- **`GET /leaderboard?metric=popular|hated`** on agent-service; `Literal`
+  query param → invalid metric 422s. JSON: `villagerId/name/score/edgeCount`.
+- **Dashboard `components/Leaderboard.tsx`** — "Standing" panel on
+  `/relationships` (graph `lg:col-span-3`, panel 1 col): Most popular / Most
+  hated, top 5 each, sign-colored scores, edge counts, 10s refetch interval.
+- **Verified live**: endpoint on real data; synthetic edges (deleted after)
+  rendered both boards + red/green/absent states; zero-tick verification via
+  **`VILLAGER_COUNT=0`** (scheduler starts no loops — the clean way to run
+  agent-service read-only for dashboard work; no DB/ledger pollution at all).
 
 Sprint 5 after that: PaperMC container migration (spike first), reflections in
 memory-service (own budget breaker — designated slip candidate), coverage gate
