@@ -3,8 +3,9 @@
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue from this file + `docs/architecture/07-m1-plan.md`
 > without asking questions. **Sprint 4 is complete — M1-4 + M1-5 + M1-6 +
-> M1-7 all done. Sprint 5 M1-8 PaperMC spike is GREEN (see "M1-8 spike result"
-> below). Next up: the 20-bot fleet + 30-min soak (a separate go).**
+> M1-7 all done. Sprint 5 M1-8 is COMPLETE: PaperMC spike GREEN AND the
+> 20-bot fleet soak GREEN (see "M1-8 fleet soak result" below — all three
+> acceptance criteria passed).**
 
 ## Project status
 
@@ -16,21 +17,22 @@
   CI runs typecheck). Other suites unchanged and green.
 - Test totals: **78 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
   14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
-- **Machine state (2026-07-07 ~4:05am, after M1-8 spike):** infra containers
-  (postgres, redis, redpanda, prometheus, grafana) **running**; all app-service
-  containers **stopped**; the new `minecraft` (Paper) container **stopped but
-  proven** — its `minecraft-data` volume now holds a generated 1.21.6 world, so
-  the fleet session's `up -d minecraft` is a fast boot (no world-gen). Vanilla
-  host server **stopped** and **untouched** (still the documented fallback via
-  `MC_HOST=host.docker.internal`). `agent_db` at migration **0002 (head)** and
-  untouched this session (spike is MC-only — no DB/Kafka writes). ⚠️ The stopped
-  agent-service container was last
-  created with `LLM_PROVIDER=fake, TICK_INTERVAL_SECONDS=3600` (M1-5
-  verification) — bring it back via `docker compose … up -d` (recomputes env
-  from `.env`), NOT `docker start`, or it ticks with the fake provider.
-  ⚠️ Its image predates M1-7 and bakes the OLD 3-villager seed file — the
-  Sprint 5 20-villager run needs `up --build` (same trap as migrations:
-  images bake `seed/` too).
+- **Machine state (2026-07-07 ~5:15am, after M1-8 fleet soak):** the FULL
+  stack is **running** — infra + all app services (rebuilt with `up --build`,
+  so images now bake the M1-7 20-villager seed) + the `minecraft` (Paper)
+  container. Paper was **restarted post-soak** (user request) and came back
+  healthy; bots auto-reconnected via the executor's reconnect loop. Vanilla
+  host server **stopped** and **untouched** (fallback via
+  `MC_HOST=host.docker.internal`). `.env` now holds **`VILLAGER_COUNT=20`**
+  and **`MC_HOST=minecraft`** (uncommitted, as `.env` always is — a fresh
+  clone gets `.env.example` defaults). `agent_db` now holds **all 20
+  villagers** (seed response: 17 seeded + 3 pre-existing Elara/Bram/Wren);
+  the Sprint 3 Elara→Bram edge survives, plus whatever edges the soak's
+  20-bot chatter formed. LLM provider during the soak was **ollama
+  (llama3.1:8b)** — blank `OPENAI_API_KEY` walked the chain, Ollama warmed,
+  so the soak exercised REAL LLM deliberation across 20 concurrent villagers
+  (personality-driven chatter observed: Ines correcting Wren's flood dates
+  from her ledger, etc.).
 - Sprint 3 live proof achieved: Bram said "Elara, still on about the pantry?"
   in-game (multi-day characterization via memory), Elara's reply tick fired
   `trigger=reactive`, relationships formed from interactions
@@ -167,7 +169,8 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
 ## M1-8 spike result (PaperMC container migration — GATE PASSED)
 
 **The spike is green: mineflayer 4.37.1 talks to containerized Paper 1.21.6
-cleanly. The fleet + 30-min soak is now a green-lit follow-up (separate session).**
+cleanly. The fleet + 30-min soak ran next session and PASSED — see "M1-8
+fleet soak result" just below.**
 
 - **Compose `minecraft` service is now enabled-ready** (`docker-compose.yml`):
   the pre-existing Paper stub had a **floating `java21` tag** — pinned to
@@ -192,16 +195,39 @@ cleanly. The fleet + 30-min soak is now a green-lit follow-up (separate session)
   `max` values are the first-boot world-gen spike — read the avg, and let the
   1m window roll before trusting it.)
 
-### What the fleet/soak session still needs (do NOT start it here)
+### M1-8 fleet soak result (2026-07-07 04:23–05:00 — ALL AC PASSED)
 
-- Bring Paper up: `docker compose … --profile minecraft up -d minecraft`
-  (fast now — world volume `minecraft-data` is seeded). Read MSPT with
-  `docker exec ai-civilization-engine-minecraft-1 rcon-cli mspt`.
-- Point the bots at Paper: containerized minecraft-service reaches it as
-  **`MC_HOST=minecraft`** (compose service name), NOT host.docker.internal.
-- ⚠️ **20-villager seed needs `up --build`** — the agent-service image still
-  bakes the pre-M1-7 3-villager `seed/` file (same trap as migrations).
-- Soak AC: 20 bots ≥30 min, MSPT < 50, zero tick-loop crashes.
+**The 20-bot fleet ran ≥30 min on containerized Paper with real Ollama
+deliberation. M1-8 is COMPLETE.**
+
+- **Run shape:** `.env` set to `MC_HOST=minecraft`, `VILLAGER_COUNT=20`;
+  Paper up via `--profile minecraft up -d minecraft --wait` (fast boot, world
+  volume pre-seeded); app stack via `--profile infra --profile app up -d
+  --build --wait` (the `--build` matters — it baked the M1-7 20-villager
+  seed into the agent-service image); then `task seed` → 17 seeded + 3
+  existing = 20 villagers, bots staggered in ~1/8s, **full fleet at
+  04:23:44**.
+- **AC 1 — 20 bots ≥30 min: ✅** 20/20 online at every 60s sample from
+  04:25:04 to 05:00:59 (~37 min, 32 samples; monitor script sampled RCON
+  `list` + `mspt` + `tps` + container restart counts).
+- **AC 2 — MSPT < 50: ✅** 5s-avg ranged **8.5–17.1 ms** across the whole
+  soak (≈3–6× headroom); TPS a flat **20.0** (1m/5m/15m) on every sample.
+  Three isolated single-tick spikes appeared only in the 1m-**max** column
+  (61/152/171 ms — autosave/GC); per the documented rule, read the avg.
+- **AC 3 — zero tick-loop crashes: ✅** 0 restarts on all five containers
+  (minecraft, agent-, minecraft-, memory-, event-service); all `running` at
+  soak end. All disconnect/ECONNRESET noise in minecraft-service logs ended
+  at 04:23:33 — the staggered-join connect storm, **before** the soak window
+  opened; zero disconnects in-window.
+- **LLM path:** blank `OPENAI_API_KEY` walked the chain to **ollama
+  (llama3.1:8b, warmed)** — 20 concurrent villagers doing real
+  perceive→retrieve→deliberate→act ticks (~8–40s each), varied actions
+  (chat/move/follow/gather), personality-consistent chatter. ~10 ticks
+  degraded to idle via the tolerant-reader path (chat `message` too long /
+  empty — the known llama3.1 drift, counted, non-fatal).
+- **Post-soak:** Paper container restarted (user request), came back
+  healthy; bots auto-reconnected via the executor's reconnect loop. Stack
+  left running.
 
 Sprint 5 after that: reflections in memory-service (own budget breaker —
 designated slip candidate), coverage gate ON, the 20-villager filming run.
