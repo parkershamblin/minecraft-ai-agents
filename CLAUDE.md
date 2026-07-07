@@ -83,3 +83,9 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   must include **their own file** in `paths:` filters.
 - The SSE feed buffers to browsers if compression is on — `compress: false`
   in `next.config.ts` (curl streams fine either way; that's the trap).
+- Service images bake their migrations and run `alembic upgrade head` on boot:
+  after adding a migration, plain `up` reuses the stale image and exits with
+  "Can't locate revision" — restart that service with `up --build`.
+- Compose commands naming individual services still need **both**
+  `--profile infra --profile app`, or cross-profile `depends_on` fails with
+  "depends on undefined service: invalid compose project".

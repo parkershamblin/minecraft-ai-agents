@@ -2,31 +2,38 @@
 
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue Sprint 4 from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **M1-4 done; next up is M1-5.**
+> without asking questions. **M1-4 + M1-5 done; next up is M1-6.**
 
 ## Project status
 
-- **Sprint 3 complete** + **M1-4 complete** (commit `M1-4: relationship read
-  path + feelings in prompts`, on `main`).
+- **Sprint 3 complete** + **M1-4 complete** (`M1-4: relationship read path +
+  feelings in prompts`) + **M1-5 complete** (`M1-5: live relationship graph
+  page`), both on `main`.
 - **69 agent-service tests green locally** (was 59; M1-4 added 5 prompt
-  snapshot + 5 testcontainers repo tests). Other suites unchanged and green.
+  snapshot + 5 testcontainers repo tests). Dashboard typecheck clean (it has
+  no test suite — CI runs typecheck). Other suites unchanged and green.
 - Test totals: **69 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
   14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
-- **Machine state (2026-07-07 ~2:30am):** infra containers (postgres, redis,
+- **Machine state (2026-07-07 ~3:00am):** infra containers (postgres, redis,
   redpanda, prometheus, grafana) **running**; all app-service containers
-  (agent, memory, minecraft, event) **stopped**; Minecraft server **stopped**.
-  Live `agent_db` migrated to **0002 (head)**. NOTE: at last session's handoff
-  the four app-services were claimed running — they were not; a Docker Desktop
-  restart had exited every container. Always `docker ps` at session start.
+  **stopped**; Minecraft server **stopped**. `agent_db` at migration **0002
+  (head)**. ⚠️ The stopped agent-service container was last created with
+  `LLM_PROVIDER=fake, TICK_INTERVAL_SECONDS=3600` (M1-5 verification) — bring
+  it back via `docker compose … up -d` (recomputes env from `.env`), NOT
+  `docker start`, or it ticks with the fake provider. Its image was rebuilt
+  this session and includes migration 0002.
 - Sprint 3 live proof achieved: Bram said "Elara, still on about the pantry?"
   in-game (multi-day characterization via memory), Elara's reply tick fired
   `trigger=reactive`, relationships formed from interactions
   (Elara→Bram 0→3→11 via the +8 direct-address boost), all as
   RelationshipChanged ledger events.
-- **agent_db note:** Elara→Bram is at affinity 11 / trust 56 (Sprint 3 state,
-  exactly restored after an M1-4 read-path smoke). That edge's `last_reason`
-  label alone carries a synthetic smoke string (`heard Bram say: "the pantry
-  is bare again"`) — cosmetic, overwritten on the next real interaction.
+- **agent_db is at exact Sprint 3 truth:** one edge, Elara→Bram, affinity 11 /
+  trust 56 / 2 interactions, `last_reason` = `heard Bram say: "Elara, still on
+  about the pantry?"` (recovered verbatim from the ledger after dev smokes had
+  overwritten it — the ledger is the restore point for relationship state).
+  One fake-tick memory was deleted from memory_db; the ledger keeps a few
+  `llmProvider=fake` / `source=dev-tool` events from M1-5 verification
+  (append-only by design, same practice as `scripts/produce-cmd.mjs`).
 
 ## Sprint 4 plan ("The village is visible", M+M+S+M ≈ 20–26h)
 
@@ -36,7 +43,7 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
 | ID | Title | Core AC |
 |---|---|---|
 | ✅ M1-4 | Relationship read path + feelings in prompts | **DONE** — see "What M1-4 shipped" below |
-| M1-5 | Relationships graph page | Force graph in apps/dashboard, bootstrapped from the new GET endpoint, live-updated from **the existing event-service SSE stream** (`/api/events/events/stream` via Next rewrites) filtered to RelationshipChanged — NO BFF, NO Zustand (deferred to M2 by review); edge color = affinity sign, width = \|affinity\| |
+| ✅ M1-5 | Relationships graph page | **DONE** — see "What M1-5 shipped" below |
 | M1-6 | Leaderboard (interim) | `GET /leaderboard?metric=popular\|hated` on **agent-service** = SQL aggregate over relationships (`idx_relationships_target` exists); dashboard panel; analytics-service takes this over in M2 |
 | M1-7 | 20 personas | `services/agent-service/seed/villagers.json` → 20 distinct voices (traits/values/speechStyle/quirks/backstory); keep the 3 existing UUIDs stable; seed idempotence test at 20; read-aloud taste pass |
 
@@ -70,6 +77,38 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
   reason persistence, reasonless non-erasure, `edges_for` filtering,
   `list_edges` ordering, clamping; `FakeRelationships` updated for the new
   signature + read methods.
+
+### What M1-5 shipped (commit `M1-5: live relationship graph page`)
+
+- **`/relationships` page** (`apps/dashboard/app/relationships/page.tsx`) +
+  nav links both ways with the overview page (which lost its stale "Sprint 1 ·
+  walking skeleton" tag to make room).
+- **`components/RelationshipGraph.tsx`** — hand-rolled **d3-force@3.0.0
+  (exact-pinned) + SVG**, deliberately no react-force-graph wrapper (React 19
+  interop risk, opaque live-update path). Simulation + node/link arrays live
+  in refs (d3 mutates positions; repaint via a tick-counter state bump; d3
+  stops ticking at alphaMin so no idle re-render). Bootstrap = react-query:
+  `GET /villagers` then per-villager `GET /villagers/{id}/relationships`
+  (N+1 is fine at ≤20), every alive villager a node, isolated nodes included.
+- **Live path**: the existing SSE relay (`/api/events/events/stream`),
+  filtered client-side to `RelationshipChanged`; upsert by directed key
+  `villagerId->targetId`, then `alpha(0.3).restart()`. Unknown node id →
+  react-query invalidate (re-bootstrap; covers villagers seeded after page
+  load). No BFF, no Zustand, per the review cut.
+- **Visual AC**: edge color = affinity sign (emerald/red/zinc-0), width =
+  `1 + |affinity|·5/100` px; A→B and B→A drawn as parallel strands offset to
+  their own left; arrowhead at the rim of the target ("arrows point at whom
+  it's felt"); `<title>` tooltip = names + affinity/trust + `last_reason`.
+- **Verified live in a browser** (preview server + real stack): bootstrap
+  rendered the real Elara→Bram edge; two hand-published RelationshipChanged
+  events over Kafka (`rpk topic produce social.events`, envelope mirroring
+  `packages/events/fixtures/RelationshipChanged.v1.json`, `source: dev-tool`)
+  appeared live — first as a NEW red edge, then as an in-place width/tooltip
+  update with no duplicate; reload drops SSE-only state (by design — the DB
+  is truth). Arrowhead geometry checked computationally, not by eyeball.
+- Dashboard still has no test runner (CI = typecheck) — unchanged by review
+  ruling; the graph's logic seams (upsert, color/width fns) are small and
+  pure if we add vitest later.
 
 Sprint 5 after that: PaperMC container migration (spike first), reflections in
 memory-service (own budget breaker — designated slip candidate), coverage gate
