@@ -1,28 +1,31 @@
-# Session Handoff — Sprint 4 (M1) in progress
+# Session Handoff — Sprint 4 (M1) COMPLETE
 
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
-> should be able to continue Sprint 4 from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **M1-4 + M1-5 + M1-6 done; next up is M1-7
-> (20 personas — the last Sprint 4 ticket).**
+> should be able to continue from this file + `docs/architecture/07-m1-plan.md`
+> without asking questions. **Sprint 4 is complete — M1-4 + M1-5 + M1-6 +
+> M1-7 all done. Next up is Sprint 5 ("20 wake up"): PaperMC spike first.**
 
 ## Project status
 
-- **Sprint 3 complete** + **M1-4, M1-5, M1-6 complete** (commits `M1-4:
-  relationship read path…`, `M1-5: live relationship graph page`, `M1-6:
-  interim leaderboard…`), all on `main`.
-- **71 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
-  added 2). Dashboard typecheck clean (it has no test suite — CI runs
-  typecheck). Other suites unchanged and green.
-- Test totals: **71 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
+- **Sprint 3 complete** + **Sprint 4 complete** (commits `M1-4: relationship
+  read path…`, `M1-5: live relationship graph page`, `M1-6: interim
+  leaderboard…`, `M1-7: 20 villager personas — the full cast`), all on `main`.
+- **78 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
+  added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
+  CI runs typecheck). Other suites unchanged and green.
+- Test totals: **78 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
   14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
-- **Machine state (2026-07-07 ~3:00am):** infra containers (postgres, redis,
+- **Machine state (2026-07-07 ~3:25am):** infra containers (postgres, redis,
   redpanda, prometheus, grafana) **running**; all app-service containers
   **stopped**; Minecraft server **stopped**. `agent_db` at migration **0002
-  (head)**. ⚠️ The stopped agent-service container was last created with
-  `LLM_PROVIDER=fake, TICK_INTERVAL_SECONDS=3600` (M1-5 verification) — bring
-  it back via `docker compose … up -d` (recomputes env from `.env`), NOT
-  `docker start`, or it ticks with the fake provider. Its image was rebuilt
-  this session and includes migration 0002.
+  (head)** and untouched this session (M1-7 tests use throwaway
+  testcontainers Postgres). ⚠️ The stopped agent-service container was last
+  created with `LLM_PROVIDER=fake, TICK_INTERVAL_SECONDS=3600` (M1-5
+  verification) — bring it back via `docker compose … up -d` (recomputes env
+  from `.env`), NOT `docker start`, or it ticks with the fake provider.
+  ⚠️ Its image predates M1-7 and bakes the OLD 3-villager seed file — the
+  Sprint 5 20-villager run needs `up --build` (same trap as migrations:
+  images bake `seed/` too).
 - Sprint 3 live proof achieved: Bram said "Elara, still on about the pantry?"
   in-game (multi-day characterization via memory), Elara's reply tick fired
   `trigger=reactive`, relationships formed from interactions
@@ -46,7 +49,7 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
 | ✅ M1-4 | Relationship read path + feelings in prompts | **DONE** — see "What M1-4 shipped" below |
 | ✅ M1-5 | Relationships graph page | **DONE** — see "What M1-5 shipped" below |
 | ✅ M1-6 | Leaderboard (interim) | **DONE** — see "What M1-6 shipped" below |
-| M1-7 | 20 personas | `services/agent-service/seed/villagers.json` → 20 distinct voices (traits/values/speechStyle/quirks/backstory); keep the 3 existing UUIDs stable; seed idempotence test at 20; read-aloud taste pass |
+| ✅ M1-7 | 20 personas | **DONE** — see "What M1-7 shipped" below |
 
 ### What M1-4 shipped (commit `M1-4: relationship read path + feelings…`)
 
@@ -127,6 +130,34 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
   rendered both boards + red/green/absent states; zero-tick verification via
   **`VILLAGER_COUNT=0`** (scheduler starts no loops — the clean way to run
   agent-service read-only for dashboard work; no DB/ledger pollution at all).
+
+### What M1-7 shipped (commit `M1-7: 20 villager personas — the full cast`)
+
+- **`seed/villagers.json` 3 → 20** fully-voiced personas (traits ×3, values
+  ×3, speechStyle, quirks ×2, backstory each). Elara/Bram/Wren byte-identical,
+  UUIDs stable, and **still the first three entries** — `seed_villagers`
+  slices `[:VILLAGER_COUNT]`, so file order is contract (the demo preset
+  `VILLAGER_COUNT=2` must keep meaning Elara+Bram). New ids follow the
+  existing hand-readable pattern (`…-0000000d0004` through `…-0000000d0020`).
+- **Cast design (the taste pass)**: every speechStyle is a distinct register
+  (tested); the ensemble is a drama engine — an information economy (Wren
+  broadcasts, Cassia the innkeeper trades, Vesper the night-watch hoards,
+  Quill the chronicler corrects from his ledger), Tansy the forager as
+  Elara's pantry rival, Nils the miller's grandson (quasi-family to Elara),
+  Sable off the same caravan as Wren, and the old-village flood (already in
+  Elara's backstory) threaded through six new backstories as shared trauma.
+- **`tests/test_seed.py`**: six shape checks (exactly 20; founding-three ids
+  AND order; unique valid UUIDs; unique MC-legal usernames `[A-Za-z0-9_]{3,16}`;
+  fully voiced; no duplicate speechStyle) + **seed idempotence at 20** against
+  real Postgres: second run creates 0 rows / 0 new `VillagerCreated`, spawn
+  commands sent both passes (40) — re-embodiment after restart is by design.
+- **`tests/conftest.py`**: the session-scoped testcontainers `database`
+  fixture moved out of `test_relationships_repo.py` so both integration
+  suites share one Postgres container.
+- Not touched (deliberate): `brain/prompts.py` renders traits/values/
+  speechStyle/backstory but **not quirks** — quirks ship in the data; wiring
+  them into the system prompt is a candidate one-liner for Sprint 5's
+  20-villager run.
 
 Sprint 5 after that: PaperMC container migration (spike first), reflections in
 memory-service (own budget breaker — designated slip candidate), coverage gate
