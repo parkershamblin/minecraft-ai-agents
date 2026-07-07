@@ -1,4 +1,35 @@
+import uuid
+from datetime import UTC, datetime
+
 from agent_service.brain.prompts import system_prompt, user_prompt
+from agent_service.villagers.relationships import RelationshipEdge
+
+BRAM_ID = "019f8e2a-0000-7000-8000-0000000b2a44"
+WREN_ID = "019f8e2a-0000-7000-8000-0000000c3e55"
+
+
+def _snapshot(*nearby):
+    return {
+        "position": {"x": 1, "y": 64, "z": 2},
+        "health": 20,
+        "food": 18,
+        "timeOfDay": 1000,
+        "inventory": [],
+        "nearbyVillagers": list(nearby),
+    }
+
+
+def _edge(target_id, affinity, trust, last_reason):
+    return RelationshipEdge(
+        target_id=uuid.UUID(target_id),
+        affinity=affinity,
+        trust=trust,
+        interaction_count=4,
+        last_reason=last_reason,
+        last_reason_at=datetime.now(UTC),
+        last_interaction_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
 
 
 def test_system_prompt_carries_the_persona():
@@ -34,3 +65,43 @@ def test_user_prompt_renders_snapshot_percepts_and_memories():
 def test_blind_prompt_when_no_snapshot():
     prompt = user_prompt(None, [], [])
     assert "cannot sense the world" in prompt
+
+
+def test_no_feelings_section_when_seam_off():
+    # feelings=None (default) — old callers / read seam not wired: no section.
+    prompt = user_prompt(_snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0}), [], [])
+    assert "How you feel" not in prompt
+
+
+def test_feelings_render_affinity_trust_and_reason():
+    snapshot = _snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0})
+    feelings = {BRAM_ID: _edge(BRAM_ID, 11, 56, 'heard Bram say: "the pantry is bare again"')}
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "How you feel about those nearby:" in prompt
+    assert '- Bram (affinity +11, trust 56 — heard Bram say: "the pantry is bare again")' in prompt
+
+
+def test_feelings_signed_negative_affinity():
+    snapshot = _snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0})
+    feelings = {BRAM_ID: _edge(BRAM_ID, -7, 40, None)}
+    prompt = user_prompt(snapshot, [], [], feelings)
+    # no last_reason -> no em-dash clause; affinity keeps its sign
+    assert "- Bram (affinity -7, trust 40)" in prompt
+
+
+def test_feelings_neutral_for_villager_without_edge():
+    # Bram has an edge; Wren is in sight but no edge yet -> neutral line.
+    snapshot = _snapshot(
+        {"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0},
+        {"villagerId": WREN_ID, "name": "Wren", "distance": 9.0},
+    )
+    feelings = {BRAM_ID: _edge(BRAM_ID, 20, 60, "shared bread")}
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "- Bram (affinity +20, trust 60 — shared bread)" in prompt
+    assert "- Wren: no strong feelings yet" in prompt
+
+
+def test_feelings_section_absent_when_nobody_nearby():
+    # seam wired (feelings={}) but nobody in sight -> no section, no crash.
+    prompt = user_prompt(_snapshot(), [], [], {})
+    assert "How you feel" not in prompt

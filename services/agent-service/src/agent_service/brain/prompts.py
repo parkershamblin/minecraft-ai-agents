@@ -35,10 +35,41 @@ def system_prompt(name: str, personality: dict[str, Any], backstory: str | None)
     )
 
 
+def _signed(n: int) -> str:
+    return f"+{n}" if n > 0 else str(n)
+
+
+def _feelings_section(
+    snapshot: dict[str, Any] | None, feelings: dict[str, Any]
+) -> str | None:
+    """One line per nearby villager: the edge if there is one, otherwise a
+    neutral 'no strong feelings yet'. `feelings` is keyed by villagerId string
+    and each value is a RelationshipEdge-shaped object (affinity, trust,
+    last_reason). Called only when the read seam is wired (feelings is not
+    None); an empty dict still renders every nearby villager as neutral."""
+    nearby = (snapshot or {}).get("nearbyVillagers", [])
+    if not nearby:
+        return None
+    lines = []
+    for v in nearby:
+        edge = feelings.get(str(v.get("villagerId")))
+        if edge is None:
+            lines.append(f"- {v['name']}: no strong feelings yet")
+        elif edge.last_reason:
+            lines.append(
+                f"- {v['name']} (affinity {_signed(edge.affinity)}, trust {edge.trust} "
+                f"— {edge.last_reason})"
+            )
+        else:
+            lines.append(f"- {v['name']} (affinity {_signed(edge.affinity)}, trust {edge.trust})")
+    return "How you feel about those nearby:\n" + "\n".join(lines)
+
+
 def user_prompt(
     snapshot: dict[str, Any] | None,
     percepts: list[dict[str, Any]],
     memories: list[RetrievedMemory],
+    feelings: dict[str, Any] | None = None,
 ) -> str:
     sections: list[str] = []
 
@@ -58,6 +89,12 @@ def user_prompt(
         sections.append(
             "You cannot sense the world right now (no snapshot) — you may still think, speak, or wait."
         )
+
+    # Feelings for the villagers actually in sight (read seam wired -> not None).
+    if feelings is not None:
+        section = _feelings_section(snapshot, feelings)
+        if section:
+            sections.append(section)
 
     # Type-dispatch: unknown percept types are skipped, never a KeyError —
     # the queue outlives any single deploy's vocabulary.

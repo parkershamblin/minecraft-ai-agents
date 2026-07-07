@@ -74,12 +74,34 @@ def build_tick_graph(deps: TickDeps):
         memories = await deps.memory.search(villager.id, cue, k=deps.memories_k)
         return {"memories": memories}
 
+    async def _nearby_feelings(state: TickState) -> dict[str, Any] | None:
+        """Read this villager's edges toward whoever is in sight, so the prompt
+        can voice how she feels about them. None when the read seam is off
+        (old tests) -> the feelings section is omitted entirely."""
+        if deps.relationships is None:
+            return None
+        villager = state["villager"]
+        target_ids: list[uuid.UUID] = []
+        for v in (state.get("snapshot") or {}).get("nearbyVillagers", []):
+            try:
+                target_ids.append(uuid.UUID(str(v.get("villagerId"))))
+            except (ValueError, TypeError):
+                continue  # players / malformed ids have no villager edges
+        edges = await deps.relationships.edges_for(villager.id, target_ids)
+        return {str(edge.target_id): edge for edge in edges}
+
     async def deliberate(state: TickState) -> TickState:
         villager = state["villager"]
+        feelings = await _nearby_feelings(state)
         outcome = await decide_safely(
             deps.llm,
             system_prompt(villager.name, villager.personality, villager.backstory),
-            user_prompt(state.get("snapshot"), state.get("percepts", []), state.get("memories", [])),
+            user_prompt(
+                state.get("snapshot"),
+                state.get("percepts", []),
+                state.get("memories", []),
+                feelings,
+            ),
         )
         return {"outcome": outcome}
 
@@ -190,7 +212,7 @@ def build_tick_graph(deps: TickDeps):
                 continue  # no self-edges, even if the LLM tries
             try:
                 change = await deps.relationships.apply_update(
-                    villager.id, uuid.UUID(target_id), affinity_delta, trust_delta
+                    villager.id, uuid.UUID(target_id), affinity_delta, trust_delta, reason
                 )
             except Exception as exc:  # noqa: BLE001 — hallucinated ids must not kill the tick
                 logger.warning(

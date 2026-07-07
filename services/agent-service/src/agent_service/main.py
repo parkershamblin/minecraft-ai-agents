@@ -85,6 +85,7 @@ async def lifespan(app: FastAPI):
     percepts.on_chat_percept = scheduler.request_reactive  # ears -> mind (M1-2)
 
     app.state.repo = repo
+    app.state.relationships = relationships
     app.state.publisher = publisher
     app.state.scheduler = scheduler
     logger.info("agent-service ready")
@@ -124,6 +125,28 @@ async def list_villagers() -> list[dict]:
             "backstory": v.backstory,
         }
         for v in villagers
+    ]
+
+
+@app.get("/villagers/{villager_id}/relationships")
+async def villager_relationships(villager_id: uuid.UUID) -> list[dict]:
+    """This villager's outgoing edges, strongest affinity first — the read path
+    the relationship graph bootstraps from (M1-5); live deltas ride the SSE
+    RelationshipChanged stream."""
+    edges = await app.state.relationships.list_edges(villager_id)
+    return [
+        {
+            "villagerId": str(villager_id),
+            "targetId": str(e.target_id),
+            "affinity": e.affinity,
+            "trust": e.trust,
+            "interactionCount": e.interaction_count,
+            "lastReason": e.last_reason,
+            "lastReasonAt": e.last_reason_at.isoformat() if e.last_reason_at else None,
+            "lastInteractionAt": e.last_interaction_at.isoformat() if e.last_interaction_at else None,
+            "updatedAt": e.updated_at.isoformat(),
+        }
+        for e in edges
     ]
 
 

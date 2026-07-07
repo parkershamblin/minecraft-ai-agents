@@ -37,5 +37,7 @@ class Relationship(AgentBase):
     trust: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=50)
     interaction_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     last_interaction_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    last_reason_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

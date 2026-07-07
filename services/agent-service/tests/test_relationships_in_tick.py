@@ -36,17 +36,25 @@ class ScriptedProvider:
 class FakeRelationships:
     def __init__(self, reject: set[str] | None = None):
         self.applied = []
+        self.reasons = []
         self._reject = reject or set()
 
-    async def apply_update(self, villager_id, target_id, affinity_delta, trust_delta):
+    async def apply_update(self, villager_id, target_id, affinity_delta, trust_delta, reason=None):
         if str(target_id) in self._reject:
             raise ValueError("unknown target (FK)")
         self.applied.append((str(villager_id), str(target_id), affinity_delta, trust_delta))
+        self.reasons.append(reason)
         return RelationshipChange(
             villager_id=villager_id, target_id=target_id,
             previous_affinity=0, new_affinity=int(affinity_delta),
             previous_trust=50, new_trust=int(50 + trust_delta),
         )
+
+    async def edges_for(self, villager_id, target_ids):
+        return []  # the read seam: no prior feelings in these tick tests
+
+    async def list_edges(self, villager_id):
+        return []
 
 
 def decision(**overrides):
@@ -84,6 +92,7 @@ async def test_llm_deltas_apply_and_emit():
     await run_tick(graph_with(llm_decision, repo=repo, publish=published), ELARA)
 
     assert repo.applied == [(str(ELARA.id), BRAM_ID, 15.0, 5.0)]
+    assert repo.reasons == ["He helped me carry logs."]  # reason reaches the repo (persisted as last_reason)
     [changed] = published.by_type("RelationshipChanged")
     assert changed["payload"]["newAffinity"] == 15
     assert changed["payload"]["source"] == "deliberation"
