@@ -88,4 +88,16 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   "Can't locate revision" — restart that service with `up --build`.
 - Compose commands naming individual services still need **both**
   `--profile infra --profile app`, or cross-profile `depends_on` fails with
-  "depends on undefined service: invalid compose project".
+  "depends on undefined service: invalid compose project". Exception: the
+  `minecraft` (Paper) service has **no** `depends_on`, so it starts standalone
+  with a bare `--profile minecraft up -d minecraft`.
+- Containerized Paper (M1-8): read server tick health via RCON —
+  `docker exec ai-civilization-engine-minecraft-1 rcon-cli mspt` (also `tps`,
+  `list`); `rcon-cli` inside the image auto-reads `RCON_PORT`/`RCON_PASSWORD`,
+  no args needed. First-boot world-gen is ~25–30s and gated by the `mc-health`
+  healthcheck (`start_period: 90s`) — use `up --wait`. The 80–118 ms MSPT `max`
+  right after boot is the world-gen spike, **not** steady state: read the avg
+  and let the 1-minute window roll over before trusting it (idle steady-state
+  is ~2–4 ms). Point bots at it with **`MC_HOST=minecraft`** (the compose
+  service name); the vanilla host server stays the fallback via
+  `MC_HOST=host.docker.internal`.

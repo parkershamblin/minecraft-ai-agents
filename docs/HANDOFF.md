@@ -3,7 +3,8 @@
 > Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
 > should be able to continue from this file + `docs/architecture/07-m1-plan.md`
 > without asking questions. **Sprint 4 is complete — M1-4 + M1-5 + M1-6 +
-> M1-7 all done. Next up is Sprint 5 ("20 wake up"): PaperMC spike first.**
+> M1-7 all done. Sprint 5 M1-8 PaperMC spike is GREEN (see "M1-8 spike result"
+> below). Next up: the 20-bot fleet + 30-min soak (a separate go).**
 
 ## Project status
 
@@ -15,11 +16,15 @@
   CI runs typecheck). Other suites unchanged and green.
 - Test totals: **78 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
   14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
-- **Machine state (2026-07-07 ~3:25am):** infra containers (postgres, redis,
-  redpanda, prometheus, grafana) **running**; all app-service containers
-  **stopped**; Minecraft server **stopped**. `agent_db` at migration **0002
-  (head)** and untouched this session (M1-7 tests use throwaway
-  testcontainers Postgres). ⚠️ The stopped agent-service container was last
+- **Machine state (2026-07-07 ~4:05am, after M1-8 spike):** infra containers
+  (postgres, redis, redpanda, prometheus, grafana) **running**; all app-service
+  containers **stopped**; the new `minecraft` (Paper) container **stopped but
+  proven** — its `minecraft-data` volume now holds a generated 1.21.6 world, so
+  the fleet session's `up -d minecraft` is a fast boot (no world-gen). Vanilla
+  host server **stopped** and **untouched** (still the documented fallback via
+  `MC_HOST=host.docker.internal`). `agent_db` at migration **0002 (head)** and
+  untouched this session (spike is MC-only — no DB/Kafka writes). ⚠️ The stopped
+  agent-service container was last
   created with `LLM_PROVIDER=fake, TICK_INTERVAL_SECONDS=3600` (M1-5
   verification) — bring it back via `docker compose … up -d` (recomputes env
   from `.env`), NOT `docker start`, or it ticks with the fake provider.
@@ -159,10 +164,48 @@ Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
   them into the system prompt is a candidate one-liner for Sprint 5's
   20-villager run.
 
-Sprint 5 after that: PaperMC container migration (spike first), reflections in
-memory-service (own budget breaker — designated slip candidate), coverage gate
-ON, the 20-villager filming run. Deferred to M2 by review: dashboard-service
-BFF, analytics-service, Loki, k6.
+## M1-8 spike result (PaperMC container migration — GATE PASSED)
+
+**The spike is green: mineflayer 4.37.1 talks to containerized Paper 1.21.6
+cleanly. The fleet + 30-min soak is now a green-lit follow-up (separate session).**
+
+- **Compose `minecraft` service is now enabled-ready** (`docker-compose.yml`):
+  the pre-existing Paper stub had a **floating `java21` tag** — pinned to
+  **`itzg/minecraft-server:2026.7.0-java21`** (full patch tag, per the same
+  discipline as `MC_VERSION`; this build ships `paper-1.21.6-48`). Added
+  `ENABLE_RCON`/`RCON_PASSWORD` (MSPT/TPS read path) and an `mc-health`
+  healthcheck (`start_period: 90s`) so `up --wait` blocks until Paper accepts
+  logins. Still `profiles: [minecraft]`, off by default. `ONLINE_MODE=FALSE`
+  matches the bots' `auth:'offline'` (BotSession.ts:89).
+- **`scripts/paper-spike.js`** — the committed spike artifact. Mirrors
+  `scripts/smoke.js` (borrows the archived PoC's mineflayer 4.37.1, the exact
+  shipped pin; connects `auth:'offline'` + `viewDistance:'tiny'` like the real
+  BotSession) and **adds a walk leg + a clean-disconnect assertion**. Exits 0
+  only if connect→spawn→walk→chat→disconnect all pass.
+- **Spike run (1 bot, localhost:25565):** ✅ PASS, exit 0. Spawn handshake
+  **982 ms**; walked 1.56 blocks (movement packets round-trip); chat OK; clean
+  `end` on quit (no error/kick). **No protocol/offline/packet weirdness — the
+  mineflayer pin did NOT need to move** (so no atomic pin-bump PR).
+- **MSPT baseline (RCON `mspt`/`tps`):** empty server ~2.0 ms (1m avg);
+  **1 bot idling ~4.0/4.5 ms (5s/10s avg)**, TPS a flat **20.0**. Against the
+  M1-8 ceiling of **MSPT < 50**, that's huge headroom for 20 bots. (The 80–118 ms
+  `max` values are the first-boot world-gen spike — read the avg, and let the
+  1m window roll before trusting it.)
+
+### What the fleet/soak session still needs (do NOT start it here)
+
+- Bring Paper up: `docker compose … --profile minecraft up -d minecraft`
+  (fast now — world volume `minecraft-data` is seeded). Read MSPT with
+  `docker exec ai-civilization-engine-minecraft-1 rcon-cli mspt`.
+- Point the bots at Paper: containerized minecraft-service reaches it as
+  **`MC_HOST=minecraft`** (compose service name), NOT host.docker.internal.
+- ⚠️ **20-villager seed needs `up --build`** — the agent-service image still
+  bakes the pre-M1-7 3-villager `seed/` file (same trap as migrations).
+- Soak AC: 20 bots ≥30 min, MSPT < 50, zero tick-loop crashes.
+
+Sprint 5 after that: reflections in memory-service (own budget breaker —
+designated slip candidate), coverage gate ON, the 20-villager filming run.
+Deferred to M2 by review: dashboard-service BFF, analytics-service, Loki, k6.
 
 ## Key decisions & gotchas from Sprint 3 (all shipped, all tested)
 

@@ -219,21 +219,37 @@ services:
       start_period: 30s
 
   minecraft:
-    # Off by default (profile). Pin an exact image tag in the PR that first
-    # enables this profile (M1, when 20 bots outgrow the vanilla host server).
-    image: itzg/minecraft-server:java21
+    # Off by default (profile). Containerized PaperMC — enabled at M1-8, when 20
+    # bots outgrow the vanilla host server. The vanilla host server stays the
+    # documented fallback (set MC_HOST back to host.docker.internal to use it).
+    # Image pinned to a full patch tag (itzg release, not floating 'java21') —
+    # same discipline as MC_VERSION. Bump only deliberately.
+    image: itzg/minecraft-server:2026.7.0-java21
     profiles: [minecraft]
     environment:
       EULA: "TRUE"
       TYPE: PAPER
       VERSION: ${MC_VERSION:-1.21.6}
-      ONLINE_MODE: "FALSE"
+      ONLINE_MODE: "FALSE"          # bots auth 'offline' (BotSession.ts) — must match
       MEMORY: 3G
-      VIEW_DISTANCE: "4"
+      VIEW_DISTANCE: "4"            # low sim/view distance keeps MSPT down at 20 bots
       SIMULATION_DISTANCE: "4"
+      # RCON is how we read MSPT/TPS during the spike + soak:
+      #   docker exec ai-civilization-engine-minecraft-1 rcon-cli mspt
+      # rcon-cli inside the image auto-reads RCON_PORT/RCON_PASSWORD from env.
+      ENABLE_RCON: "TRUE"
+      RCON_PASSWORD: ${RCON_PASSWORD:-civ_rcon}
     ports: ["25565:25565"]
     volumes:
       - minecraft-data:/data
+    # itzg ships mc-health; gate `up --wait` on the server actually accepting
+    # logins (first-boot world-gen takes ~30-60s).
+    healthcheck:
+      test: ["CMD", "mc-health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
 
 volumes:
   postgres-data:
