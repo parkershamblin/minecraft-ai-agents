@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { EventFeed } from '@/components/EventFeed'
 import { VillagerGrid } from '@/components/VillagerGrid'
 
@@ -11,7 +12,11 @@ export default function OverviewPage() {
             Autonomous villagers on a live Minecraft server — every thought, word, and step is an event.
           </p>
         </div>
-        <span className="text-xs text-zinc-500">Sprint 1 · walking skeleton</span>
+        <nav className="text-xs text-zinc-500">
+          <Link href="/relationships" className="hover:text-zinc-300">
+            Relationships →
+          </Link>
+        </nav>
       </header>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">

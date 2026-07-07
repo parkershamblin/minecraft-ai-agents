@@ -10,6 +10,7 @@ __pycache__/
 .venv/
 venv/
 .task/
+*.tsbuildinfo
 
 # local config & secrets — .env.example is the committed template
 .env
