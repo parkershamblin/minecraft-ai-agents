@@ -379,22 +379,44 @@ activity (VillagerTalked, DecisionMade) continued and is what the soak
 evidence cited. The in-game chatter observed early in the soak was real.
 Both failure modes are now fixed and loudly observable (M1-10 above).
 
-## Machine state at session end (2026-07-07 ~12:45Z)
+## THE FILMING SESSION HAPPENED (2026-07-07 ~12:45–13:35Z) — M1 DoD #6 footage recorded
 
-- **Full stack RUNNING** (infra + app + Paper), all healthy, fleet 20/20,
-  reflections currently OFF and tick interval 120s via `.env`
-  (`REFLECTION_ENABLED=false`, `TICK_INTERVAL_SECONDS=120`,
-  `LLM_DAILY_TOKEN_BUDGET=100000000`) — the conservative local-verification
-  preset. **For the filming run**: restore `TICK_INTERVAL_SECONDS=60`, set
-  `REFLECTION_ENABLED=true`, and ideally set `OPENAI_API_KEY` (the plan's
-  filming preset — local Ollama serializes deliberation + embeddings +
-  reflections through one GPU).
-- agent_db + memory_db are **narrative-clean** (post-repair): 345 edges,
-  1,599 real memories incl. 66 reflections. The append-only ledger keeps the
-  polluted events as history (by design); the repair script pattern lives in
-  this session's transcript if needed again.
-- Dashboard dev server may still be running on :3000 (started for DoD-4
-  verification).
+Parker joined in-game and recorded Episode 1 material on the Ollama filming
+preset (60s ticks, reflections on, budget 100M). What the cameras caught,
+all emergent: the plaza assembly (all 20 gathered via `spreadplayers` —
+stage direction only; every word was llama's), the diamond rumor mutating
+scoop→plan as it spread, Tansy's whisper campaign against Bram, Quill's
+public fact-check of Wren, a 12-villager reflection wave (exactly the
+hourly cap) incl. Wren's oblivious "the village is abuzz" while 7 neighbors
+privately concluded she's unreliable, the storm arriving AFTER the village
+had invented a storm forecast, three factions (records-accuracy bloc /
+pragmatist food bloc / diamond dreamers), Yara openly recruiting to leave,
+and the capstone: **Petra convened the village's first self-organized
+meeting** ("calling a meeting by sundown... Wren and Bram agreeing to share
+their thoughts") — proto-governance, one milestone early. All reconstructable
+from the ledger (causation chains + reflection provenance) for edit overlays.
+
+**A FOURTH bug was found and fixed live on camera** (commit `6a8ad3f`): the
+executor wedge — `execute()` awaited an action promise that never settles
+when a connection dies mid-move (any Paper restart), freezing eachMessage
+and, with one partition, EVERY bot, with no crash event. Now `Promise.race`s
+the watchdog; regression test added; CLAUDE.md corollary 3.
+
+## Machine state at session end (2026-07-07 ~13:40Z)
+
+- **Stack fully DOWN** — clean shutdown after filming: world saved
+  (`save-all flush`, Petra's meeting is canon), all profiles down,
+  0 containers. All volumes intact.
+- `.env` (uncommitted, as always): `VILLAGER_COUNT=20`, `MC_HOST=minecraft`,
+  `TICK_INTERVAL_SECONDS=60`, `REFLECTION_ENABLED=true`,
+  `LLM_DAILY_TOKEN_BUDGET=100000000` — this IS the working Ollama filming
+  preset now; it ran the recorded session successfully.
+- Paper: `MAX_PLAYERS=30`; ParkerShamblin op'd (offline UUID).
+- agent_db + memory_db are narrative-clean and now carry the filming
+  session's story (the meeting, the reflections, the factions) as canon.
+- Next session candidates: M2 planning; episode-edit support (ledger pulls
+  for overlays); the still-open organic grudge (Tansy's campaign against
+  Bram is the live thread — his incoming edges were sliding all session).
 
 Deferred to M2 by review: dashboard-service BFF, analytics-service, Loki, k6.
 New M2 candidates from this session: packages/shared-py (two envelope-builder
