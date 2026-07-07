@@ -1,35 +1,75 @@
-# Session Handoff — resume at Sprint 4 (M1)
+# Session Handoff — Sprint 4 (M1) in progress
 
-> Written at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
-> should be able to start Sprint 4 from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions.
+> Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
+> should be able to continue Sprint 4 from this file + `docs/architecture/07-m1-plan.md`
+> without asking questions. **M1-4 done; next up is M1-5.**
 
 ## Project status
 
-- **Sprint 3 complete** (commit `M1 Sprint 3: villagers learn to hear…`, pushed).
-  **59 agent-service tests green locally, all six CI pipelines green**, clean
-  shutdown afterward.
-- Test totals: 59 py-agent, 19 py-memory, 29 ts-minecraft, 8 java-event,
+- **Sprint 3 complete** + **M1-4 complete** (commit `M1-4: relationship read
+  path + feelings in prompts`, on `main`).
+- **69 agent-service tests green locally** (was 59; M1-4 added 5 prompt
+  snapshot + 5 testcontainers repo tests). Other suites unchanged and green.
+- Test totals: **69 py-agent**, 19 py-memory, 29 ts-minecraft, 8 java-event,
   14 contract fixtures. Coverage gate is still report-only (turns ON in M1-10).
-- Machine state at handoff: infra + memory-service + minecraft-service +
-  event-service containers **running**; agent-service container **stopped**
-  (no idle GPU burn); Minecraft server **stopped**; all villagers despawned.
+- **Machine state (2026-07-07 ~2:30am):** infra containers (postgres, redis,
+  redpanda, prometheus, grafana) **running**; all app-service containers
+  (agent, memory, minecraft, event) **stopped**; Minecraft server **stopped**.
+  Live `agent_db` migrated to **0002 (head)**. NOTE: at last session's handoff
+  the four app-services were claimed running — they were not; a Docker Desktop
+  restart had exited every container. Always `docker ps` at session start.
 - Sprint 3 live proof achieved: Bram said "Elara, still on about the pantry?"
   in-game (multi-day characterization via memory), Elara's reply tick fired
   `trigger=reactive`, relationships formed from interactions
   (Elara→Bram 0→3→11 via the +8 direct-address boost), all as
   RelationshipChanged ledger events.
+- **agent_db note:** Elara→Bram is at affinity 11 / trust 56 (Sprint 3 state,
+  exactly restored after an M1-4 read-path smoke). That edge's `last_reason`
+  label alone carries a synthetic smoke string (`heard Bram say: "the pantry
+  is bare again"`) — cosmetic, overwritten on the next real interaction.
 
-## Sprint 4 plan (next work — "The village is visible", M+M+S+M ≈ 20–26h)
+## Sprint 4 plan ("The village is visible", M+M+S+M ≈ 20–26h)
 
-Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary:
+Full acceptance criteria in `docs/architecture/07-m1-plan.md`. Summary
+(**✅ = done**):
 
 | ID | Title | Core AC |
 |---|---|---|
-| M1-4 | Relationship read path + feelings in prompts | migrations_agent **0002**: `last_reason text, last_reason_at timestamptz` on relationships (written on upsert — RelationshipRepo.apply_update must start persisting the reason it already receives); repo gains `edges_for(villager_id, target_ids)` / `list_edges(villager_id)`; **`GET /villagers/{id}/relationships`** on agent-service (port 8001); new `TickDeps.relationships`-read seam so prompts render nearby villagers' edges: "Bram (affinity +11, trust 56 — heard Bram say: …)"; no-edge renders neutral; snapshot tests |
+| ✅ M1-4 | Relationship read path + feelings in prompts | **DONE** — see "What M1-4 shipped" below |
 | M1-5 | Relationships graph page | Force graph in apps/dashboard, bootstrapped from the new GET endpoint, live-updated from **the existing event-service SSE stream** (`/api/events/events/stream` via Next rewrites) filtered to RelationshipChanged — NO BFF, NO Zustand (deferred to M2 by review); edge color = affinity sign, width = \|affinity\| |
 | M1-6 | Leaderboard (interim) | `GET /leaderboard?metric=popular\|hated` on **agent-service** = SQL aggregate over relationships (`idx_relationships_target` exists); dashboard panel; analytics-service takes this over in M2 |
 | M1-7 | 20 personas | `services/agent-service/seed/villagers.json` → 20 distinct voices (traits/values/speechStyle/quirks/backstory); keep the 3 existing UUIDs stable; seed idempotence test at 20; read-aloud taste pass |
+
+### What M1-4 shipped (commit `M1-4: relationship read path + feelings…`)
+
+- **Migration 0002** (`migrations_agent/versions/0002_relationship_reason.py`):
+  `last_reason text`, `last_reason_at timestamptz` on `relationships`. Applied
+  to live `agent_db` (now at 0002 head).
+- **`RelationshipRepo`** (`villagers/relationships.py`): `apply_update` gained a
+  trailing `reason: str | None = None` param — persists it on insert **and**
+  update; a reasonless nudge (heuristic may pass `None`) does **not** erase a
+  prior explained cause. New read methods `edges_for(villager_id, target_ids)`
+  and `list_edges(villager_id)` (affinity DESC) return a session-detached
+  `RelationshipEdge` dataclass (`.of(row)` classmethod).
+- **`GET /villagers/{id}/relationships`** (`main.py`, wired via
+  `app.state.relationships`): outgoing edges, strongest affinity first, JSON
+  keys `targetId/affinity/trust/interactionCount/lastReason/lastReasonAt/
+  lastInteractionAt/updatedAt`. **Ids only — no target names** (M1-5 maps
+  ids→names from `GET /villagers`). This is the endpoint M1-5 bootstraps from.
+- **Read seam** (`brain/graph.py::_nearby_feelings`): in `deliberate`, reads
+  edges for the snapshot's nearby villagers and passes a `{villagerId: edge}`
+  dict into `user_prompt(...)`. Guarded on `deps.relationships is None`
+  (feature-off → `None` → section omitted). Non-UUID/player ids skipped.
+- **Prompt** (`brain/prompts.py`): new 4th arg `feelings` to `user_prompt`.
+  Renders "How you feel about those nearby:" — `- Bram (affinity +11, trust 56
+  — <last_reason>)`; no reason → drops the em-dash clause; nearby villager with
+  no edge → `- Bram: no strong feelings yet`. `feelings=None` (default) omits
+  the whole section, so all pre-M1-4 callers/tests are unaffected.
+- **Tests:** `test_prompts.py` +5 snapshot cases; `test_relationships_repo.py`
+  new testcontainers suite (real Postgres, migration 0002 included) covering
+  reason persistence, reasonless non-erasure, `edges_for` filtering,
+  `list_edges` ordering, clamping; `FakeRelationships` updated for the new
+  signature + read methods.
 
 Sprint 5 after that: PaperMC container migration (spike first), reflections in
 memory-service (own budget breaker — designated slip candidate), coverage gate
