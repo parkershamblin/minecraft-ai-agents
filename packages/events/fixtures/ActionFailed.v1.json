@@ -12,8 +12,8 @@
     "commandId": "019f8e2b-000a-7000-8000-00000000a00a",
     "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
     "action": "gather",
-    "errorCode": "NOT_IMPLEMENTED",
-    "errorMessage": "gather is stubbed until M1 (Sprint 1 ships move/chat/spawn/despawn)",
-    "retryable": false
+    "errorCode": "RESOURCE_NOT_FOUND",
+    "errorMessage": "no wood within 10 blocks of (312, 120, -87) — try maxDistance 48 (the cap is 64), or move somewhere new first",
+    "retryable": true
   }
 }

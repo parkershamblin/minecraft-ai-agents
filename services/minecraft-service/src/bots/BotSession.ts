@@ -9,7 +9,7 @@ import { buildEnvelope } from '../events/envelope.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { MovementTracker } from '../world/movementTracker.ts'
 import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
-import { RESOURCE_YIELD, blockNamesFor } from '../world/resources.ts'
+import { RESOURCE_YIELD, blockNamesFor, gatherFailureMessage, planHarvest } from '../world/resources.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
@@ -230,10 +230,12 @@ export class BotSession {
   }
 
   /**
-   * Harvest the nearest block of a resource family: pathfind adjacent, dig,
-   * step onto the spot to collect the drop, report the inventory delta.
-   * Emits ResourceGathered (a world fact); the command outcome carries the
-   * same result back to the requesting mind.
+   * Harvest the nearest block of a resource family — the composite verb:
+   * find, plan the tool, pathfind adjacent, equip, dig, step onto the spot
+   * to collect the drop, report the inventory delta. Emits ResourceGathered
+   * (a world fact); the command outcome carries the same result back to the
+   * requesting mind. Failures are prescriptive — the message is the next
+   * tick's percept, so it must teach, not just report.
    */
   async gather(
     resource: string,
@@ -252,8 +254,27 @@ export class BotSession {
       maxDistance,
     })
     if (!block) {
-      const err = new Error(`no ${resource} within ${maxDistance} blocks`)
+      const err = new Error(gatherFailureMessage(resource, maxDistance, this.position))
       ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
+      throw err
+    }
+    // findBlock picks the 3D-nearest match with no reachability check — when
+    // a gather times out, THIS line says whether the target was a fair ask.
+    const target = { x: block.position.x, y: block.position.y, z: block.position.z }
+    this.log.info(
+      { resource, blockType: block.name, target, distance: round1(distance(this.position as Position, target)) },
+      'gather target found',
+    )
+
+    // Check for a doomed dig (stone, empty hands) BEFORE walking — fail
+    // fast and prescriptively, not after a hike.
+    const itemNameById = (id: number) => bot.registry.items[id]?.name
+    const doomed = planHarvest(block, bot.inventory.items(), itemNameById)
+    if (doomed.kind === 'blocked') {
+      const err = new Error(
+        `digging ${block.name} bare-handed drops nothing — it needs ${doomed.toolHint} and you carry none; gather wood or dirt instead`,
+      )
+      ;(err as Error & { code?: string }).code = 'TOOL_REQUIRED'
       throw err
     }
 
@@ -266,6 +287,14 @@ export class BotSession {
     const before = countYield()
 
     await bot.pathfinder.goto(new goals.GoalGetToBlock(block.position.x, block.position.y, block.position.z))
+    // Choose the tool AT THE DIG SITE, from the current inventory — the
+    // pathfinder digs its own way through obstacles and re-equips as it
+    // pleases en route, so a pre-walk choice can be stale on arrival.
+    const plan = planHarvest(block, bot.inventory.items(), itemNameById)
+    if (plan.kind === 'equip') {
+      this.log.info({ tool: plan.item.name, blockType: block.name }, 'gather equipping tool')
+      await bot.equip(plan.item, 'hand')
+    }
     const blockType = block.name
     await bot.dig(block)
     // Step onto the dig site so the drop auto-collects, then give it a moment.

@@ -165,10 +165,10 @@ describe('CommandExecutor', () => {
     expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
   })
 
-  it('gather defaults to wood within 32 blocks and completes with the yield', async () => {
+  it('gather defaults to wood within 48 blocks (the M2-1 contract default) and completes with the yield', async () => {
     const h = harness()
     await h.executor.execute(command('gather'))
-    expect(h.session.gather).toHaveBeenCalledWith('wood', 32)
+    expect(h.session.gather).toHaveBeenCalledWith('wood', 48)
     expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
     const result = h.outcomes[0]!.extra.result as { blockType: string; collected: number }
     expect(result.blockType).toBe('oak_log')
@@ -180,12 +180,13 @@ describe('CommandExecutor', () => {
     expect(h.session.gather).toHaveBeenCalledWith('stone', 64)
   })
 
-  it('an empty world is an honest RESOURCE_NOT_FOUND, retryable', async () => {
+  it('an empty world is an honest RESOURCE_NOT_FOUND, retryable, with the prescriptive text passed through', async () => {
+    const prescriptive = 'no wood within 10 blocks of (312, 120, -87) — try maxDistance 48 (the cap is 64), or move somewhere new first'
     const h = harness(
       {},
       {
         gather: vi.fn(async () => {
-          const err = new Error('no wood within 32 blocks')
+          const err = new Error(prescriptive)
           ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
           throw err
         }),
@@ -194,5 +195,23 @@ describe('CommandExecutor', () => {
     await h.executor.execute(command('gather'))
     expect(h.outcomes[0]!.extra.errorCode).toBe('RESOURCE_NOT_FOUND')
     expect(h.outcomes[0]!.extra.retryable).toBe(true)
+    expect(h.outcomes[0]!.extra.errorMessage).toBe(prescriptive) // the villager reads this verbatim next tick
+  })
+
+  it('a dig that cannot drop (stone, empty hands) is TOOL_REQUIRED and NOT retryable', async () => {
+    const h = harness(
+      {},
+      {
+        gather: vi.fn(async () => {
+          const err = new Error('digging stone bare-handed drops nothing — it needs a pickaxe and you carry none; gather wood or dirt instead')
+          ;(err as Error & { code?: string }).code = 'TOOL_REQUIRED'
+          throw err
+        }),
+      },
+    )
+    await h.executor.execute(command('gather', { resource: 'stone' }))
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('TOOL_REQUIRED')
+    expect(h.outcomes[0]!.extra.retryable).toBe(false)
   })
 })

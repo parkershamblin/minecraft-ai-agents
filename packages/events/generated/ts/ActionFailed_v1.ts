@@ -22,6 +22,7 @@ export interface ActionFailedPayload {
     | "NOT_IMPLEMENTED"
     | "PATH_NOT_FOUND"
     | "RESOURCE_NOT_FOUND"
+    | "TOOL_REQUIRED"
     | "INVALID_PARAMS"
     | "BOT_DISCONNECTED"
     | "UNKNOWN_ACTION"
