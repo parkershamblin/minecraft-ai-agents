@@ -322,3 +322,16 @@ Sizing uses our S/M/L convention. **If M2 stays "Government," the recommended co
 4. **Building and police are deferred, not missing** — both are the published frontier's admitted gaps (Sid prompt-bans builders; skipped enforcement).
 5. **Keep the single-call tick** until output arity genuinely grows; then bottleneck+broadcast, not ad-hoc concurrent modules.
 6. **Keep "organic, ledger-provable" as the bar** for every emergent claim we film (EG's evidence standard, GA's verification hygiene).
+
+---
+
+## 8. Re-verification addendum (2026-07-08)
+
+An independent second read of all five transcripts and all three papers (fresh session, parallel deep-reads of each PDF) reproduced this document's conclusions with no contradictions found. Deltas worth recording:
+
+- **The MineCollab PDF is now real and was read in full.** The earlier file-hygiene warning (both PDFs being Project Sid) is resolved — Parker's research folder now contains the actual arXiv:2504.17950 paper, and §4.3's claims were re-verified against it directly.
+- **Claude 3.5 Sonnet is uniquely robust to task-complexity scaling** (MineCollab Tables 4/6): flat success across crafting depth (~77–83%) and blueprint complexity (materials/rooms 0→2), where GPT-4o and LLaMA-70B degrade 10–50% relative. Implication: frontier-model headroom shows up as *robustness under complexity*, not just headline success rate — budget the strong model for filmed sessions where tasks compound.
+- **MineCollab's authors hit our exact architecture need and hacked it:** Hell's Kitchen required a cross-process **shared progress file** because each agent is its own process with no view of other bots' state — independent triangulation of the ledger-as-shared-truth design (alongside GA's audit-log recommendation and Sid's S3 blackboard).
+- **Benchmark noise caveat:** GPT-4o's cooking success anomalously *rises* to 83.3% when both agents lose recipe access (from 58.3% with one blocked) — unexplained in the paper. Treat single-cell MineCollab numbers as directional, not precise.
+- **The 90%→<30% agent-scaling collapse curve is cooking/crafting only** — construction with 3+ agents was never run ("outside of our budget for closed source APIs"). The worst-case task family at scale is unmeasured.
+- **Sid scaling color:** the 1000+-agent failure was explicitly the *Minecraft server* (bots "sporadically unresponsive"), not the cognitive architecture — consistent with our connection-throttle/reconnect-herd gotchas; the game server is the ceiling, plan federation accordingly (ruling 3 stands).
