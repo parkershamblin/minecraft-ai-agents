@@ -1,12 +1,41 @@
-# Session Handoff — Sprint 5 COMPLETE: M1-10 done, M1 DoD 6/6 (evidence in ledger)
+# Session Handoff — M2 PLANNED (Sprints 6–8): see 08-m2-plan.md · M1 COMPLETE (DoD 6/6)
 
-> Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
-> should be able to continue from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **All M1 tickets complete (M1-1…M1-10). M1 DoD:
-> all 6 items verified with evidence — the organic grudge closed on
-> 2026-07-07 afternoon (Yara→Cassia peaked −54 in the clean window; see
-> "Afternoon session" section) and Episode 1 footage is recorded (editing
-> is Parker's post-production work, not an engine DoD item).**
+> A fresh session should be able to continue from this file +
+> `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
+> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 is planned but not
+> started — next unit of work is M2-1 (composite gather).**
+
+## Session 2026-07-08 — M2 planning (docs only, no code/stack touched)
+
+- **`docs/architecture/08-m2-plan.md` authored** — the M2 plan in the 07
+  house style: Sprints 6–8 ("Bodies that work" → "The campaign machine" →
+  "Election night"), printed arithmetic, named slip valves, DoD (7 items),
+  ticket-owned risk register. Core set per the research study's
+  recommendation: **A1–A3 + C1–C2 + D1–D2** mapped onto the roadmap's P2
+  scope.
+- **Key rulings made in the plan** (don't re-litigate): governance is a
+  *second command plane* (`commands.government`, government-service the
+  single governance executor, exactly-one-outcome ported); decision contract
+  gains required-nullable `governanceAction` (M1-3 precedent); vote
+  idempotency via natural keys; government = affordances not scripts
+  (operator seeds the election, politics must be organic); **no Java codegen
+  yet** (hand-mapped records, event-service precedent); freshness guards are
+  day-one ACs on every new consumer; BFF/analytics/OpenSearch/Loki/k6/laws/
+  factions all deferred again with reasons (plan ruling 8).
+- **D1 scope note:** Sid's full constitutional-amendment loop is
+  deliberately M3 ("living law"); M2 builds its substrate (command plane,
+  ballot box, seated government).
+- **Machine state:** stack fully DOWN this session (Docker Desktop not
+  running) — supersedes the 2026-07-07 "RUNNING" note below. Volumes
+  untouched; narrative DBs still carry the filming-day canon.
+- **Untracked leftovers noted, not committed:**
+  `docs/research/emergent-garden-study.md` (earlier partial study draft —
+  superseded by the committed `emergent-garden-lessons.md` but contains the
+  unique PDF-mislabeling warning; Parker to decide keep/commit/delete) and
+  `.claude/settings.json` (local plugin config).
+- **Next session: start M2-1** (composite gather + prescriptive failures) —
+  stack bring-up needed first (`task up:all` + Paper profile per the resume
+  commands at the bottom of this file).
 
 ## Project status
 
