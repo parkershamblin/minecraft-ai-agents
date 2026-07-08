@@ -64,6 +64,13 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   resist deletion) `%LOCALAPPDATA%\Docker\run` AND
   `%LOCALAPPDATA%\docker-secrets-engine`, then relaunch. **Never "Reset to
   factory defaults"** — it wipes volumes (villager memories, the ledger).
+  Wrinkle (2026-07-08): the rename can RACE a crashed instance's own
+  recovery, which quietly puts a zombie sock back and the relaunch dies the
+  same way. Order matters: (1) verify **zero** docker processes first (a
+  crashing instance lingers minutes after launch, then auto-quits), (2)
+  rename both dirs, (3) verify both paths are actually GONE, (4) relaunch.
+  Failed-launch forensics: tail
+  `%LOCALAPPDATA%\Docker\log\host\com.docker.backend.exe.log`.
 - Bare `python` on this box is a stale 3.8 — always `uv run` / `uvx` / `py`.
 - New `gradlew` files need `git update-index --chmod=+x` (Windows can't store
   the exec bit; Linux CI fails without it).

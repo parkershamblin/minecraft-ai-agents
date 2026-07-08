@@ -1,9 +1,63 @@
-# Session Handoff — M2 PLANNED (Sprints 6–8): see 08-m2-plan.md · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: M2-1 ✅ done, next M2-2 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
-> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 is planned but not
-> started — next unit of work is M2-1 (composite gather).**
+> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is underway:
+> M2-1 shipped and live-verified — next unit of work is M2-2
+> (`nearbyResources` in WorldSnapshot).**
+
+## Session 2026-07-08 ~02:00–02:45 EDT — M2-1 shipped (commit `abf4ae6`)
+
+- **What shipped** (`M2-1: composite gather — equip best tool, prescriptive
+  failures, default 48`): GatherParams default 32→48 (schema + executor
+  fallback, clamp 4..64 unchanged, types regenerated); `BotSession.gather` is
+  the composite verb (find → plan tool → walk → **equip at the dig site** →
+  dig → collect — the pathfinder re-equips while digging its own way en
+  route, so pre-walk tool choices go stale); pure `planHarvest` +
+  `gatherFailureMessage` in `world/resources.ts`; **TOOL_REQUIRED** additive
+  ActionFailed enum value (stone dug bare-handed used to "complete" with
+  collected: 0 — now an honest, non-retryable, prescriptive failure naming
+  the missing tool class); observability lines `gather target found`
+  (block/position/distance) and `gather equipping tool`. ts tests 30→41;
+  all five suites green.
+- **Live smoke evidence (all in the ledger, ~06:14–06:23Z):** prescriptive
+  RESOURCE_NOT_FOUND at r=4 ("no wood within 4 blocks of (3, 121, 4) — try
+  maxDistance 48 (the cap is 64), or move somewhere new first");
+  `ResourceGathered{spruce_log, quantity: 2}` at distance 38 — **Elara left
+  the plaza and climbed the mountainside** (findable only because default is
+  48 now); TOOL_REQUIRED live on bare-hand stone; RCON-given stone_pickaxe →
+  `gather equipping tool` → `ResourceGathered{stone, quantity: 1}` in 7.2s.
+  Smoke ran with **VILLAGER_COUNT=0** + hand-published commands
+  (`produce-cmd`) — zero ticks, zero narrative pollution; the smoke's
+  command/outcome events sit in the ledger under Elara's id with
+  `causationId: null` (no DecisionMade parent = distinguishable from real
+  deliberation; append-only, accepted practice).
+- **Finding for M2-2/M2-3 (measured):** `findBlock` picks the 3D-nearest
+  match with **no reachability check**, and a pathfinder `goto` toward an
+  unreachable goal **never settles** (no NoPath rejection observed — the
+  watchdog is the only exit, 90s TIMEOUT with zero movement). First gather
+  attempt hit exactly that (spruce 20 blocks up a rock face), the identical
+  retry succeeded after world state shifted. So: TIMEOUT on gather ≠ broken —
+  it's often "target was never a fair ask"; the `gather target found` log
+  line now says which. `nearbyResources` (M2-2) should bias toward
+  *reachable* surface resources, and relocation prompting (M2-3) is what
+  gets bots off treeless mountaintops.
+- **Docker Desktop wouldn't start (twice)** — the stale-socket gotcha, with
+  a new wrinkle: the rename fix can RACE a crashed instance's own recovery,
+  which puts a zombie sock back. Refined procedure now in CLAUDE.md (verify
+  zero docker processes, rename, verify dirs gone, relaunch). Engine came up
+  on the second, verified application.
+- **Parker committed in parallel** (`69acb12`, 02:16 EDT — research addendum:
+  second independent read, MineCollab PDF confirmed real). The untracked
+  leftovers (`docs/research/emergent-garden-study.md`, `.claude/settings.json`)
+  remain untracked — still Parker's call.
+- **Machine state at session end: stack fully DOWN** (world saved via
+  `save-all flush` before down; 0 containers; volumes intact — narrative DBs
+  still carry filming canon untouched; Elara's PLAYER data in the world now
+  holds 2 spruce logs + the pickaxe + 1 cobblestone from the smoke).
+  Docker Desktop itself is RUNNING.
+- **Next: M2-2** (`nearbyResources` in WorldSnapshot — additive optional
+  field, count-capped findBlocks scan every ~5s, MSPT measured in AC).
 
 ## Session 2026-07-08 — M2 planning (docs only, no code/stack touched)
 
@@ -46,7 +100,8 @@
   added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
   CI runs typecheck). Other suites unchanged and green.
 - Test totals: **78 py-agent**, **46 py-memory** (19 → 42 in M1-9, +4
-  reflect-guard tests in M1-10), **30 ts-minecraft** (+1 stale-command),
+  reflect-guard tests in M1-10), **41 ts-minecraft** (30 → 41 in M2-1:
+  planHarvest, failure prose, TOOL_REQUIRED, default 48),
   8 java-event, **15 contract fixtures**. Coverage gate is **ON since M1-10**
   (agent brain/llm 96.4%, memory service/scoring 98.0%, event ingest/read
   87.8% — all ≥80 enforced). `task test` runs all five suites.
@@ -540,7 +595,8 @@ cd "..\Minecraft 1.21.6 Server"; java -Xmx3G -jar server.jar nogui
 # seed + watch
 curl -X POST http://localhost:8001/internal/seed
 docker logs ai-civilization-engine-agent-service-1 -f | findstr "tick complete"
-# hand-publish any command (dev tool)
+# hand-publish any command (dev tool). PowerShell eats inner double quotes on
+# the way to node — escape them: '{\"resource\":\"wood\",\"maxDistance\":4}'
 node scripts/produce-cmd.mjs <villagerId> <action> '<paramsJson>' [timeoutMs]
 ```
 
