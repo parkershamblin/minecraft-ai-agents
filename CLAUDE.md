@@ -64,12 +64,16 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   resist deletion) `%LOCALAPPDATA%\Docker\run` AND
   `%LOCALAPPDATA%\docker-secrets-engine`, then relaunch. **Never "Reset to
   factory defaults"** — it wipes volumes (villager memories, the ledger).
-  Wrinkle (2026-07-08): the rename can RACE a crashed instance's own
-  recovery, which quietly puts a zombie sock back and the relaunch dies the
-  same way. Order matters: (1) verify **zero** docker processes first (a
-  crashing instance lingers minutes after launch, then auto-quits), (2)
-  rename both dirs, (3) verify both paths are actually GONE, (4) relaunch.
-  Failed-launch forensics: tail
+  Wrinkle (2026-07-08, bit twice the same night): the rename can RACE a
+  crashed instance's own recovery, which quietly puts a zombie sock back and
+  the relaunch dies the same way. The on-screen error dialog IS the
+  lingering instance — behind one such dialog sat nine live processes
+  (backend, build, 5× electron, docker-agent). Order matters:
+  (1) `Get-Process | ? { $_.ProcessName -match 'docker|vpnkit' } |
+  Stop-Process -Force` — don't eyeball, kill; (2) rename both dirs;
+  (3) verify both paths are actually GONE; (4) relaunch. Any socket under
+  those dirs can be the victim (`engine.sock`, `run\dockerInference` — the
+  error names whichever bind failed first). Failed-launch forensics: tail
   `%LOCALAPPDATA%\Docker\log\host\com.docker.backend.exe.log`.
 - Bare `python` on this box is a stale 3.8 — always `uv run` / `uvx` / `py`.
 - New `gradlew` files need `git update-index --chmod=+x` (Windows can't store
