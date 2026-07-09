@@ -31,7 +31,10 @@ Ports: 3000 dashboard · 8001 agent · 8002 memory · 8003 minecraft ·
 ```powershell
 task up        # infra only (Postgres+pgvector, Redis, Redpanda, Prometheus, Grafana)
 task up:all    # + the services (docker compose --profile infra --profile app)
+task topics    # provision the Kafka topic map (runs inside up/up:all; partition
+               # changes need docs/runbooks/kafka-topic-migration.md)
 task seed      # provision villagers.json (first VILLAGER_COUNT) + spawn bots
+               # (VILLAGER_COUNT=0 preset: use node scripts/spawn-fleet.mjs instead)
 task test      # all test suites   ·   task gen  # regen contract types (committed!)
 task down      # stop containers (volumes survive)  ·  task nuke  # fresh world
 ```

@@ -1,10 +1,65 @@
-# Session Handoff — M2 IN PROGRESS: M2-1 ✅ M2-2 ✅ M2-3 ✅, next M2-4 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: M2-1 ✅ M2-2 ✅ M2-3 ✅ M2-4 ✅, next M2-5 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
 > complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is underway:
-> M2-1/M2-2/M2-3 shipped — next unit of work is M2-4 (explicit 6-partition
-> command topics), then M2-5 (grudge kit, the slip valve) closes Sprint 6.**
+> M2-1…M2-4 shipped — next unit of work is M2-5 (grudge persistence kit,
+> the slip-valve ticket), which closes Sprint 6.**
+
+## Session 2026-07-08 ~21:25–21:50 EDT — M2-4 shipped
+
+- **What shipped** (`M2-4: explicit 6-partition command topics`):
+  `scripts/provision-topics.mjs` — the executable topic map (world 6 /
+  agent 6 / social 3 / government 3 / commands.minecraft 6 /
+  commands.government 6; retention 7d facts, 24h commands), idempotent:
+  creates missing, converges `retention.ms` in place, **fails loud on a
+  partition-count mismatch** pointing at the new runbook (counts can't
+  change in place without rehashing keys = breaking per-villager ordering).
+  New `task topics`; `up`/`up:all` now provision **after infra `--wait`,
+  before the app profile starts** — explicit creation beats the producers'
+  auto-create race on a fresh cluster (Redpanda dev-mode auto-create stays
+  on as a net, and a race loser is caught as a mismatch). Consumer
+  `partitionsConsumedConcurrently` 3→6 (commandConsumer.ts).
+  `commands.government` + `government.events` provisioned **ahead of their
+  first producer**, so M2-6/M2-7 meet correctly-shaped topics.
+  `docs/runbooks/kafka-topic-migration.md` (drain→recreate→offset-reset) is
+  the new runbook; 03-events-kafka.md gains the `commands.government` row +
+  a "this table is provisioned, not aspirational" note. Also
+  `scripts/spawn-fleet.mjs`: re-embody the fleet without ticks — on the
+  zero-pollution preset (`villager_count=0`) `task seed` slices zero
+  villagers, so every session since M2-2 hand-rolled spawn envelopes; now
+  it's a one-liner (and the runbook's step 5).
+- **The live migration ran — the runbook's first execution.** All four
+  auto-created 1-partition topics migrated: drain verified (all 3 groups
+  TOTAL-LAG 0), consumers + memory-service stopped (producer on
+  agent.events — removes the auto-create race during the delete window),
+  topics deleted, `task topics` recreated at map shape, groups deleted
+  (**2 of 3 were already gone** — topic deletion strips a memberless
+  group's offsets and it gets GC'd; `GROUP_ID_NOT_FOUND` is success, noted
+  in the runbook), minecraft-service `up --build` (bakes 3→6), the rest
+  `start` not `up` (containers keep their env — agent-service stayed
+  `villager_count=0`, zero narrative pollution). Bonus finding: the doc's
+  "24h retention" on commands had been aspirational — auto-created topics
+  carry the cluster default (7d); it's real now.
+- **Verification, all held:** the 20 respawn commands spread across **all
+  six partitions** (rpk produce receipts); single consumer holds all 6,
+  lag 0; per-villager ordering — Elara's spawn + 2 idle canaries all on
+  partition 3 at offsets 0/2/3 in publication order; exactly-one-outcome —
+  22 ActionRequested archived, 22 ActionCompleted, 20 VillagerSpawned in
+  the ledger; fleet 20/20 online (~4-min gap; Parker was in-game the whole
+  time — Paper itself was never touched, his session rode through). All
+  five suites green (15 contracts / 53 ts / 87 py-agent / 46 py-memory /
+  event suite), zero new tests (kafka glue stays integration-verified, per
+  the coverage-gate scope).
+- **Machine state: stack UP**, 20 tick-less bots online, narrative DBs
+  untouched all session (canary + spawn commands are `causationId: null`
+  dev-tool practice, M2-1 precedent).
+- **Next: M2-5** — grudge persistence kit: behavioral directive in the
+  feelings prompt section (grudges constrain tone/choices), heuristic
+  asymmetry (*ambient* positive deltas halved onto edges with affinity
+  ≤ −20; deliberation-sourced deltas untouched — a real apology still
+  works), regression tests, grudge half-life measured from the ledger
+  before/after. It's the sprint's slip valve (may slip to Sprint 8).
 
 ## Session 2026-07-08 ~21:10–21:25 EDT — M2-3 shipped (commit `65fe8d7`)
 
