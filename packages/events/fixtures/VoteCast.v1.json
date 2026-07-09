@@ -1,0 +1,18 @@
+{
+  "eventId": "019f8e2b-0013-7000-8000-00000000b013",
+  "eventType": "VoteCast",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-08T19:12:30.180Z",
+  "source": "government-service",
+  "aggregateType": "Election",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000e1ec0001",
+  "correlationId": "019f8e2b-0001-7000-8000-c0de00000001",
+  "causationId": "019f8e2b-0012-7000-8000-00000000b012",
+  "payload": {
+    "electionId": "019f8e2a-0000-7000-8000-0000e1ec0001",
+    "voterId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "candidateId": "019f8e2a-0000-7000-8000-0000c0a10001",
+    "candidateVillagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "reason": "He shared his bread when the pantry ran low; he will share the office the same way."
+  }
+}

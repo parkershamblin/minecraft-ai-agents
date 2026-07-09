@@ -1,0 +1,17 @@
+{
+  "eventId": "019f8e2b-0011-7000-8000-00000000b011",
+  "eventType": "CandidateNominated",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-08T19:00:00.050Z",
+  "source": "government-service",
+  "aggregateType": "Election",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000e1ec0001",
+  "correlationId": "019f8e2b-0010-7000-8000-c0de0000e1ec",
+  "causationId": null,
+  "payload": {
+    "electionId": "019f8e2a-0000-7000-8000-0000e1ec0001",
+    "candidateId": "019f8e2a-0000-7000-8000-0000c0a10001",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "platform": null
+  }
+}

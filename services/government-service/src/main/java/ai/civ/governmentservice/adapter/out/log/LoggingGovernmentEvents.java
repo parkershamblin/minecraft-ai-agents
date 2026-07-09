@@ -1,36 +1,59 @@
 package ai.civ.governmentservice.adapter.out.log;
 
+import ai.civ.governmentservice.application.error.GovernanceRejectedException.ErrorCode;
 import ai.civ.governmentservice.application.port.out.GovernmentEventsPort;
+import ai.civ.governmentservice.application.port.out.Provenance;
 import ai.civ.governmentservice.domain.Candidate;
 import ai.civ.governmentservice.domain.Election;
+import ai.civ.governmentservice.domain.Vote;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * M2-6's emission adapter: structured log lines only. The wire form of
- * ElectionStarted/ElectionDecided is M2-7's contract work (schemas + fixtures
- * in packages/events, then a Kafka producer adapter replaces this class
- * behind the same port). Deliberate — contract-first forbids shipping event
- * shapes that have no schema, and nothing consumes government.events until
- * event-service archives it (also M2-7).
+ * Broker-less fallback adapter (civ.governance.kafka-enabled=false): the
+ * M2-6 shape, kept for tests that don't need Kafka and for running the
+ * service standalone. The real adapter is KafkaGovernmentEvents.
  */
 @Component
+@ConditionalOnProperty(prefix = "civ.governance", name = "kafka-enabled", havingValue = "false")
 class LoggingGovernmentEvents implements GovernmentEventsPort {
 
     private static final Logger log = LoggerFactory.getLogger(LoggingGovernmentEvents.class);
 
     @Override
-    public void electionStarted(Election election) {
-        log.info("ElectionStarted (log-only until M2-7 contracts) electionId={} office={} startsAt={} endsAt={}",
+    public void electionStarted(Election election, Provenance provenance) {
+        log.info("ElectionStarted (log-only, kafka disabled) electionId={} office={} startsAt={} endsAt={}",
                 election.id(), election.office(), election.startsAt(), election.endsAt());
     }
 
     @Override
-    public void electionDecided(Election election, Candidate winner, Map<UUID, Long> votesByCandidateId) {
-        log.info("ElectionDecided (log-only until M2-7 contracts) electionId={} winnerCandidateId={} winnerVillagerId={} voteCounts={}",
-                election.id(), winner.id(), winner.villagerId(), votesByCandidateId);
+    public void candidateNominated(Candidate candidate, Provenance provenance) {
+        log.info("CandidateNominated (log-only, kafka disabled) electionId={} villagerId={}",
+                candidate.electionId(), candidate.villagerId());
+    }
+
+    @Override
+    public void voteCast(Vote vote, Candidate candidate, Provenance provenance) {
+        log.info("VoteCast (log-only, kafka disabled) electionId={} voterId={} candidateVillagerId={}",
+                vote.electionId(), vote.voterVillagerId(), candidate.villagerId());
+    }
+
+    @Override
+    public void electionDecided(Election election, Candidate winner, List<Candidate> candidates,
+                                Map<UUID, Long> votesByCandidateId, Provenance provenance) {
+        log.info("ElectionDecided (log-only, kafka disabled) electionId={} winnerVillagerId={} voteCounts={}",
+                election.id(), winner.villagerId(), votesByCandidateId);
+    }
+
+    @Override
+    public void governanceRejected(UUID commandId, UUID villagerId, String action, UUID electionId,
+                                   ErrorCode errorCode, String message, Provenance provenance) {
+        log.info("GovernanceRejected (log-only, kafka disabled) commandId={} villagerId={} errorCode={}",
+                commandId, villagerId, errorCode);
     }
 }

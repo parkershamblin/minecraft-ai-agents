@@ -71,6 +71,7 @@ class FakeProvider:
                     "reason": "A pleasant exchange in the morning sun.",
                 }
             ],
+            "governanceAction": None,
         },
         {
             "action": "move",
@@ -79,6 +80,7 @@ class FakeProvider:
             "importance": 1.5,
             "sentiment": 0.1,
             "relationshipUpdates": None,
+            "governanceAction": None,
         },
         {
             "action": "idle",
@@ -87,6 +89,7 @@ class FakeProvider:
             "importance": 1.0,
             "sentiment": 0.2,
             "relationshipUpdates": None,
+            "governanceAction": None,
         },
     ]
 

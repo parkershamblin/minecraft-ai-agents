@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/commands/GovernanceRequested.v1.schema.json",
+  "title": "GovernanceRequestedPayload",
+  "description": "A governance command, not a fact — asks government-service to act inside the election state machine and may be rejected. Exactly one executor (government-service.command-executor) validates it against the state machine + natural keys and emits exactly one outcome: CandidateNominated / VoteCast on success, GovernanceRejected otherwise (08-m2-plan ruling 3, the World invariant ported). The LLM's governanceAction is validated against the per-action params shapes in $defs before a command is ever published (M1-3 seam discipline). Producer: agent-service on commands.government, key = the acting villagerId (per-villager civic ordering). No timeoutMs/priority: the governance plane has no watchdog — the election clock and the consumer's freshness guard (STALE_COMMAND) bound liveness.",
+  "type": "object",
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Equal to the command's envelope eventId; carried into the outcome event and the executor's processed-commands dedupe."
+    },
+    "villagerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The acting villager (the would-be candidate or voter)."
+    },
+    "action": {
+      "type": "string",
+      "enum": ["declare_candidacy", "vote"],
+      "description": "P2 mayoralty verbs. Laws (M3) and factions (M4) are deliberately absent."
+    },
+    "params": {
+      "type": "object",
+      "description": "Action-specific parameters; canonical shapes in $defs (declare_candidacy: DeclareCandidacyParams, vote: VoteParams)."
+    }
+  },
+  "required": ["commandId", "villagerId", "action", "params"],
+  "additionalProperties": false,
+  "$defs": {
+    "DeclareCandidacyParams": {
+      "type": "object",
+      "properties": {
+        "electionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "platform": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "The campaign promise, in the villager's own words — episode gold."
+        }
+      },
+      "required": ["electionId"],
+      "additionalProperties": false
+    },
+    "VoteParams": {
+      "type": "object",
+      "properties": {
+        "electionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "candidateVillagerId": {
+          "type": "string",
+          "format": "uuid",
+          "description": "The VILLAGER being voted for — deliberation only ever knows villager ids; the executor resolves it to the candidates row (NOT_A_CANDIDATE if absent)."
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Why — the LLM rationale, rendered on the dashboard's vote-reasons feed."
+        }
+      },
+      "required": ["electionId", "candidateVillagerId"],
+      "additionalProperties": false
+    }
+  }
+}

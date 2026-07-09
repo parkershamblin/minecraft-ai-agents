@@ -67,6 +67,7 @@ def decision(**overrides):
         "importance": 2.0,
         "sentiment": 0.5,
         "relationshipUpdates": None,
+        "governanceAction": None,  # required-nullable (M2-7)
     }
     base.update(overrides)
     return base

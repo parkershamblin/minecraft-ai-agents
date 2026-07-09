@@ -98,6 +98,13 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   minecraft-service registers `kafkajs-snappy`; keep that import first.
 - OpenAI strict structured outputs reject optional schema properties — new
   decision-contract fields must be **required-nullable** (`type: ["x","null"]`).
+  Corollary (M2-7 structural audit): strict mode ALSO rejects free-form
+  objects (`{type: object}` with no properties/additionalProperties:false) —
+  DECISION_SCHEMA's world `params` is exactly that, so the OpenAI provider
+  path 400s TODAY, latent since M1-3 (every run so far was Ollama).
+  governanceAction was built flat + strict-safe for this reason. Reshape
+  `params` (superset-with-nullables) BEFORE any OpenAI filming run — and
+  re-verify llama behavior after, since llama sees the same schema.
 - `LLM_DAILY_TOKEN_BUDGET=2000000` is sized for PAID providers. On free local
   Ollama, 20 villagers burn it in ~30 minutes and the breaker silently flips
   deliberation to the FakeProvider — whose scripted chat + relationshipUpdates

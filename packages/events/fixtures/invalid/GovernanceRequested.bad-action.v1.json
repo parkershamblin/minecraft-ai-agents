@@ -1,0 +1,17 @@
+{
+  "eventId": "019f8e2b-00fe-7000-8000-00000000dead",
+  "eventType": "GovernanceRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-08T19:15:00.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000c3e55",
+  "correlationId": "019f8e2b-0015-7000-8000-c0de00000015",
+  "causationId": null,
+  "payload": {
+    "commandId": "019f8e2b-00fe-7000-8000-00000000dead",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000c3e55",
+    "action": "propose_law",
+    "params": { "title": "The Accurate Records Act" }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/government/GovernanceRejected.v1.schema.json",
+  "title": "GovernanceRejectedPayload",
+  "description": "A governance command the state machine refused — the exactly-one-outcome twin of CandidateNominated/VoteCast. Rejections flow back to the actor as percepts (M2-8): the same action-awareness loop that teaches gather teaches civics. causationId = the rejected GovernanceRequested's eventId; aggregate = the acting VILLAGER (a rejection may have no valid election to aggregate on). Producer: government-service on government.events.",
+  "type": "object",
+  "properties": {
+    "commandId": { "type": "string", "format": "uuid" },
+    "villagerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Whose request was refused."
+    },
+    "action": { "type": "string", "enum": ["declare_candidacy", "vote"] },
+    "electionId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "The election named in the request; null when the request never named a resolvable one."
+    },
+    "errorCode": {
+      "type": "string",
+      "enum": [
+        "WINDOW_CLOSED",
+        "ALREADY_VOTED",
+        "ALREADY_A_CANDIDATE",
+        "NOT_A_CANDIDATE",
+        "UNKNOWN_ELECTION",
+        "STALE_COMMAND",
+        "INVALID_PARAMS"
+      ],
+      "description": "Machine-readable cause; the same vocabulary government-service's REST plane uses in problem+json."
+    },
+    "message": {
+      "type": "string",
+      "description": "Prescriptive, villager-readable prose (the M2-1 lesson: diagnosis quality IS competence — this string becomes the percept)."
+    }
+  },
+  "required": ["commandId", "villagerId", "action", "electionId", "errorCode", "message"],
+  "additionalProperties": false
+}

@@ -12,6 +12,7 @@ TOPIC_WORLD = "world.events"
 TOPIC_AGENT = "agent.events"
 TOPIC_SOCIAL = "social.events"
 TOPIC_COMMANDS = "commands.minecraft"
+TOPIC_GOVERNMENT_COMMANDS = "commands.government"
 
 
 def build_envelope(

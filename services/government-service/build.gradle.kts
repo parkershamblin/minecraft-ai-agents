@@ -19,18 +19,17 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.kafka:spring-kafka")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
     implementation("net.logstash.logback:logstash-logback-encoder:8.0")
     runtimeOnly("org.postgresql:postgresql")
-    // No spring-kafka yet, deliberately: M2-6 emits ElectionStarted/ElectionDecided
-    // through GovernmentEventsPort with a logging adapter only. The Kafka adapter
-    // arrives with M2-7's contracts (schemas + fixtures) — contract-first.
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:redpanda")
     testImplementation("org.awaitility:awaitility")
 }
 

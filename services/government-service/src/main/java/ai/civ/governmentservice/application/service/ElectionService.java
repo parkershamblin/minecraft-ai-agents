@@ -9,6 +9,7 @@ import ai.civ.governmentservice.application.port.in.QueryElectionUseCase;
 import ai.civ.governmentservice.application.port.out.ElectionStorePort;
 import ai.civ.governmentservice.application.port.out.GovernmentEventsPort;
 import ai.civ.governmentservice.application.port.out.GovernmentStorePort;
+import ai.civ.governmentservice.application.port.out.Provenance;
 import ai.civ.governmentservice.application.query.ElectionDetail;
 import ai.civ.governmentservice.config.ElectionProperties;
 import ai.civ.governmentservice.domain.Candidate;
@@ -90,13 +91,16 @@ public class ElectionService
         // Operator-seeded candidates (dev/smoke convenience). Deduped: the
         // schema's UNIQUE would reject a repeat, and an operator typo should
         // not 500 an otherwise valid open.
+        Provenance provenance = Provenance.ofRestRequest(clock);
         Set<UUID> seeded = new LinkedHashSet<>(
                 cmd.candidateVillagerIds() == null ? List.of() : cmd.candidateVillagerIds());
         for (UUID villagerId : seeded) {
-            store.insertCandidate(new Candidate(UuidV7.next(clock), election.id(), villagerId, null, now));
+            Candidate candidate = new Candidate(UuidV7.next(clock), election.id(), villagerId, null, now);
+            store.insertCandidate(candidate);
+            events.candidateNominated(candidate, provenance);
         }
 
-        events.electionStarted(election);
+        events.electionStarted(election, provenance);
         opened.increment();
         log.info("election opened electionId={} office={} startsAt={} nominatingEndsAt={} endsAt={} seededCandidates={}",
                 election.id(), office, election.startsAt(), election.nominatingEndsAt(), election.endsAt(),
@@ -156,12 +160,11 @@ public class ElectionService
             throw new GovernanceRejectedException(ErrorCode.WINDOW_CLOSED,
                     "election " + electionId + " is " + election.status().db() + ", not voting");
         }
-        boolean isCandidate = store.candidatesOf(electionId).stream()
-                .anyMatch(c -> c.id().equals(candidateId));
-        if (!isCandidate) {
-            throw new GovernanceRejectedException(ErrorCode.NOT_A_CANDIDATE,
-                    "candidate " + candidateId + " is not registered in election " + electionId);
-        }
+        Candidate candidate = store.candidatesOf(electionId).stream()
+                .filter(c -> c.id().equals(candidateId))
+                .findFirst()
+                .orElseThrow(() -> new GovernanceRejectedException(ErrorCode.NOT_A_CANDIDATE,
+                        "candidate " + candidateId + " is not registered in election " + electionId));
 
         Vote vote = new Vote(UuidV7.next(clock), electionId, candidateId, voterVillagerId,
                 blankToNull(reason), clock.instant());
@@ -172,6 +175,8 @@ public class ElectionService
             return new CastResult(store.findVote(electionId, voterVillagerId).orElseThrow(), false);
         }
         voteCounter("accepted").increment();
+        // Exactly once per STORED vote — replays above return without emitting.
+        events.voteCast(vote, candidate, Provenance.ofRestRequest(clock));
         log.info("vote cast electionId={} voterVillagerId={} candidateId={}",
                 electionId, voterVillagerId, candidateId);
         return new CastResult(vote, true);
@@ -254,7 +259,8 @@ public class ElectionService
         governments.insertGovernment(seated);
 
         transitionCounter(ElectionStatus.DECIDED).increment();
-        events.electionDecided(store.findElection(election.id()).orElseThrow(), mayor, counts);
+        events.electionDecided(store.findElection(election.id()).orElseThrow(), mayor, candidates,
+                counts, Provenance.root(clock));
         log.info("election decided electionId={} winnerCandidateId={} mayorVillagerId={} governmentId={} totalVotes={}",
                 election.id(), mayor.id(), mayor.villagerId(), seated.id(),
                 counts.values().stream().mapToLong(Long::longValue).sum());

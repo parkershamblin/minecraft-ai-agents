@@ -18,6 +18,7 @@ from agent_service.brain.prompts import system_prompt, user_prompt
 from agent_service.events.envelope import (
     TOPIC_AGENT,
     TOPIC_COMMANDS,
+    TOPIC_GOVERNMENT_COMMANDS,
     TOPIC_SOCIAL,
     build_envelope,
 )
@@ -113,12 +114,15 @@ def build_tick_graph(deps: TickDeps):
         outcome = state["outcome"]
         decision = outcome.decision
 
+        decision_text = f"{decision.action} {decision.params}" if decision.params else decision.action
+        if decision.governance_action is not None:
+            decision_text += f" + {decision.governance_action.action}"
         decision_event = build_envelope(
             "DecisionMade",
             villager.id,
             {
                 "villagerId": str(villager.id),
-                "decision": f"{decision.action} {decision.params}" if decision.params else decision.action,
+                "decision": decision_text,
                 "reasoning": decision.reasoning,
                 "llmProvider": outcome.provider,
                 "llmModel": outcome.model,
@@ -149,6 +153,29 @@ def build_tick_graph(deps: TickDeps):
                 event_id=command_id,
             ),
         )
+
+        if decision.governance_action is not None:
+            # The second command plane (08-m2-plan ruling 3): a tick can act in
+            # the world AND in civic life. Params were validated against the
+            # GovernanceRequested $defs at decision time; causation threads
+            # DoD #2's replay: VoteCast <- GovernanceRequested <- DecisionMade.
+            governance_command_id = uuid7()
+            await deps.publish(
+                TOPIC_GOVERNMENT_COMMANDS,
+                build_envelope(
+                    "GovernanceRequested",
+                    villager.id,
+                    {
+                        "commandId": str(governance_command_id),
+                        "villagerId": str(villager.id),
+                        "action": decision.governance_action.action,
+                        "params": decision.governance_action.params,
+                    },
+                    correlation_id=correlation,
+                    causation_id=decision_event["eventId"],
+                    event_id=governance_command_id,
+                ),
+            )
 
         if decision.action == "chat":
             snapshot = state.get("snapshot") or {}

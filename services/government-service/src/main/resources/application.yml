@@ -11,6 +11,20 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/government_db
     username: ${GOVERNMENT_DB_USER:government_service}
     password: ${GOVERNMENT_DB_PASSWORD:government_service_dev}
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    consumer:
+      group-id: government-service.command-executor
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
   mvc:
     problemdetails:
       enabled: true
@@ -34,3 +48,14 @@ civ:
     voting-window-seconds: ${ELECTION_VOTING_WINDOW_SECONDS:900}
     # The scheduled clock driving scheduled -> nominating -> voting -> decided.
     clock-ms: ${ELECTION_CLOCK_MS:5000}
+  governance:
+    # M2-7: the second command plane. kafka-enabled=false runs the service
+    # broker-less (REST + logging events only — the M2-6 shape); tests that
+    # don't need Kafka use it to boot without a broker.
+    kafka-enabled: ${GOVERNANCE_KAFKA_ENABLED:true}
+    commands-topic: commands.government
+    events-topic: government.events
+    # Day-one freshness guard (08-m2-plan ruling 7, CLAUDE.md corollary 2):
+    # commands older than this are rejected STALE_COMMAND, never executed —
+    # frozen consumer-group offsets must not replay dead intents.
+    command-max-age-seconds: ${GOVERNANCE_COMMAND_MAX_AGE_SECONDS:600}

@@ -34,7 +34,12 @@ import org.testcontainers.utility.DockerImageName;
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "civ.election.clock-ms=3600000")
+        properties = {
+                "civ.election.clock-ms=3600000",
+                // Broker-less boot (the M2-6 shape): REST + state machine only.
+                // The Kafka wiring has its own integration test.
+                "civ.governance.kafka-enabled=false",
+        })
 @Testcontainers
 class ElectionLifecycleIntegrationTest {
 

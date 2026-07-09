@@ -1,10 +1,132 @@
-# Session Handoff — M2 IN PROGRESS: SPRINT 7 OPEN (M2-6 ✅), next M2-7 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: SPRINT 7 COMPLETE (M2-6 + M2-7 ✅), next M2-8 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
-> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is COMPLETE
-> (M2-1…M2-5); Sprint 7 "The campaign machine" is OPEN with M2-6 shipped —
-> next unit of work is M2-7 (governance command plane + contracts).**
+> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprints 6 AND 7 are
+> COMPLETE (M2-1…M2-7); next unit of work is M2-8 (civic perception +
+> campaign affordances), which opens Sprint 8 "Election night". The M2-7
+> week-one go/no-go smoke: GO — llama3.1 4/4 contract-valid votes.**
+
+## Session 2026-07-08 ~23:25–00:15 EDT — M2-7 shipped, Sprint 7 closed, GO on the go/no-go
+
+- **What shipped** (`M2-7: governance command plane + contracts`), all four
+  code surfaces + contracts:
+  - **packages/events**: six new v1 schemas + fixtures + one invalid —
+    `commands/GovernanceRequested` (action enum declare_candidacy|vote,
+    per-action `$defs` DeclareCandidacyParams/VoteParams; **no timeoutMs** —
+    the governance plane has no watchdog, the clock + freshness guard bound
+    liveness), `government/ElectionStarted` (gains `nominatingEndsAt` over
+    the 03 sketch — consumers render deadlines without querying),
+    `CandidateNominated` (+`villagerId`, platform nullable),
+    `VoteCast` (+`candidateVillagerId`; emitted EXACTLY once per stored vote
+    so tallies count events 1:1), `ElectionDecided` (winnerCandidateId +
+    winnerVillagerId + villager-keyed zero-filled voteCounts + totalVotes;
+    the sketched `turnout` DROPPED — government-service can't honestly know
+    the electorate size), `GovernanceRejected` (errorCode enum WINDOW_CLOSED/
+    ALREADY_VOTED/ALREADY_A_CANDIDATE/NOT_A_CANDIDATE/UNKNOWN_ELECTION/
+    STALE_COMMAND/INVALID_PARAMS; aggregate = the acting VILLAGER — a
+    rejection may have no valid election). Fixtures thread one story: the
+    existing DecisionMade fixture causes GovernanceRequested{vote} causes
+    VoteCast, on Elara's tick correlation. `task gen` output committed;
+    03-events-kafka catalog rows updated to the shipped shapes.
+  - **agent-service**: DECISION_SCHEMA gains required-nullable
+    `governanceAction` — **deliberately FLAT** (action/electionId/
+    candidateVillagerId/reason/platform all at one level, every field
+    required-nullable): OpenAI-strict-safe by construction and kinder to
+    small models than nesting. `_parse_governance` maps it to the
+    GovernanceRequested wire params and validates against the REAL `$defs`
+    (M1-3 seam discipline) + real `uuid.UUID` parses (JSON-Schema `format:
+    uuid` is annotation-only — hallucinated ids must not become wire noise);
+    **a bad civic add-on is DROPPED (logged + `civ_llm_governance_dropped_
+    total`), never fails the world action** — semantic teaching is the
+    executor's job via rejection percepts. The act node publishes
+    GovernanceRequested to `commands.government` (key = villagerId,
+    causation = DecisionMade — DoD #2's chain), and DecisionMade's decision
+    string gains " + vote"/" + declare_candidacy". Missing governanceAction
+    key = malformed (the strict relationshipUpdates precedent); FakeProvider
+    script updated. Tests 95→105.
+  - **government-service**: spring-kafka consumer on commands.government
+    (`government-service.command-executor`, all 6 partitions) with **day-one
+    freshness guard** (ruling 7; >600s → GovernanceRejected{STALE_COMMAND})
+    and **transactional exactly-one-outcome**: Flyway V2 `processed_commands`
+    — the commandId claim (INSERT..ON CONFLICT DO NOTHING) commits atomically
+    with the state change, so a redelivery claims nothing and emits nothing
+    (stronger than the world plane's Redis mark-before-execute).
+    `GovernanceCommandService` = the single governance executor: vote
+    (ALREADY_VOTED checked BEFORE window — truer teaching), candidacy
+    (NOMINATING window, natural key → ALREADY_A_CANDIDATE), rejections in
+    prescriptive prose (the M2-1 diagnosis-quality lesson). Emission:
+    `KafkaGovernmentEvents` replaces the logging adapter behind the SAME
+    port (the M2-6 seam paid off — zero domain surgery), sends deferred to
+    **after-commit** (no ghost facts from rolled-back transactions; the
+    crash-between-commit-and-send residue = logged ledger gap, M1-9
+    precedent); `GovernmentEnvelopeFactory` is the hand-rolled Java envelope
+    builder (UuidV7 reuse, unit-tested field-for-field). REST vote/open/seed
+    paths now emit the same facts (causation null = operator plane).
+    Off-enum actions (propose_law, the M3 temptation) are PARKED at the
+    mapper, not rejected — GovernanceRejected.action couldn't carry them
+    validly. `civ.governance.kafka-enabled=false` runs the M2-6 broker-less
+    shape (the lifecycle test uses it). Tests 21→27 incl. the command-plane
+    Testcontainers scenario (Redpanda + Postgres): 8 commands → 2 facts +
+    6 rejections + redelivery-emits-nothing, claims accounted exactly.
+  - **event-service**: CIV_TOPICS default + explicit compose env now
+    archive `government.events` + `commands.government` (verified live:
+    the consumer holds all 30 partitions across 6 topics).
+  - **scripts/produce-gov-cmd.mjs**: the governance twin of produce-cmd.mjs
+    (the M2-7 filmable beat is literally this tool); `occurredAt` override
+    for staleness drills. Gotcha fixed in-tool: `||` not `??` for optional
+    positional args — `''` must mean "generate".
+- **Live end-to-end on the running stack** (both services rebuilt from the
+  worktree, `--no-deps`; bots + Paper untouched — Parker was in-game
+  throughout): a CONTESTED election with organic candidacies —
+  Bram and Tansy both declared via hand-published commands (platforms
+  verbatim in CandidateNominated), Bram's re-file → ALREADY_A_CANDIDATE,
+  3 votes with reasons → 3 VoteCast (causation = each command), Elara's
+  re-vote → ALREADY_VOTED, a 2h-old vote → STALE_COMMAND ("7200s old,
+  limit 600s"), and the clock decided **Bram 2–1** with villager-keyed
+  voteCounts. The ledger archived ALL of it (8 GovernanceRequested + 10
+  outcomes/facts; one `correlation-id=` query returns the command→VoteCast
+  pair — the DoD #2 replay works). Bonus: an accidentally-empty commandId
+  proved the poison-message path live (parked by BOTH consumers, zero
+  retries). government_db wiped to 0 rows after (smoke hygiene; ledger
+  keeps the events — append-only, causationId-null = dev-tool fingerprint).
+- **THE GO/NO-GO: GO.** llama3.1:8b against the new schema with a synthetic
+  "Village affairs" prompt: first draft (polite "if you would rather wait,
+  set null" + no stakes) went **0/4** — all valid decisions, all declined to
+  vote. Rewritten affordance (deadline named, "a vote not cast is a voice
+  lost", NO polite out, "the vote rides along with whatever else you do")
+  went **4/4 contract-valid**: exact electionId + candidateVillagerId every
+  time, memory-grounded choice (Bram — the shared bread), in-character
+  reasons quoting his platform, and the single-call multi-plane tick worked
+  (chat+vote ×2, move+vote ×2; 2.7–3.8s). **That 0/4→4/4 flip is M2-8's
+  design brief**: the civic section must name stakes + deadline, must not
+  offer an out, and must say the vote rides along with the world action.
+- **OpenAI half of the smoke: BLOCKED on key (blank by design) + a REAL
+  pre-existing finding.** The offline strict-mode structural audit shows the
+  world `params` free-form object (`{type: object}`, no properties) violates
+  strict-mode rules — **the OpenAI provider path 400s today, latent since
+  M1-3** (every live run has been Ollama; the "OpenAI filming fallback" was
+  never actually exercised). governanceAction was built flat/strict-safe for
+  exactly this reason and audits clean. Fix (reshape `params` to a
+  superset-with-nullables, then re-verify llama against the changed schema)
+  is a follow-up ticket BEFORE any OpenAI run — in CLAUDE.md as a gotcha
+  corollary. Parker's call whether to fund a key smoke sooner.
+- **Machine state: stack UP, 12 containers healthy**; event-service +
+  government-service run worktree-built images (rebuild from main after
+  merge is a no-op content-wise); agent-service container now THREE
+  milestones stale (pre-M2-3) and still `villager_count=0` — the next
+  deliberation run needs `up --build` (it also picks up the new
+  DECISION_SCHEMA). 20 bots + Parker online throughout; narrative DBs
+  untouched all session; government_db 0 rows; the ledger gained the smoke's
+  governance events (accepted practice).
+- **Next: M2-8** (Sprint 8 opener) — civic perception + campaign
+  affordances: perception consumer adds government.events (freshness-guarded
+  ruling 7), election events broadcast-fan-out to all alive villagers'
+  percept queues (roster injection like the scheduler hook), in-memory
+  civic-state cache rendered as a standing "Village affairs" prompt section
+  (percepts decay; an ongoing election must not), `governanceAction`
+  affordance text only while a window is open — **using the 4/4 prompt
+  shape from this session's smoke**, mixed-queue regression test.
 
 ## Session 2026-07-08 ~22:45–23:20 EDT — M2-6 shipped, Sprint 7 opened
 

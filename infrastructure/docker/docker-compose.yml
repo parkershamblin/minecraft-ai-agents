@@ -216,6 +216,9 @@ services:
       EVENT_DB_USER: event_service
       EVENT_DB_PASSWORD: event_service_dev
       KAFKA_BROKERS: redpanda:29092
+      # Explicit and complete (matches the image default) — the ledger's
+      # subscription list should be visible where operators look first.
+      CIV_TOPICS: world.events,agent.events,social.events,government.events,commands.minecraft,commands.government
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres:
@@ -230,9 +233,9 @@ services:
       start_period: 30s
 
   government-service:
-    # First compose appearance = first real feature (M2-6: election state
-    # machine). No Kafka wiring yet — the command consumer + event producer
-    # land with M2-7's contracts.
+    # Entered compose with its first real feature (M2-6: election state
+    # machine); M2-7 made it the single governance executor — consumes
+    # commands.government, emits facts/rejections on government.events.
     build: ../../services/government-service
     profiles: [app]
     ports: ["8082:8082"]
@@ -240,12 +243,15 @@ services:
       POSTGRES_HOST: postgres
       GOVERNMENT_DB_USER: government_service
       GOVERNMENT_DB_PASSWORD: government_service_dev
+      KAFKA_BROKERS: redpanda:29092
       # Filming levers: window durations without a rebuild (seconds).
       ELECTION_NOMINATING_WINDOW_SECONDS: ${ELECTION_NOMINATING_WINDOW_SECONDS:-600}
       ELECTION_VOTING_WINDOW_SECONDS: ${ELECTION_VOTING_WINDOW_SECONDS:-900}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       postgres:
+        condition: service_healthy
+      redpanda:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]

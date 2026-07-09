@@ -2,16 +2,21 @@ package ai.civ.governmentservice.application.error;
 
 /**
  * A governance request the state machine refuses, with a machine-readable
- * errorCode. The codes deliberately pre-echo M2-7's GovernanceRejected.v1
- * errorCode enum — the REST plane and the command plane speak the same
- * vocabulary, so rejection percepts and problem+json bodies match.
+ * errorCode. Since M2-7 the enum IS the GovernanceRejected.v1 errorCode
+ * vocabulary — the REST plane (problem+json) and the command plane
+ * (GovernanceRejected events, which become percepts) speak identically.
+ * REST throws only a subset; the command executor uses them all.
  */
 public class GovernanceRejectedException extends RuntimeException {
 
     public enum ErrorCode {
-        UNKNOWN_ELECTION,
         WINDOW_CLOSED,
+        ALREADY_VOTED,
+        ALREADY_A_CANDIDATE,
         NOT_A_CANDIDATE,
+        UNKNOWN_ELECTION,
+        STALE_COMMAND,
+        INVALID_PARAMS,
     }
 
     private final ErrorCode errorCode;

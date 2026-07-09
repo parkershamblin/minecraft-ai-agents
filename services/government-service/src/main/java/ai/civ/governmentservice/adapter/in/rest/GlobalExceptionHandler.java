@@ -27,8 +27,9 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail governanceRejected(GovernanceRejectedException e) {
         HttpStatus status = switch (e.errorCode()) {
             case UNKNOWN_ELECTION -> HttpStatus.NOT_FOUND;
-            case WINDOW_CLOSED -> HttpStatus.CONFLICT;
+            case WINDOW_CLOSED, ALREADY_VOTED, ALREADY_A_CANDIDATE, STALE_COMMAND -> HttpStatus.CONFLICT;
             case NOT_A_CANDIDATE -> HttpStatus.UNPROCESSABLE_ENTITY;
+            case INVALID_PARAMS -> HttpStatus.BAD_REQUEST;
         };
         ProblemDetail problem = problem(status, e.getMessage());
         problem.setProperty("errorCode", e.errorCode().name());
