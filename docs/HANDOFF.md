@@ -1,10 +1,46 @@
-# Session Handoff — M2 IN PROGRESS: M2-1 ✅ M2-2 ✅, next M2-3 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: M2-1 ✅ M2-2 ✅ M2-3 ✅, next M2-4 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
 > complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is underway:
-> M2-1 and M2-2 shipped and live-verified — next unit of work is M2-3
-> (prompt rebalance + expected-vs-observed + quirks).**
+> M2-1/M2-2/M2-3 shipped — next unit of work is M2-4 (explicit 6-partition
+> command topics), then M2-5 (grudge kit, the slip valve) closes Sprint 6.**
+
+## Session 2026-07-08 ~21:10–21:25 EDT — M2-3 shipped (commit `65fe8d7`)
+
+- **What shipped** (`M2-3: prompt rebalance — resources in sight, action
+  awareness, quirks`), all in agent-service, prompt-side only (no contract,
+  no schema): the M1 "prefer small, concrete, **social** actions" steer is
+  rebalanced (material work — gathering, exploring, providing — named as
+  equally legitimate); **"Resources in sight"** section renders from the
+  M2-2 `nearbyResources` survey (absent field → no section, pre-M2-2
+  compatible; scanned-empty → honest "this spot is bare" + points at
+  moving); **action awareness** (Sid's #1 progression lever): new
+  `brain/awareness.py` holds an in-memory `LastDecision` per villager —
+  deliberate recalls it, act remembers it — and the prompt renders "Your
+  last decision: X → outcome", where the matching ActionCompleted/Failed
+  percept is CLAIMED (never renders twice: once as the pairing, not again
+  under "Since your last turn"), or an honest "outcome not observed yet";
+  **quirks** finally render in the system prompt (the M1-7 leftover
+  one-liner). All seams optional-by-default (`awareness=None`,
+  `last_decision=None`) — every pre-M2-3 caller/test unaffected.
+- **Deliberately in-memory** awareness (a restart forgets): the ledger and
+  memory stream are the durable record; this is working memory. Wired in
+  `main.py` via `TickDeps.awareness=ActionAwareness()`.
+- **Tests:** agent 78→87 (+6 prompt cases incl. claim-dedupe and
+  scanned-empty-vs-absent, +1 graph round-trip, +2 system-prompt cases);
+  all five suites green at the boundary. AC per plan (prompt snapshot
+  tests) satisfied; no live tick this session — the running agent-service
+  container is `villager_count=0` and still on the pre-M2-3 image, so the
+  **next real run needs `up --build`** (standard image-bake rule).
+- **PowerShell gotcha confirmed again:** PS 5.1 eats inner double quotes in
+  here-string args to native exes (git this time, produce-cmd before) —
+  write commit messages without embedded double quotes.
+- **Machine state: stack UP** (unchanged from M2-2 session: 20 tick-less
+  bots online, narrative DBs untouched).
+- **Next: M2-4** — `commands.minecraft` + `commands.government` explicit
+  6-partition provisioning (rpk via Taskfile), drain→recreate→offset-reset
+  runbook, `partitionsConsumedConcurrently` 3→6.
 
 ## Session 2026-07-08 ~20:20–21:15 EDT — M2-2 shipped
 
@@ -143,7 +179,8 @@
 - **78 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
   added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
   CI runs typecheck). Other suites unchanged and green.
-- Test totals: **78 py-agent**, **46 py-memory** (19 → 42 in M1-9, +4
+- Test totals: **87 py-agent** (78 → 87 in M2-3: prompt sections, awareness
+  round-trip), **46 py-memory** (19 → 42 in M1-9, +4
   reflect-guard tests in M1-10), **53 ts-minecraft** (30 → 41 in M2-1, 41 → 53 in
   M2-2: scan, Y-band, rescan gate, snapshot merge),
   8 java-event, **15 contract fixtures**. Coverage gate is **ON since M1-10**
