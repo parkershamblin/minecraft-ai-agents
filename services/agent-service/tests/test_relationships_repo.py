@@ -107,3 +107,45 @@ async def test_leaderboard_sums_incoming_affinity(repos: RelationshipRepo):
 
 async def test_leaderboard_empty_when_no_edges(repos: RelationshipRepo):
     assert await repos.leaderboard("popular") == []
+
+
+# --- M2-5 grudge asymmetry: ambient positives halve onto edges <= -20 ---
+
+
+async def test_ambient_positive_is_halved_onto_a_grudge(repos: RelationshipRepo):
+    await repos.apply_update(ELARA, BRAM, -30, -20, reason="he spread lies about my pantry")
+
+    # +8/+4 is the direct-address heuristic tuple — ambient warmth heals at half speed
+    change = await repos.apply_update(ELARA, BRAM, 8, 4, ambient=True)
+    assert change.new_affinity == -26  # -30 + 8/2, not -22
+    assert change.new_trust == 32  # 30 + 4/2, trust damps alongside
+
+
+async def test_ambient_negative_deepens_a_grudge_at_full_speed(repos: RelationshipRepo):
+    await repos.apply_update(ELARA, BRAM, -30, 0, reason="grudge")
+
+    change = await repos.apply_update(ELARA, BRAM, -8, -4, ambient=True)
+    assert change.new_affinity == -38  # asymmetry is positive-only
+
+
+async def test_deliberate_positive_lands_whole_on_a_grudge(repos: RelationshipRepo):
+    await repos.apply_update(ELARA, BRAM, -30, 0, reason="grudge")
+
+    # default ambient=False = the LLM chose this delta — a real apology works
+    change = await repos.apply_update(ELARA, BRAM, 8, 4, reason="he apologized, and meant it")
+    assert change.new_affinity == -22
+
+
+async def test_grudge_boundary_is_exactly_minus_20(repos: RelationshipRepo):
+    await repos.apply_update(ELARA, BRAM, -20, 0, reason="cold")
+    change = await repos.apply_update(ELARA, BRAM, 8, 0, ambient=True)
+    assert change.new_affinity == -16  # -20 counts as a grudge: halved
+
+    await repos.apply_update(ELARA, WREN, -19, 0, reason="chilly")
+    change = await repos.apply_update(ELARA, WREN, 8, 0, ambient=True)
+    assert change.new_affinity == -11  # -19 does not: full +8
+
+
+async def test_ambient_on_a_first_meeting_is_not_damped(repos: RelationshipRepo):
+    change = await repos.apply_update(ELARA, WREN, 3, 1, ambient=True)
+    assert change.new_affinity == 3  # new edge starts at 0 — no grudge to protect

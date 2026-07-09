@@ -37,13 +37,15 @@ class FakeRelationships:
     def __init__(self, reject: set[str] | None = None):
         self.applied = []
         self.reasons = []
+        self.ambients = []
         self._reject = reject or set()
 
-    async def apply_update(self, villager_id, target_id, affinity_delta, trust_delta, reason=None):
+    async def apply_update(self, villager_id, target_id, affinity_delta, trust_delta, reason=None, *, ambient=False):
         if str(target_id) in self._reject:
             raise ValueError("unknown target (FK)")
         self.applied.append((str(villager_id), str(target_id), affinity_delta, trust_delta))
         self.reasons.append(reason)
+        self.ambients.append(ambient)
         return RelationshipChange(
             villager_id=villager_id, target_id=target_id,
             previous_affinity=0, new_affinity=int(affinity_delta),
@@ -93,6 +95,7 @@ async def test_llm_deltas_apply_and_emit():
 
     assert repo.applied == [(str(ELARA.id), BRAM_ID, 15.0, 5.0)]
     assert repo.reasons == ["He helped me carry logs."]  # reason reaches the repo (persisted as last_reason)
+    assert repo.ambients == [False]  # deliberate delta — never grudge-damped (M2-5)
     [changed] = published.by_type("RelationshipChanged")
     assert changed["payload"]["newAffinity"] == 15
     assert changed["payload"]["source"] == "deliberation"
@@ -111,6 +114,7 @@ async def test_heuristic_fallback_from_overheard_chat():
 
     [(_, target, affinity, trust)] = repo.applied
     assert target == BRAM_ID and affinity == 8.0 and trust == 4.0
+    assert repo.ambients == [True]  # heuristic drift is ambient -> grudge-damped in the repo (M2-5)
     assert published.by_type("RelationshipChanged")[0]["payload"]["source"] == "heuristic"
 
 

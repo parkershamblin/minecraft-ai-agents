@@ -6,6 +6,7 @@ from typing import Any
 
 from agent_service.brain.awareness import LastDecision
 from agent_service.memory_client import RetrievedMemory
+from agent_service.villagers.relationships import GRUDGE_AFFINITY_THRESHOLD
 
 SYSTEM_TEMPLATE = """You are {name}, a villager in a small Minecraft settlement.
 Personality traits: {traits}.
@@ -54,17 +55,29 @@ def _feelings_section(
     if not nearby:
         return None
     lines = []
+    grudge_nearby = False
     for v in nearby:
         edge = feelings.get(str(v.get("villagerId")))
         if edge is None:
             lines.append(f"- {v['name']}: no strong feelings yet")
-        elif edge.last_reason:
+            continue
+        if edge.affinity <= GRUDGE_AFFINITY_THRESHOLD:
+            grudge_nearby = True
+        if edge.last_reason:
             lines.append(
                 f"- {v['name']} (affinity {_signed(edge.affinity)}, trust {edge.trust} "
                 f"— {edge.last_reason})"
             )
         else:
             lines.append(f"- {v['name']} (affinity {_signed(edge.affinity)}, trust {edge.trust})")
+    if grudge_nearby:
+        # The M2-5 behavioral directive: without it, models paper over grudges
+        # with politeness and the affinity numbers above stay theater.
+        lines.append(
+            "You hold a grudge against someone here. Let it shape your tone and "
+            "choices — refusing, avoiding, arguing, or cold words are all "
+            "legitimate; do not perform warmth you do not feel."
+        )
     return "How you feel about those nearby:\n" + "\n".join(lines)
 
 

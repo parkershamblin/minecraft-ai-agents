@@ -218,7 +218,12 @@ def build_tick_graph(deps: TickDeps):
                 continue  # no self-edges, even if the LLM tries
             try:
                 change = await deps.relationships.apply_update(
-                    villager.id, uuid.UUID(target_id), affinity_delta, trust_delta, reason
+                    villager.id,
+                    uuid.UUID(target_id),
+                    affinity_delta,
+                    trust_delta,
+                    reason,
+                    ambient=(source == "heuristic"),
                 )
             except Exception as exc:  # noqa: BLE001 — hallucinated ids must not kill the tick
                 logger.warning(

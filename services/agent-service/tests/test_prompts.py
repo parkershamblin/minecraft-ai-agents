@@ -108,6 +108,33 @@ def test_feelings_section_absent_when_nobody_nearby():
     assert "How you feel" not in prompt
 
 
+def test_grudge_directive_renders_when_grudge_in_sight():
+    snapshot = _snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0})
+    feelings = {BRAM_ID: _edge(BRAM_ID, -20, 30, "he spread lies")}  # -20 IS a grudge (boundary)
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "You hold a grudge against someone here." in prompt
+    assert "do not perform warmth you do not feel" in prompt
+
+
+def test_no_grudge_directive_above_threshold():
+    snapshot = _snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0})
+    feelings = {BRAM_ID: _edge(BRAM_ID, -19, 30, "chilly words")}
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "You hold a grudge" not in prompt
+
+
+def test_grudge_directive_ignores_edges_for_absent_villagers():
+    # A grudge toward someone who is NOT in sight must not fire the directive —
+    # it keys off who is actually here, not every edge the dict happens to hold.
+    snapshot = _snapshot({"villagerId": WREN_ID, "name": "Wren", "distance": 9.0})
+    feelings = {
+        WREN_ID: _edge(WREN_ID, 12, 55, None),
+        BRAM_ID: _edge(BRAM_ID, -40, 10, "he spread lies"),  # absent villager
+    }
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "You hold a grudge" not in prompt
+
+
 def test_system_prompt_renders_quirks_and_material_work():
     prompt = system_prompt(
         "Elara",
