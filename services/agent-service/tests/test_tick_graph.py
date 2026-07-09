@@ -226,6 +226,49 @@ async def test_no_governance_action_means_nothing_on_that_plane():
     assert published.by_type("GovernanceRequested") == []
 
 
+async def test_civic_state_reaches_deliberation():
+    """The M2-8 seam: deps.civics -> per-villager view -> VILLAGE AFFAIRS in
+    the user prompt. Optional-by-default — every deps() above passes None."""
+    from datetime import timedelta
+
+    from agent_service.brain.civics import CivicState
+
+    class SpyLLM(ScriptedLLM):
+        def __init__(self, decision_dict):
+            super().__init__(decision_dict)
+            self.user_prompts: list[str] = []
+
+        async def complete(self, system, user):
+            self.user_prompts.append(user)
+            return await super().complete(system, user)
+
+    civics = CivicState()
+    now = datetime.now(UTC)
+    civics.election_started({
+        "electionId": ELECTION_ID,
+        "office": "mayor",
+        "startsAt": (now - timedelta(minutes=1)).isoformat(),
+        "nominatingEndsAt": (now + timedelta(minutes=9)).isoformat(),
+        "endsAt": (now + timedelta(minutes=24)).isoformat(),
+    })
+
+    spy = SpyLLM({
+        "action": "idle", "params": {}, "reasoning": "listening",
+        "importance": 1.0, "sentiment": 0.0,
+        "relationshipUpdates": None, "governanceAction": None,
+    })
+    base = deps()
+    base.llm = spy
+    base.civics = civics
+    graph = build_tick_graph(base)
+
+    await run_tick(graph, ELARA)
+
+    [prompt] = spy.user_prompts
+    assert "VILLAGE AFFAIRS" in prompt
+    assert 'action "declare_candidacy"' in prompt  # nominating window is open
+
+
 async def test_awareness_round_trips_across_ticks():
     """Tick 1's decision is remembered; tick 2 recalls it (Sid's Action
     Awareness). Awareness is optional — deps without it (every test above)

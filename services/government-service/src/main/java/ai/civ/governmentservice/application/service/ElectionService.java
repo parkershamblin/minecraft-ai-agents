@@ -88,10 +88,16 @@ public class ElectionService
                 null, now);
         store.insertElection(election);
 
+        // The announcement is EMITTED before any seeded candidacy: consumers'
+        // civic caches key candidacies to a known election, and after-commit
+        // sends fire in registration order (caught live in the M2-8 harness —
+        // the seeded candidate vanished from every villager's ballot).
+        Provenance provenance = Provenance.ofRestRequest(clock);
+        events.electionStarted(election, provenance);
+
         // Operator-seeded candidates (dev/smoke convenience). Deduped: the
         // schema's UNIQUE would reject a repeat, and an operator typo should
         // not 500 an otherwise valid open.
-        Provenance provenance = Provenance.ofRestRequest(clock);
         Set<UUID> seeded = new LinkedHashSet<>(
                 cmd.candidateVillagerIds() == null ? List.of() : cmd.candidateVillagerIds());
         for (UUID villagerId : seeded) {
@@ -100,7 +106,6 @@ public class ElectionService
             events.candidateNominated(candidate, provenance);
         }
 
-        events.electionStarted(election, provenance);
         opened.increment();
         log.info("election opened electionId={} office={} startsAt={} nominatingEndsAt={} endsAt={} seededCandidates={}",
                 election.id(), office, election.startsAt(), election.nominatingEndsAt(), election.endsAt(),

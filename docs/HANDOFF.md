@@ -1,11 +1,106 @@
-# Session Handoff — M2 IN PROGRESS: SPRINT 7 COMPLETE (M2-6 + M2-7 ✅), next M2-8 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: SPRINT 8 OPEN (M2-8 ✅), next M2-9 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
-> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprints 6 AND 7 are
-> COMPLETE (M2-1…M2-7); next unit of work is M2-8 (civic perception +
-> campaign affordances), which opens Sprint 8 "Election night". The M2-7
-> week-one go/no-go smoke: GO — llama3.1 4/4 contract-valid votes.**
+> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 is at M2-8 of 10:
+> Sprints 6–7 COMPLETE, Sprint 8 "Election night" OPEN with M2-8 shipped —
+> next unit of work is M2-9 (dashboard /government page).**
+
+## Session 2026-07-09 ~00:20–01:10 EDT — M2-8 shipped (civic perception + affordances)
+
+- **What shipped** (`M2-8: civic perception + campaign affordances`), all
+  agent-service except one government-service ordering fix:
+  - **`brain/civics.py`** — the in-memory civic working memory (M2-3
+    awareness precedent, deliberately not durable): one live
+    `ElectionCampaign` (office, three boundaries, candidates with
+    roster-resolved names + platforms, voter set) + the standing `Mayor`.
+    **Content-gated ingestion**: percepts age by delivery (ruling 7's guard,
+    unchanged) but institutions age by their own clocks — a late-delivered
+    ElectionStarted is accepted if its `endsAt` is still in the future,
+    an expired one is ignored. Phase math is advisory (server is the
+    authority; a boundary race earns an honest GovernanceRejected percept).
+    **No ElectionAnnulled event exists by design — silence IS the signal**:
+    an undecided campaign is hidden at close and forgotten after a 300s
+    grace. ElectionDecided seats the mayor even when the campaign is
+    unknown (restart amnesia), so the standing line self-heals one
+    election late. KNOWN LIMITATION (accepted, documented): an
+    agent-service restart mid-election forgets it (committed offsets never
+    replay the news) — open elections while agent-service is up.
+  - **Percept consumer** (`kafka/percepts.py`) — subscribes
+    `government.events` alongside world.events (same group; new topic
+    partitions start at `latest`, so the eventual redeploy meets no backlog
+    surprise). Civic branch: cache ingestion BEFORE the staleness gate
+    (content decides), percept fanout behind it (ruling 7). **Fanout rules**
+    (the scoping decisions): ElectionStarted / CandidateNominated /
+    ElectionDecided **broadcast to the injected roster** (id→name dict,
+    refreshed on seed — the "injected like the scheduler hook" AC);
+    percepts are **personalized at fanout** (`you: true` — prompts have no
+    self-id); GovernanceRejected goes ONLY to its actor (private teaching);
+    **VoteCast is cache-only, deliberately** — 20 villagers × 20 votes
+    would evict the chat drama from the 20-cap queues, and ballots should
+    influence through results, not herd signals; **civic events never
+    trigger reactive ticks** (an ElectionStarted waking 20 minds at once is
+    a GPU stampede; the 60s cadence carries the news within a tick).
+  - **Prompt** (`brain/prompts.py`) — the standing "Village affairs"
+    section renders from the cache every tick (percepts decay; an ongoing
+    election must not), in the M2-7 smoke's proven 0/4→4/4 shape: stakes +
+    deadline named, no polite out, "rides along with whatever else you do
+    this turn". Affordances are window-gated AND actor-gated:
+    already-voted / already-declared villagers see status lines instead
+    (no ALREADY_* rejection spam); nominating offers declare_candidacy,
+    voting offers vote, wrong-window affordances never leak (tested).
+    Standing mayor line after the arc ("The village mayor is Bram." /
+    **"You are the mayor of the village."** — M2-10's address line, free).
+    New percept renderers under "Village news since your last turn"
+    (candidacies with platforms, YOU-are-elected second person, rejection
+    messages verbatim — they're prescriptive prose from the executor);
+    unknown percept types still skipped (mixed-queue regression kept).
+  - Wiring: `TickDeps.civics` optional-by-default; deliberate() passes the
+    per-villager view; main.py injects CivicState + roster into the
+    consumer (boot + seed). Tests 105→129 (+10 civics, +6 fanout,
+    +7 prompt snapshots, +1 graph seam).
+- **THE HARNESS CAUGHT A REAL BUG LIVE** (and it's fixed + regression-
+  tested): government-service's `open()` registered the seeded candidacy's
+  after-commit send BEFORE the announcement's, so `CandidateNominated` hit
+  the wire before `ElectionStarted`; the civic cache (which keys
+  candidacies to a known election) dropped the seeded candidate — **the
+  voting prompt listed only the organic candidate; a real llama run could
+  never have voted for a seeded one**. Fix: emit ElectionStarted first
+  (same-key events share a partition, so consumer order = emission order);
+  new integration test `seededCandidaciesAreAnnouncedAfterTheElection`
+  (government tests 27→28); container rebuilt; wire order re-verified live
+  (offsets: ElectionStarted then CandidateNominated). The general lesson is
+  in the code comments: **announce the aggregate before its dependents —
+  after-commit synchronizations fire in registration order.**
+- **Live verify, zero-pollution** (the running agent-service container is
+  UNTOUCHABLE — stale image, tick-less, and its consumer group must not be
+  joined): a host-side harness with a GROUP-LESS consumer on the real
+  `government.events` fed the REAL PerceptConsumer + CivicState (in-memory
+  fake Redis — the live queues belong to the fleet) while a real election
+  ran: Elara's rendered prompt tracked every phase live — nominating
+  affordance → Wren's candidacy appearing with platform → the 4/4 voting
+  text → "You have cast your vote" suppression after her real VoteCast →
+  section vanishing at close → "The village mayor is Bram." after the
+  decide. Queues: rejection reached only Elara, zero VoteCast percepts,
+  `bram.you_are_mayor=True`. Bonus live proof: the arc ended 1–1 and the
+  **tie-break (earliest registered) decided it** — the domain rule on
+  camera-day rails.
+- **Machine state: stack UP, 12 containers healthy**; government-service
+  rebuilt again this session (emission-order fix); **agent-service
+  container is now FOUR milestones stale (pre-M2-3 image; M2-7 schema +
+  M2-8 civics not deployed)** — still `villager_count=0`, harmless, but
+  M2-9/M2-10's first deliberation run MUST `up --build` agent-service.
+  government_db wiped to 0 rows; narrative DBs untouched all session;
+  ledger keeps the smoke's governance events (append-only, accepted).
+- **Next: M2-9** — dashboard `/government` page: election card (phase +
+  window clock), candidate list, live tally (bootstrap `GET
+  /elections/{id}` + SSE filtered to VoteCast/ElectionDecided — the M1-5
+  pattern, no BFF), vote-reasons feed (the campaign's receipts), rewrite
+  `/api/government/*`, nav links both ways, typecheck-only CI. Note for
+  M2-9: government-service has no election LIST endpoint (deliberate M2-6
+  cut) — the page needs either the SSE ElectionStarted to learn ids, or
+  M2-9 adds `GET /elections?status=...` to government-service (small,
+  04-compatible).
 
 ## Session 2026-07-08 ~23:25–00:15 EDT — M2-7 shipped, Sprint 7 closed, GO on the go/no-go
 

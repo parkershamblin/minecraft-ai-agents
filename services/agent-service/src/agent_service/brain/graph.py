@@ -45,6 +45,7 @@ class TickDeps:
     publish: Any  # async (topic, envelope) -> None
     relationships: Any = None  # RelationshipRepo-shaped: apply_update() (None: feature off, e.g. old tests)
     awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
+    civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
     percepts_max: int = 10
     memories_k: int = 6
 
@@ -104,6 +105,7 @@ def build_tick_graph(deps: TickDeps):
                 state.get("memories", []),
                 feelings,
                 last_decision=deps.awareness.recall(villager.id) if deps.awareness else None,
+                civic=deps.civics.snapshot(str(villager.id)) if deps.civics else None,
             ),
         )
         return {"outcome": outcome}

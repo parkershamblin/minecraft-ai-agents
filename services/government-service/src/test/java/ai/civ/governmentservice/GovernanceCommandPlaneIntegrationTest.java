@@ -51,6 +51,7 @@ import org.testcontainers.utility.DockerImageName;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "civ.election.clock-ms=3600000")
 @Testcontainers
+@org.junit.jupiter.api.TestMethodOrder(org.junit.jupiter.api.MethodOrderer.OrderAnnotation.class)
 class GovernanceCommandPlaneIntegrationTest {
 
     @Container
@@ -182,6 +183,7 @@ class GovernanceCommandPlaneIntegrationTest {
     // ----------------------------------------------------------------- test
 
     @Test
+    @org.junit.jupiter.api.Order(1) // the global outcome counts assume a clean topic
     void everyCommandTerminatesInExactlyOneOutcome() throws Exception {
         // ---- open (REST): ElectionStarted lands on the topic ----------------
         HttpHeaders headers = new HttpHeaders();
@@ -303,5 +305,34 @@ class GovernanceCommandPlaneIntegrationTest {
         assertThat(byType("CandidateNominated")).hasSize(1);
         assertThat(byType("VoteCast")).hasSize(2);
         assertThat(byType("GovernanceRejected")).hasSize(6);
+    }
+
+    @Test
+    @org.junit.jupiter.api.Order(2) // runs after the count-sensitive scenario; filters by its own election
+    void seededCandidaciesAreAnnouncedAfterTheElection() throws Exception {
+        // Same election aggregate = same partition = consumer sees producer
+        // order. The announcement must precede the ballot entries, or civic
+        // caches (keyed to a known election) drop the seeded candidate —
+        // caught live in the M2-8 harness.
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        ResponseEntity<String> opened = rest.postForEntity("/elections",
+                new HttpEntity<>("{\"nominatingWindowSeconds\": 600, \"votingWindowSeconds\": 900,"
+                        + "\"candidateVillagerIds\": [\"" + BRAM + "\"]}", headers),
+                String.class);
+        assertThat(opened.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        String electionId = json.readTree(opened.getBody()).get("electionId").asText();
+
+        await().atMost(Duration.ofSeconds(30)).pollInSameThread().until(() -> {
+            drain();
+            return observed.stream().anyMatch(e ->
+                    e.get("eventType").asText().equals("CandidateNominated")
+                            && e.get("payload").get("electionId").asText().equals(electionId));
+        });
+        List<String> orderForThisElection = observed.stream()
+                .filter(e -> e.get("aggregateId").asText().equals(electionId))
+                .map(e -> e.get("eventType").asText())
+                .toList();
+        assertThat(orderForThisElection).startsWith("ElectionStarted", "CandidateNominated");
     }
 }

@@ -5,6 +5,7 @@ import json
 from typing import Any
 
 from agent_service.brain.awareness import LastDecision
+from agent_service.brain.civics import CivicView
 from agent_service.memory_client import RetrievedMemory
 from agent_service.villagers.relationships import GRUDGE_AFFINITY_THRESHOLD
 
@@ -101,12 +102,88 @@ def _resources_section(snapshot: dict[str, Any]) -> str | None:
     return "Resources in sight (gather can reach these):\n" + lines
 
 
+def _candidate_lines(view: CivicView) -> str:
+    if not view.campaign or not view.campaign.candidates:
+        return "- no one has stepped forward yet"
+    lines = []
+    for c in view.campaign.candidates:
+        platform = f' — platform: "{c.platform}"' if c.platform else ""
+        lines.append(f"- {c.name} (candidateVillagerId {c.villager_id}){platform}")
+    return "\n".join(lines)
+
+
+def _civic_section(view: CivicView) -> str | None:
+    """The standing 'Village affairs' section. Percepts alone decay — an
+    ongoing election must not. The affordance wording is the M2-7 smoke's
+    proven shape (0/4 -> 4/4): name the stakes and the deadline, offer no
+    polite way out, and say the civic act rides along with the world action.
+    Affordance text renders ONLY while its window is open and only for
+    villagers who can still act (already-voted/already-declared see status
+    instead — no ALREADY_* rejection spam)."""
+    lines: list[str] = []
+    campaign, phase = view.campaign, view.phase
+
+    if campaign is not None and phase == "scheduled":
+        lines.append(
+            f"VILLAGE AFFAIRS — an election for {campaign.office} has been announced; "
+            "nominations open shortly. Think on whether you would run, and whom you would trust."
+        )
+    elif campaign is not None and phase == "nominating":
+        lines.append(
+            f"VILLAGE AFFAIRS — the village is choosing its {campaign.office} TODAY. "
+            "Nominations are OPEN and close soon. Candidates so far:\n"
+            + _candidate_lines(view)
+        )
+        if view.you_declared:
+            lines.append(
+                "Your name is already on the ballot. Campaign for it — "
+                "talk to your neighbors about why."
+            )
+        else:
+            lines.append(
+                "To RUN yourself, fill governanceAction with action \"declare_candidacy\", "
+                f"electionId \"{campaign.election_id}\", and your platform in your own words — "
+                "a candidacy not declared is a chance lost. You can still chat or act while "
+                "declaring; it rides along with whatever else you do this turn."
+            )
+    elif campaign is not None and phase == "voting":
+        lines.append(
+            f"VILLAGE AFFAIRS — the village is electing its {campaign.office} TODAY and "
+            "the ballot box closes within the hour. The candidates:\n" + _candidate_lines(view)
+        )
+        if view.you_voted:
+            lines.append(
+                "You have cast your vote; the ballot box closes soon. "
+                "Speak your mind while the village decides."
+            )
+        else:
+            lines.append(
+                "You have not voted yet; this is likely your last chance, and a vote not "
+                "cast is a voice lost. To cast your vote NOW, fill governanceAction with "
+                f"action \"vote\", electionId \"{campaign.election_id}\", the "
+                "candidateVillagerId of your choice, and your reason in your own voice. "
+                "You can still chat or act while voting — the vote rides along with "
+                "whatever else you do this turn."
+            )
+
+    if view.mayor is not None:
+        if view.you_are_mayor:
+            lines.append(
+                "You are the mayor of the village. The office is yours to fill with deeds."
+            )
+        else:
+            lines.append(f"The village mayor is {view.mayor.name}.")
+
+    return "\n".join(lines) if lines else None
+
+
 def user_prompt(
     snapshot: dict[str, Any] | None,
     percepts: list[dict[str, Any]],
     memories: list[RetrievedMemory],
     feelings: dict[str, Any] | None = None,
     last_decision: LastDecision | None = None,
+    civic: CivicView | None = None,
 ) -> str:
     sections: list[str] = []
 
@@ -157,10 +234,18 @@ def user_prompt(
         if section:
             sections.append(section)
 
+    # The standing civic section (M2-8): percepts decay off the queue, but an
+    # ongoing election must not — the cache re-renders it every tick.
+    if civic is not None:
+        section = _civic_section(civic)
+        if section:
+            sections.append(section)
+
     # Type-dispatch: unknown percept types are skipped, never a KeyError —
     # the queue outlives any single deploy's vocabulary.
     action_lines = []
     overheard_lines = []
+    news_lines = []
     for i, percept in enumerate(percepts):
         if i == claimed_index:
             continue  # already voiced in "Your last decision"
@@ -171,12 +256,38 @@ def user_prompt(
             action_lines.append(f"- your '{percept['action']}' FAILED: {json.dumps(percept['detail'])}")
         elif kind == "ChatObserved" and len(overheard_lines) < 5:
             overheard_lines.append(f'- {percept.get("speakerName", "someone")} said: "{percept.get("message", "")}"')
+        elif kind == "ElectionStarted":
+            news_lines.append(
+                f"- an election for {percept.get('office', 'mayor')} has been called — the village will choose"
+            )
+        elif kind == "CandidateNominated":
+            if percept.get("you"):
+                news_lines.append("- your candidacy is registered — your name is on the ballot")
+            else:
+                platform = percept.get("platform")
+                quote = f': "{platform}"' if platform else ""
+                news_lines.append(
+                    f"- {percept.get('candidateName', 'someone')} declared candidacy{quote}"
+                )
+        elif kind == "ElectionDecided":
+            if percept.get("you"):
+                news_lines.append("- the votes are counted: YOU have been elected mayor of the village")
+            else:
+                news_lines.append(
+                    f"- the votes are counted: {percept.get('winnerName', 'someone')} is the new mayor"
+                )
+        elif kind == "GovernanceRejected":
+            news_lines.append(
+                f"- your {percept.get('action', 'request')} was refused: {percept.get('message', 'no reason given')}"
+            )
     if action_lines:
         sections.append("Since your last turn:\n" + "\n".join(action_lines))
     if overheard_lines:
         sections.append(
             "Recently overheard (you may want to respond, in your own voice):\n" + "\n".join(overheard_lines)
         )
+    if news_lines:
+        sections.append("Village news since your last turn:\n" + "\n".join(news_lines))
 
     if memories:
         sections.append(
