@@ -1,10 +1,54 @@
-# Session Handoff — M2 IN PROGRESS: M2-1 ✅ done, next M2-2 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: M2-1 ✅ M2-2 ✅, next M2-3 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
 > complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is underway:
-> M2-1 shipped and live-verified — next unit of work is M2-2
-> (`nearbyResources` in WorldSnapshot).**
+> M2-1 and M2-2 shipped and live-verified — next unit of work is M2-3
+> (prompt rebalance + expected-vs-observed + quirks).**
+
+## Session 2026-07-08 ~20:20–21:15 EDT — M2-2 shipped
+
+- **What shipped** (`M2-2: nearbyResources in WorldSnapshot`): WorldSnapshot.v1
+  gains additive optional `nearbyResources` `[{family, nearestDistance,
+  count}]` (schema + fixture + TS/py types regenerated); minecraft-service
+  surveys the RESOURCE_BLOCKS families (wood/stone/dirt) with per-family
+  `findBlocks` sweeps — count-capped (32 reported, 2× headroom requested),
+  **Y-banded ±16** (the M2-1 reachability finding: never advertise the
+  cliff-face spruce; the band is a post-filter because findBlocks probes
+  section palettes with position-less Blocks), merged into every 1s snapshot
+  from a cache. Field semantics: **absent = no scan yet / disabled; `[]` =
+  scanned, nothing in sight.** Config: `RESOURCE_SCAN_{INTERVAL_MS,DISTANCE,
+  COUNT_CAP,Y_BAND,MOVE_BLOCKS,MAX_AGE_MS}`; `INTERVAL_MS=0` disables.
+  ts tests 41→53; all five suites green.
+- **THE MEASUREMENT (the AC — and it caught a real problem pre-commit):**
+  ungated 5s scans across 20 bots **pinned a full CPU core** on
+  minecraft-service (~175 ms per bot-scan) — and that core is the single
+  Node event loop that executes every command. Paper never noticed:
+  findBlocks is **client-side**; the risk register's "scans lag the server"
+  worry aimed at the wrong victim. Fix shipped inside the ticket: a movement
+  gate (`shouldRescan`, unit-tested) — the 5s interval is only the *check*
+  cadence; the sweep runs only after ≥8 blocks of movement or a ≥60 s-old
+  survey. Numbers (20 idle bots, 6×20 s samples per phase): CPU baseline
+  scan-off **22–38%**, ungated **~100%**, gated **19–31%** (indistinguishable
+  from off); Paper MSPT 5s-avg 5–8 ms in **all three** phases.
+- **Live evidence:** Elara (mountainside, still holding her M2-1 loot) sees
+  `wood@4.4 / stone@1.2 / dirt@0.6` (counts capped at 32); Vesper (plaza)
+  sees `wood@33.7 count 25` — the M1 "no wood near the plaza" diagnosis made
+  visible to the LLM, and inside the default-48 gather range. Scan-off run:
+  field cleanly absent from a fresh snapshot. Zero `resource scan failed`
+  warnings across all phases.
+- **Smoke shape:** zero-pollution again — `VILLAGER_COUNT=0` via process env
+  (`.env` untouched, still the filming preset), 20 bots hand-spawned through
+  `produce-cmd` spawn commands. **Learned:** bot sessions do NOT survive a
+  minecraft-service container recreate (in-memory; nothing re-embodies from
+  the roster on boot) — re-publish spawns (or `task seed`) after any
+  recreate of that container.
+- **Machine state at session end: STACK UP** (all containers healthy), 20
+  tick-less bots online (agent-service running `villager_count=0` — no
+  deliberation, no narrative writes all session). Narrative DBs untouched.
+- **Next: M2-3** (soften the social-actions prompt line; render "Resources
+  in sight" from this field; "Your last decision → outcome" line; quirks
+  into the system prompt).
 
 ## Session 2026-07-08 ~02:00–02:45 EDT — M2-1 shipped (commit `abf4ae6`)
 
@@ -100,8 +144,8 @@
   added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
   CI runs typecheck). Other suites unchanged and green.
 - Test totals: **78 py-agent**, **46 py-memory** (19 → 42 in M1-9, +4
-  reflect-guard tests in M1-10), **41 ts-minecraft** (30 → 41 in M2-1:
-  planHarvest, failure prose, TOOL_REQUIRED, default 48),
+  reflect-guard tests in M1-10), **53 ts-minecraft** (30 → 41 in M2-1, 41 → 53 in
+  M2-2: scan, Y-band, rescan gate, snapshot merge),
   8 java-event, **15 contract fixtures**. Coverage gate is **ON since M1-10**
   (agent brain/llm 96.4%, memory service/scoring 98.0%, event ingest/read
   87.8% — all ≥80 enforced). `task test` runs all five suites.

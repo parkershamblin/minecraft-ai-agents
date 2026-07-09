@@ -143,6 +143,14 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   is ~2–4 ms). Point bots at it with **`MC_HOST=minecraft`** (the compose
   service name); the vanilla host server stays the fallback via
   `MC_HOST=host.docker.internal`.
+- mineflayer world sweeps (`findBlocks` etc.) are CLIENT-side: they never
+  cost Paper MSPT — they cost the minecraft-service **event loop**, the one
+  thread that executes every bot's commands. Measured M2-2: ungated 5s
+  resource scans × 20 bots pinned a full core (~175 ms/bot-scan). Any
+  recurring sweep must pass a skip gate (see `shouldRescan`: movement ≥8
+  blocks or survey ≥60s old). Related: bot sessions are in-memory — a
+  minecraft-service container recreate silently drops the whole fleet;
+  re-publish spawn commands (or `task seed`) after recreating it.
 - Paper's `bukkit.yml` `connection-throttle: 4000` (per-IP) chokes the bot
   fleet after any server restart: all 20 bots share the minecraft-service
   container IP and reconnect in a synchronized 60s-backoff herd, so the
