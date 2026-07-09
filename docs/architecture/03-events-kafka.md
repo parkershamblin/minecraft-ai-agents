@@ -50,8 +50,18 @@ flowchart LR
 | `social.events` | agent-service | `event-service.event-store`, `analytics-service.projections`, `dashboard-service.ws-fanout`, `agent-service.perception` | 3 | 7 days | `aggregateId` (speaker/initiator villagerId) |
 | `government.events` | government-service (P2+) | `event-service.event-store`, `analytics-service.projections`, `dashboard-service.ws-fanout`, `agent-service.perception` | 3 | 7 days | `aggregateId` (electionId / lawId / factionId) |
 | `commands.minecraft` | agent-service | `minecraft-service.command-executor`, `event-service.event-store` | 6 | 24 hours | `aggregateId` (villagerId) |
+| `commands.government` | agent-service (M2-7+) | `government-service.command-executor` (M2-6+), `event-service.event-store` | 6 | 24 hours | `aggregateId` (villagerId — the acting villager; per-villager civic ordering, same guarantee as `commands.minecraft`) |
 
 Retention can stay short because Kafka is transport, not storage — anything older than the topic window lives forever in the event store (see §5). Partition counts are sized for 20 villagers with headroom to demonstrate parallel consumption; scaling to 100+ villagers is a partition-count and consumer-instance change, not a redesign.
+
+**This table is provisioned, not aspirational (since M2-4):** `task topics`
+(`scripts/provision-topics.mjs` — the executable copy of this table) creates
+every topic explicitly and converges retention; `task up`/`up:all` run it
+before the app profile starts, so auto-creation-at-default-1 never decides a
+topic's shape. Changing a partition count on a live cluster requires the
+drain → recreate → offset-reset procedure in
+`docs/runbooks/kafka-topic-migration.md`. Keep table and script in step —
+review checks both when either changes.
 
 **The command/event split (CQRS).** `commands.minecraft` carries *intent* — `ActionRequested` messages that ask minecraft-service to do something and may be rejected or fail; the four `*.events` topics carry immutable *facts* about what already happened. This is the write-side/read-side split of CQRS: agent-service issues commands, minecraft-service is the **single executor** that turns them into `ActionCompleted`/`ActionFailed` facts on `world.events`, and every read model (analytics projections, dashboard) is built purely from facts. Commands and events never share a topic. The event store *does* archive commands (second consumer group above) — not to act on them, but because the causation chain `DecisionMade → ActionRequested → ActionCompleted` is the product: "why did she do that" replays break in the middle without the command link.
 
