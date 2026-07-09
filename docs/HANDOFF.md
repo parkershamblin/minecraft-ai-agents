@@ -1,10 +1,82 @@
-# Session Handoff — M2 IN PROGRESS: SPRINT 8 OPEN (M2-8 ✅), next M2-9 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: M2-9 ✅, next M2-10 (the finale) · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
-> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 is at M2-8 of 10:
-> Sprints 6–7 COMPLETE, Sprint 8 "Election night" OPEN with M2-8 shipped —
-> next unit of work is M2-9 (dashboard /government page).**
+> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 is at M2-9 of 10 —
+> only M2-10 remains: election day (filming run + jacoco gate extension +
+> demo-m2.md). Before ANY deliberation run: `up --build` agent-service
+> (its container is FOUR milestones stale).**
+
+## Session 2026-07-09 ~01:15–02:00 EDT — M2-9 shipped (dashboard /government page)
+
+- **What shipped** (`M2-9: dashboard /government page`):
+  - **government-service** (small, additive): `GET /elections?limit=`
+    (newest first, tallies included, votes omitted) — the dashboard's
+    bootstrap; the deliberate M2-6 "no list endpoint" cut ended here, 04
+    table updated. `CandidateDto` gains `platform` (plain prose, unwrapped
+    from the jsonb string scalar) — the REST plane now shows the campaign
+    promises the wire events already carried. Tests 28→29 (newest-first +
+    votes-omitted assertions); container rebuilt live.
+  - **dashboard**: `/government` page + `components/Government.tsx` in the
+    M1-5 house style, plus one refinement: **SSE is the poke, react-query
+    is the truth** — civic events (ElectionStarted/CandidateNominated/
+    VoteCast/ElectionDecided) trigger a DEBOUNCED (800ms) query
+    invalidation instead of hand-merged state, so a vote burst is one
+    refetch and the tally can never drift from government-service (the
+    graph hand-merges only because force layouts hate refetch resets);
+    10s `refetchInterval` is the belt under the SSE suspenders (phase
+    flips nominating→voting emit NO event by design — polling + the
+    client countdown carry those). One EventSource per page (mounted by
+    ElectionPanel), queries deduped across panels by react-query.
+    Election card: phase chip, boundary countdown ("ballot box closes
+    in 0:12"), window times, total votes; candidate rows with platform
+    quotes, vote bars, "★ mayor?" leader marker during voting hardening
+    to "★ mayor" + the emerald winner banner at decide; annulled banner
+    with reason. **Vote-reasons feed** ("The receipts — why they voted"):
+    newest-first, voter → candidate names resolved from the agent-service
+    roster, reason verbatim, relative time. `/api/government/:path*`
+    rewrite (`GOVERNMENT_SERVICE_URL`, default localhost:8082); nav links
+    Overview ↔ Government ↔ Relationships; empty state explains the
+    operator lever. Typecheck-only CI unchanged (dashboard caller already
+    covers the paths).
+- **Live-verified in a real browser** (preview server + live stack): page
+  bootstrapped to the honest empty state ("No election has ever been
+  called"), then — WITHOUT A RELOAD — followed a real contested arc driven
+  through the command plane: candidacies appeared with platforms, phase
+  chip flipped to voting with the countdown ticking, three reasoned votes
+  landed in the tally (2–1) and the receipts feed (one early snapshot
+  raced the 800ms debounce and showed 0 — the very next look showed 3;
+  the poll would have healed it regardless), then the decided banner:
+  "The votes are counted — Bram is the new mayor of the village."
+  Screenshot taken; the page is episode-ready. Roster-truth note: the
+  page resolved `d0009`→Juniper and `d0004`→Ansel — my smoke script's
+  comments had guessed Tansy; **the page renders whatever the roster
+  says, which is the point**. Smoke rows wiped after (government_db
+  0 rows); all six suites green at the boundary.
+- **Machine state: stack UP, 12 containers healthy**; government-service
+  on the M2-9 image (list endpoint + platform in DTO). **agent-service
+  container UNCHANGED and now FOUR milestones stale — M2-10's filming
+  run MUST `up --build` agent-service first** (that deploy also brings
+  M2-7's schema + M2-8's civic consumer into the running fleet).
+  Narrative DBs untouched all session; ledger keeps the smoke's
+  governance events (append-only, causationId-null dev-tool practice).
+- **Next: M2-10 — election day (the M2 finale).** Full arc on the filming
+  preset: `up --build` agent-service (+ memory-service unchanged, but
+  `up --build` is the standard image-bake rule), operator opens the
+  election ON CAMERA with the filmable windows (600/900 via env or POST
+  body), nominations/campaign/votes fully organic (DoD #1: ≥2 organic
+  candidacies, ≥10/20 organic votes), DoD evidence pulled from the ledger
+  (per-vote causation chains — DoD #2), one live duplicate vote on
+  camera-day data (DoD #3), jacoco gate extended to government-service
+  (≥80 on adapter/application classes, `finalizedBy(test)` — the M1-10
+  pattern; current coverage is healthy but UNMEASURED against that scope
+  — leave slack), `docs/demo-m2.md` + Episode 2 shot list, D2 steering
+  knobs staged as filming levers (`COMMUNITY_GOAL` env → one system-prompt
+  line; influencer personas = villagers.json edits, zero code), HANDOFF.
+  Reminders for that session: budget 100M for Ollama; `task topics`
+  already provisioned; spawn-fleet.mjs re-embodies bots if the
+  minecraft-service container gets recreated; open elections only while
+  agent-service is up (the M2-8 restart-forgets limitation).
 
 ## Session 2026-07-09 ~00:20–01:10 EDT — M2-8 shipped (civic perception + affordances)
 

@@ -37,6 +37,39 @@ export interface RelationshipChangedPayload {
   source: 'deliberation' | 'heuristic'
 }
 
+/** Election shapes from government-service (GET /elections, /elections/{id}). */
+export interface ElectionCandidate {
+  candidateId: string
+  villagerId: string
+  platform: string | null
+  registeredAt: string
+  votes: number
+}
+
+export interface ElectionVote {
+  voteId: string
+  candidateId: string
+  voterId: string
+  reason: string | null
+  castAt: string
+}
+
+export interface Election {
+  electionId: string
+  office: string
+  status: 'scheduled' | 'nominating' | 'voting' | 'decided' | 'annulled'
+  governmentId: string | null
+  startsAt: string
+  nominatingEndsAt: string
+  endsAt: string
+  winnerCandidateId: string | null
+  winnerVillagerId: string | null
+  annulledReason: string | null
+  candidates: ElectionCandidate[]
+  totalVotes: number
+  votes: ElectionVote[] | null
+}
+
 /** The stored-event shape from event-service (envelope + ledger bookkeeping). */
 export interface CivEvent {
   eventId: string

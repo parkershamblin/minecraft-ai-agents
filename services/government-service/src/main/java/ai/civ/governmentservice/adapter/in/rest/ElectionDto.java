@@ -2,6 +2,7 @@ package ai.civ.governmentservice.adapter.in.rest;
 
 import ai.civ.governmentservice.application.query.ElectionDetail;
 import ai.civ.governmentservice.domain.Election;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +28,22 @@ public record ElectionDto(
         long totalVotes,
         List<VoteDto> votes) {
 
-    public record CandidateDto(UUID candidateId, UUID villagerId, Instant registeredAt, long votes) {
+    public record CandidateDto(
+            UUID candidateId, UUID villagerId, String platform, Instant registeredAt, long votes) {
+    }
+
+    private static final ObjectMapper JSON = new ObjectMapper();
+
+    /** candidates.platform is stored as a jsonb string scalar; unwrap to prose. */
+    private static String plainPlatform(String platformJson) {
+        if (platformJson == null) {
+            return null;
+        }
+        try {
+            return JSON.readTree(platformJson).asText();
+        } catch (Exception e) {
+            return platformJson;
+        }
     }
 
     public record VoteDto(UUID voteId, UUID candidateId, UUID voterId, String reason, Instant castAt) {
@@ -53,6 +69,7 @@ public record ElectionDto(
                 detail.candidates().stream()
                         .map(c -> new CandidateDto(
                                 c.candidate().id(), c.candidate().villagerId(),
+                                plainPlatform(c.candidate().platformJson()),
                                 c.candidate().registeredAt(), c.votes()))
                         .toList(),
                 detail.totalVotes(),

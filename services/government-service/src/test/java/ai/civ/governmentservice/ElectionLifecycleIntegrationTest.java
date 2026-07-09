@@ -6,6 +6,8 @@ import ai.civ.governmentservice.application.port.in.AdvanceElectionsUseCase;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -285,6 +287,28 @@ class ElectionLifecycleIntegrationTest {
         clock.advance(Instant.parse(opened.get("endsAt").asText()));
         assertThat(getElection(electionId, false).get("status").asText()).isEqualTo("decided");
         return electionId;
+    }
+
+    @Test
+    void latestListsNewestFirst() throws Exception {
+        UUID first = uuidOf(openElection("{\"nominatingWindowSeconds\": 60, \"votingWindowSeconds\": 60}"),
+                "electionId");
+        UUID second = uuidOf(openElection("{\"nominatingWindowSeconds\": 60, \"votingWindowSeconds\": 60}"),
+                "electionId");
+
+        ResponseEntity<String> response = rest.getForEntity("/elections?limit=50", String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        JsonNode list = json.readTree(response.getBody());
+        List<String> ids = new ArrayList<>();
+        list.forEach(e -> ids.add(e.get("electionId").asText()));
+
+        // Relative order is what matters — other tests' elections interleave.
+        assertThat(ids.indexOf(second.toString()))
+                .isGreaterThanOrEqualTo(0)
+                .isLessThan(ids.indexOf(first.toString()));
+        // list entries carry the tally shape but never the votes array
+        assertThat(list.get(0).has("candidates")).isTrue();
+        assertThat(list.get(0).path("votes").isNull() || list.get(0).path("votes").isMissingNode()).isTrue();
     }
 
     @Test

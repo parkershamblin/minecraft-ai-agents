@@ -29,6 +29,9 @@ public interface ElectionStorePort {
     /** Elections in a non-terminal status — the clock's scan set. */
     List<Election> findActiveElections();
 
+    /** Newest first (created_at, id DESC), any status. */
+    List<Election> findLatestElections(int limit);
+
     void updateStatus(UUID electionId, ElectionStatus to);
 
     void annul(UUID electionId, String reason);

@@ -63,6 +63,14 @@ public class ElectionsController {
                 .body(dto);
     }
 
+    @Operation(summary = "Latest elections, newest first (tallies included, votes omitted) — the dashboard's bootstrap")
+    @GetMapping("/elections")
+    public List<ElectionDto> latest(@RequestParam(name = "limit", defaultValue = "10") int limit) {
+        return queryElection.latest(Math.clamp(limit, 1, 50)).stream()
+                .map(ElectionDto::from)
+                .toList();
+    }
+
     @Operation(summary = "Election detail: candidates and live tally; add include=votes for the individual votes with reasons")
     @GetMapping("/elections/{electionId}")
     public ElectionDto byId(

@@ -129,6 +129,16 @@ public class ElectionService
         return detail(electionId, includeVotes);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ElectionDetail> latest(int limit) {
+        // Detail composition per row is O(elections shown) queries — the
+        // village holds a handful of elections, not a parliament's archive.
+        return store.findLatestElections(limit).stream()
+                .map(e -> detail(e.id(), false).orElseThrow())
+                .toList();
+    }
+
     private Optional<ElectionDetail> detail(UUID electionId, boolean includeVotes) {
         return store.findElection(electionId).map(election -> {
             Map<UUID, Long> counts = store.voteCounts(electionId);

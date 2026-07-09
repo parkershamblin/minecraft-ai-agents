@@ -93,6 +93,14 @@ class JdbcElectionStore implements ElectionStorePort {
     }
 
     @Override
+    public List<Election> findLatestElections(int limit) {
+        return jdbc.sql("SELECT * FROM elections ORDER BY created_at DESC, id DESC LIMIT :limit")
+                .param("limit", limit)
+                .query(ELECTION_MAPPER)
+                .list();
+    }
+
+    @Override
     public void updateStatus(UUID electionId, ElectionStatus to) {
         jdbc.sql("UPDATE elections SET status = :status WHERE id = :id")
                 .param("status", to.db())

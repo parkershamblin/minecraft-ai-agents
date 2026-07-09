@@ -44,6 +44,7 @@ Canonical local ports (single source of truth — compose and docs must match): 
 | Method | Path | Purpose | Notable params |
 |---|---|---|---|
 | POST | `/elections` | Open an election (emits `ElectionStarted`) | body: office, candidate villager IDs, closes-at |
+| GET | `/elections` | Latest elections, newest first (tallies included, votes omitted) — the dashboard bootstrap (additive, M2-9) | `limit` (default 10, max 50) |
 | GET | `/elections/{id}` | Election detail: candidates, tally, status | `include=votes` |
 | POST | `/elections/{id}/votes` | Cast a vote. **Idempotency via natural key** `(election_id, voter_id)` — replays/retries return `200` with the existing vote, never double-count; emits `VoteCast` once | body: `voterId`, `candidateId` |
 | POST | `/laws` | Propose a law (emits `LawProposed`; enactment by the seated government emits `LawEnacted`) | body: title, text, proposed-by |
