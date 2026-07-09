@@ -9,7 +9,15 @@ import { buildEnvelope } from '../events/envelope.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { MovementTracker } from '../world/movementTracker.ts'
 import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
-import { RESOURCE_YIELD, blockNamesFor, gatherFailureMessage, planHarvest } from '../world/resources.ts'
+import {
+  RESOURCE_YIELD,
+  type ResourceSighting,
+  blockNamesFor,
+  gatherFailureMessage,
+  planHarvest,
+  scanNearbyResources,
+  shouldRescan,
+} from '../world/resources.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
@@ -39,6 +47,10 @@ export class BotSession {
   private reconnectDelayMs = 1_000
   private reconnectTimer: NodeJS.Timeout | null = null
   private snapshotTimer: NodeJS.Timeout | null = null
+  private resourceScanTimer: NodeJS.Timeout | null = null
+  /** last survey result, merged into every snapshot until the next scan (null until one runs) */
+  private nearbyResources: ResourceSighting[] | null = null
+  private lastScan: { position: Position; at: number } | null = null
   private movement: MovementTracker
   private spawnWaiters: Array<(reason: SpawnReason) => void> = []
   private log
@@ -131,6 +143,7 @@ export class BotSession {
 
     this.nextSpawnReason = 'reconnect' // any future spawn that isn't a death is a reconnect
     this.startSnapshots()
+    this.startResourceScan()
 
     for (const waiter of this.spawnWaiters.splice(0)) {
       waiter(reason)
@@ -179,7 +192,7 @@ export class BotSession {
       if (!this.bot) {
         return
       }
-      const snapshot = buildSnapshot(this.villagerId, this.bot, this.deps.others())
+      const snapshot = buildSnapshot(this.villagerId, this.bot, this.deps.others(), this.nearbyResources)
       if (snapshot) {
         void redis
           .set(`world:${this.villagerId}`, JSON.stringify(snapshot), 'EX', config.SNAPSHOT_TTL_SECONDS)
@@ -193,6 +206,55 @@ export class BotSession {
       clearInterval(this.snapshotTimer)
       this.snapshotTimer = null
     }
+    if (this.resourceScanTimer) {
+      clearInterval(this.resourceScanTimer)
+      this.resourceScanTimer = null
+    }
+    // A reconnect respawns somewhere else — don't carry a stale survey there.
+    this.nearbyResources = null
+    this.lastScan = null
+  }
+
+  /**
+   * The nearbyResources survey (M2-2) — its own cadence, slower than the 1s
+   * snapshot, because findBlocks sweeps are the cost driver. The first scan
+   * waits one full interval: at spawn the surrounding chunks are still
+   * streaming in, and findBlocks silently skips unloaded columns, so an
+   * immediate scan would advertise an emptier world than the real one.
+   */
+  private startResourceScan(): void {
+    const { config } = this.deps
+    if (config.RESOURCE_SCAN_INTERVAL_MS === 0) {
+      return // disabled — snapshots omit the field entirely
+    }
+    this.resourceScanTimer = setInterval(() => {
+      const bot = this.bot
+      const position = this.position
+      if (!bot?.entity || !position) {
+        return
+      }
+      // The interval is only the CHECK cadence; the gate decides whether the
+      // (expensive) sweep runs. Idle bots settle at one sweep per max-age.
+      if (
+        !shouldRescan(this.lastScan, position, Date.now(), {
+          moveBlocks: config.RESOURCE_SCAN_MOVE_BLOCKS,
+          maxAgeMs: config.RESOURCE_SCAN_MAX_AGE_MS,
+        })
+      ) {
+        return
+      }
+      try {
+        this.nearbyResources = scanNearbyResources(bot, {
+          maxDistance: config.RESOURCE_SCAN_DISTANCE,
+          countCap: config.RESOURCE_SCAN_COUNT_CAP,
+          yBand: config.RESOURCE_SCAN_Y_BAND,
+        })
+        this.lastScan = { position, at: Date.now() }
+      } catch (err) {
+        // Never let a survey hiccup (mid-chunk-unload race) kill the timer.
+        this.log.warn({ err: (err as Error).message }, 'resource scan failed')
+      }
+    }, config.RESOURCE_SCAN_INTERVAL_MS)
   }
 
   /**

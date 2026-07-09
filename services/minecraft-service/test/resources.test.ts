@@ -5,7 +5,10 @@ import {
   blockNamesFor,
   gatherFailureMessage,
   planHarvest,
+  scanNearbyResources,
+  shouldRescan,
   type DiggableBlock,
+  type ScannableBot,
 } from '../src/world/resources.ts'
 
 describe('resource families', () => {
@@ -115,5 +118,95 @@ describe('gatherFailureMessage (the percept must teach, not just report)', () =>
     expect(gatherFailureMessage('dirt', 10, null)).toBe(
       'no dirt within 10 blocks — try maxDistance 48 (the cap is 64), or move somewhere new first',
     )
+  })
+})
+
+/** A fake world: findBlocks behaves like mineflayer's (matcher-filtered, nearest-first, count-capped). */
+function botAt(origin: { x: number; y: number; z: number }, blocks: Array<{ name: string; x: number; y: number; z: number }>): ScannableBot & { calls: number[] } {
+  const calls: number[] = []
+  return {
+    calls,
+    entity: { position: origin },
+    findBlocks: ({ matching, count }) => {
+      calls.push(count)
+      return blocks
+        .filter((b) => matching({ name: b.name }))
+        .map((b) => ({ x: b.x, y: b.y, z: b.z }))
+        .sort(
+          (a, b) =>
+            Math.hypot(a.x - origin.x, a.y - origin.y, a.z - origin.z) -
+            Math.hypot(b.x - origin.x, b.y - origin.y, b.z - origin.z),
+        )
+        .slice(0, count)
+    },
+  }
+}
+
+const SCAN = { maxDistance: 48, countCap: 32, yBand: 16 }
+
+describe('scanNearbyResources (the snapshot survey)', () => {
+  const origin = { x: 0, y: 120, z: 0 }
+
+  it('reports each sighted family with nearest distance and count', () => {
+    const bot = botAt(origin, [
+      { name: 'oak_log', x: 3, y: 121, z: 4 }, // distance ~5.1
+      { name: 'spruce_log', x: 10, y: 120, z: 0 },
+      { name: 'grass_block', x: 0, y: 119, z: 1 },
+    ])
+    expect(scanNearbyResources(bot, SCAN)).toEqual([
+      { family: 'wood', nearestDistance: 5.1, count: 2 },
+      { family: 'dirt', nearestDistance: 1.4, count: 1 },
+    ])
+  })
+
+  it('drops out-of-band sightings and recomputes the nearest from what remains (the cliff-face spruce)', () => {
+    const bot = botAt(origin, [
+      { name: 'spruce_log', x: 2, y: 140, z: 0 }, // 20 up a rock face — the M2-1 unreachable target
+      { name: 'spruce_log', x: 30, y: 122, z: 0 }, // farther but walkable
+    ])
+    expect(scanNearbyResources(bot, SCAN)).toEqual([{ family: 'wood', nearestDistance: 30.1, count: 1 }])
+  })
+
+  it('omits a family whose every match is out of band', () => {
+    const bot = botAt(origin, [{ name: 'stone', x: 0, y: 60, z: 0 }]) // the world below
+    expect(scanNearbyResources(bot, SCAN)).toEqual([])
+  })
+
+  it('returns [] for a scanned-but-empty world (distinct from null = no scan)', () => {
+    expect(scanNearbyResources(botAt(origin, []), SCAN)).toEqual([])
+  })
+
+  it('returns null before the bot has an entity', () => {
+    const bot = botAt(origin, [])
+    expect(scanNearbyResources({ ...bot, entity: undefined }, SCAN)).toBeNull()
+  })
+
+  it('caps the reported count but asks findBlocks for headroom (the Y-band filter runs after the cap)', () => {
+    const everywhere = Array.from({ length: 80 }, (_, i) => ({ name: 'dirt', x: i + 1, y: 120, z: 0 }))
+    const bot = botAt(origin, everywhere)
+    const [dirt] = scanNearbyResources(bot, SCAN)!
+    expect(dirt).toEqual({ family: 'dirt', nearestDistance: 1, count: 32 })
+    expect(bot.calls).toEqual([64, 64, 64]) // countCap * 2, once per family
+  })
+})
+
+describe('shouldRescan (the CPU gate — sweeps are ~175ms each at 20 bots)', () => {
+  const GATE = { moveBlocks: 8, maxAgeMs: 60_000 }
+  const at = (x: number) => ({ x, y: 120, z: 0 })
+
+  it('always scans when no survey exists yet', () => {
+    expect(shouldRescan(null, at(0), 0, GATE)).toBe(true)
+  })
+
+  it('skips while the bot stands still and the survey is fresh', () => {
+    expect(shouldRescan({ position: at(0), at: 0 }, at(3), 5_000, GATE)).toBe(false)
+  })
+
+  it('rescans after real movement', () => {
+    expect(shouldRescan({ position: at(0), at: 0 }, at(8), 5_000, GATE)).toBe(true)
+  })
+
+  it('rescans a stale survey even without movement (neighbors dig)', () => {
+    expect(shouldRescan({ position: at(0), at: 0 }, at(0), 60_000, GATE)).toBe(true)
   })
 })

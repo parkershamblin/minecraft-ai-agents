@@ -15,5 +15,9 @@
       "distance": 7.4
     }
   ],
-  "timeOfDay": 1000
+  "timeOfDay": 1000,
+  "nearbyResources": [
+    { "family": "wood", "nearestDistance": 12.4, "count": 32 },
+    { "family": "dirt", "nearestDistance": 1.0, "count": 32 }
+  ]
 }

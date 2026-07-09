@@ -1,4 +1,4 @@
-import type { Position } from './position.ts'
+import { type Position, distance, round1 } from './position.ts'
 
 /**
  * Resource families → concrete block names, plus the pure harvest logic
@@ -87,6 +87,95 @@ function toolHint(block: DiggableBlock, itemName: (id: number) => string | undef
   const classes = new Set(names.map((name) => name.split('_').pop()))
   const only = classes.size === 1 ? [...classes][0] : undefined
   return only ? `a ${only}` : `one of: ${names.join(', ')}`
+}
+
+/** One WorldSnapshot.nearbyResources entry — the contract's shape exactly. */
+export interface ResourceSighting {
+  family: string
+  nearestDistance: number
+  count: number
+}
+
+export interface ScanOptions {
+  /** 3D scan radius — keep aligned with GatherParams' default so "in sight" means "gatherable" */
+  maxDistance: number
+  /** per-family result cap; the snapshot's count reads "at least" beyond it */
+  countCap: number
+  /** |dy| beyond which a sighting is dropped — findBlock has no reachability
+   *  check and a goto toward a cliff-face target never settles (M2-1 finding),
+   *  so the snapshot only advertises blocks near the villager's own altitude */
+  yBand: number
+}
+
+/** The slice of a mineflayer Bot the scan reads — structural, so tests fake it. */
+export interface ScannableBot {
+  entity: { position: Position } | undefined
+  findBlocks(options: {
+    matching: (block: { name: string }) => boolean
+    maxDistance: number
+    count: number
+  }): Position[]
+}
+
+/**
+ * The scan's skip gate. Measured 2026-07-08: an ungated 5s scan across 20
+ * bots pins a full CPU core (~175ms per bot-scan — findBlocks sweeps 4096
+ * blocks in every match-bearing section), and that core is the event loop
+ * that runs command execution. A standing bot is staring at the same world,
+ * so: rescan only after real movement, or when the survey is old enough
+ * that someone may have dug the world out from under it.
+ */
+export function shouldRescan(
+  last: { position: Position; at: number } | null,
+  position: Position,
+  now: number,
+  opts: { moveBlocks: number; maxAgeMs: number },
+): boolean {
+  if (!last) {
+    return true
+  }
+  return distance(position, last.position) >= opts.moveBlocks || now - last.at >= opts.maxAgeMs
+}
+
+/**
+ * Survey every resource family around the bot for the snapshot's
+ * nearbyResources line. Called on its own slow cadence (not the 1s snapshot
+ * tick): each family is one findBlocks sweep, and although absent families
+ * are cheap (palette pre-check skips their sections), present ones pay a
+ * 4096-block section scan. Returns [] for "scanned, nothing in sight" —
+ * the caller distinguishes that from "no scan yet" (null).
+ *
+ * The Y-band is a post-filter by necessity: findBlocks probes section
+ * palettes with position-less Block instances, so a position-aware matcher
+ * would wrongly skip whole sections.
+ */
+export function scanNearbyResources(bot: ScannableBot, opts: ScanOptions): ResourceSighting[] | null {
+  const origin = bot.entity?.position
+  if (!origin) {
+    return null // not spawned — nothing truthful to report
+  }
+  const sightings: ResourceSighting[] = []
+  for (const [family, names] of Object.entries(RESOURCE_BLOCKS)) {
+    const positions = bot.findBlocks({
+      matching: (block) => names.includes(block.name),
+      maxDistance: opts.maxDistance,
+      // Headroom for the post-filter: in-band blocks must survive even when
+      // out-of-band ones (a mountainside of stone below) fill the cap first.
+      count: opts.countCap * 2,
+    })
+    const inBand = positions.filter((p) => Math.abs(p.y - origin.y) <= opts.yBand)
+    if (inBand.length === 0) {
+      continue
+    }
+    sightings.push({
+      family,
+      // findBlocks returns nearest-first, but the Y-band filter may have
+      // dropped the head of the list — recompute instead of trusting order.
+      nearestDistance: round1(Math.min(...inBand.map((p) => distance(p, origin)))),
+      count: Math.min(inBand.length, opts.countCap),
+    })
+  }
+  return sightings
 }
 
 /**

@@ -60,4 +60,24 @@ describe('buildSnapshot', () => {
   it('returns null before the bot has an entity (not spawned)', () => {
     expect(buildSnapshot(ELARA_ID, { ...bot, entity: undefined }, [])).toBeNull()
   })
+
+  it('merges the resource survey and still validates against the contract', () => {
+    const snapshot = buildSnapshot(ELARA_ID, bot, [], [
+      { family: 'wood', nearestDistance: 12.4, count: 32 },
+    ])!
+
+    expect(snapshot.nearbyResources).toEqual([{ family: 'wood', nearestDistance: 12.4, count: 32 }])
+    expect(validate(snapshot)).toBe(true)
+    expect(validate.errors ?? []).toEqual([])
+  })
+
+  it('omits nearbyResources before any scan (null) but keeps a scanned-empty [] — and both validate', () => {
+    const unscanned = buildSnapshot(ELARA_ID, bot, [], null)!
+    expect('nearbyResources' in unscanned).toBe(false)
+    expect(validate(unscanned)).toBe(true)
+
+    const scannedEmpty = buildSnapshot(ELARA_ID, bot, [], [])!
+    expect(scannedEmpty.nearbyResources).toEqual([])
+    expect(validate(scannedEmpty)).toBe(true)
+  })
 })
