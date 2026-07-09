@@ -36,9 +36,10 @@ management:
         enabled: true
 
 civ:
-  # All event topics PLUS commands.minecraft — commands are archived for
-  # causation chains, never acted on (minecraft-service is the only executor).
-  topics: ${CIV_TOPICS:world.events,agent.events,social.events,commands.minecraft}
+  # All event topics PLUS both command topics — commands are archived for
+  # causation chains, never acted on (each plane has exactly one executor:
+  # minecraft-service for the world, government-service for governance).
+  topics: ${CIV_TOPICS:world.events,agent.events,social.events,government.events,commands.minecraft,commands.government}
   sse:
     heartbeat-ms: 15000
     timeout-ms: 1800000

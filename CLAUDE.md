@@ -16,14 +16,18 @@ villagers as bots and emitting world facts. `memory-service` (Python, pgvector)
 owns the generative-agents memory stream in `memory_db` (recency × importance ×
 relevance retrieval). `event-service` (Java 21, Spring Boot) consumes every
 topic — including commands, for causation chains — into an append-only Postgres
-ledger with cursor-paged reads and an SSE live feed. Relationships are directed
+ledger with cursor-paged reads and an SSE live feed. `government-service`
+(Java 21, Spring Boot, hexagonal like event-service) owns
+elections/governments in `government_db`: the clock-driven election state
+machine (scheduled → nominating → voting → decided) and the idempotent ballot
+box — REST-driven since M2-6; it joins the Kafka planes with M2-7's contracts. Relationships are directed
 edges (affinity −100..100, trust 0..100); every change is a
 `RelationshipChanged` ledger event. Kafka = Redpanda locally. Contracts live in
 `packages/events` (JSON Schema → generated TS/Python types; additive-only
 within a version). `apps/dashboard` is Next.js reading via rewrites + SSE.
 
 Ports: 3000 dashboard · 8001 agent · 8002 memory · 8003 minecraft ·
-8080 BFF (M2) · 8081 event · 8082 government (P2) · 8083 analytics (M2) ·
+8080 BFF (M2) · 8081 event · 8082 government · 8083 analytics (M2) ·
 3001 Grafana · 9090 Prometheus · 8085 Redpanda console · 25565 Minecraft.
 
 ## Start / stop the stack
@@ -31,7 +35,10 @@ Ports: 3000 dashboard · 8001 agent · 8002 memory · 8003 minecraft ·
 ```powershell
 task up        # infra only (Postgres+pgvector, Redis, Redpanda, Prometheus, Grafana)
 task up:all    # + the services (docker compose --profile infra --profile app)
+task topics    # provision the Kafka topic map (runs inside up/up:all; partition
+               # changes need docs/runbooks/kafka-topic-migration.md)
 task seed      # provision villagers.json (first VILLAGER_COUNT) + spawn bots
+               # (VILLAGER_COUNT=0 preset: use node scripts/spawn-fleet.mjs instead)
 task test      # all test suites   ·   task gen  # regen contract types (committed!)
 task down      # stop containers (volumes survive)  ·  task nuke  # fresh world
 ```
@@ -64,6 +71,17 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   resist deletion) `%LOCALAPPDATA%\Docker\run` AND
   `%LOCALAPPDATA%\docker-secrets-engine`, then relaunch. **Never "Reset to
   factory defaults"** — it wipes volumes (villager memories, the ledger).
+  Wrinkle (2026-07-08, bit twice the same night): the rename can RACE a
+  crashed instance's own recovery, which quietly puts a zombie sock back and
+  the relaunch dies the same way. The on-screen error dialog IS the
+  lingering instance — behind one such dialog sat nine live processes
+  (backend, build, 5× electron, docker-agent). Order matters:
+  (1) `Get-Process | ? { $_.ProcessName -match 'docker|vpnkit' } |
+  Stop-Process -Force` — don't eyeball, kill; (2) rename both dirs;
+  (3) verify both paths are actually GONE; (4) relaunch. Any socket under
+  those dirs can be the victim (`engine.sock`, `run\dockerInference` — the
+  error names whichever bind failed first). Failed-launch forensics: tail
+  `%LOCALAPPDATA%\Docker\log\host\com.docker.backend.exe.log`.
 - Bare `python` on this box is a stale 3.8 — always `uv run` / `uvx` / `py`.
 - New `gradlew` files need `git update-index --chmod=+x` (Windows can't store
   the exec bit; Linux CI fails without it).
@@ -71,12 +89,22 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   won't resolve bare batch names from the CWD: `cmd /c gradlew.bat` fails with
   "not recognized" there while working fine in a normal terminal. Use the
   explicit form `cmd /c .\gradlew.bat` (the Taskfile does since M1-9).
+  Second trap in the same pit (M2-6): GIT BASH converts `/c` into `C:\`
+  (MSYS path mangling) — cmd prints its banner, runs NOTHING, exits 0.
+  Run gradlew from PowerShell (or `cmd //c` in Git Bash).
 - Git Bash mangles `/paths` in `docker run -v` args — use PowerShell for
   Docker volume mounts.
 - kafkajs has no built-in Snappy codec (rpk produces snappy by default) —
   minecraft-service registers `kafkajs-snappy`; keep that import first.
 - OpenAI strict structured outputs reject optional schema properties — new
   decision-contract fields must be **required-nullable** (`type: ["x","null"]`).
+  Corollary (M2-7 structural audit): strict mode ALSO rejects free-form
+  objects (`{type: object}` with no properties/additionalProperties:false) —
+  DECISION_SCHEMA's world `params` is exactly that, so the OpenAI provider
+  path 400s TODAY, latent since M1-3 (every run so far was Ollama).
+  governanceAction was built flat + strict-safe for this reason. Reshape
+  `params` (superset-with-nullables) BEFORE any OpenAI filming run — and
+  re-verify llama behavior after, since llama sees the same schema.
 - `LLM_DAILY_TOKEN_BUDGET=2000000` is sized for PAID providers. On free local
   Ollama, 20 villagers burn it in ~30 minutes and the breaker silently flips
   deliberation to the FakeProvider — whose scripted chat + relationshipUpdates
@@ -132,12 +160,28 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   is ~2–4 ms). Point bots at it with **`MC_HOST=minecraft`** (the compose
   service name); the vanilla host server stays the fallback via
   `MC_HOST=host.docker.internal`.
+- mineflayer world sweeps (`findBlocks` etc.) are CLIENT-side: they never
+  cost Paper MSPT — they cost the minecraft-service **event loop**, the one
+  thread that executes every bot's commands. Measured M2-2: ungated 5s
+  resource scans × 20 bots pinned a full core (~175 ms/bot-scan). Any
+  recurring sweep must pass a skip gate (see `shouldRescan`: movement ≥8
+  blocks or survey ≥60s old). Related: bot sessions are in-memory — a
+  minecraft-service container recreate silently drops the whole fleet;
+  re-publish spawn commands (or `task seed`) after recreating it.
 - Paper's `bukkit.yml` `connection-throttle: 4000` (per-IP) chokes the bot
   fleet after any server restart: all 20 bots share the minecraft-service
   container IP and reconnect in a synchronized 60s-backoff herd, so the
   throttle admits **one bot per minute** (~20 min to full recovery). Set
   `connection-throttle: -1` in `/data/bukkit.yml` — done Jul 2026; survives
   restarts (volume) but NOT `task nuke`, so re-apply after a nuke.
+- Worktree sessions vs the live stack (M2-6): worktrees don't carry `.env`
+  (gitignored) — copy it from the main repo or compose's `--env-file .env`
+  fails. Compose run from a worktree attaches to the SAME running project
+  (the `name:` key), so `up -d --build --no-deps <service>` deploys the
+  worktree's code without recreating anything else. But bind-mounted configs
+  (prometheus.yml, postgres-init) resolve relative to the compose file each
+  container was STARTED from — a worktree-side config edit reaches a running
+  container only after merge + that container's restart.
 - Paper persists difficulty per-world in `level.dat`, which overrides
   `server.properties` on boot for existing worlds. An RCON `difficulty` change
   is in-memory until a world save — run `save-all` after it, or the container's

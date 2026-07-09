@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
+from agent_service.brain.awareness import LastDecision
 from agent_service.brain.prompts import system_prompt, user_prompt
 from agent_service.villagers.relationships import RelationshipEdge
 
@@ -105,3 +106,231 @@ def test_feelings_section_absent_when_nobody_nearby():
     # seam wired (feelings={}) but nobody in sight -> no section, no crash.
     prompt = user_prompt(_snapshot(), [], [], {})
     assert "How you feel" not in prompt
+
+
+def test_grudge_directive_renders_when_grudge_in_sight():
+    snapshot = _snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0})
+    feelings = {BRAM_ID: _edge(BRAM_ID, -20, 30, "he spread lies")}  # -20 IS a grudge (boundary)
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "You hold a grudge against someone here." in prompt
+    assert "do not perform warmth you do not feel" in prompt
+
+
+def test_no_grudge_directive_above_threshold():
+    snapshot = _snapshot({"villagerId": BRAM_ID, "name": "Bram", "distance": 5.0})
+    feelings = {BRAM_ID: _edge(BRAM_ID, -19, 30, "chilly words")}
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "You hold a grudge" not in prompt
+
+
+def test_grudge_directive_ignores_edges_for_absent_villagers():
+    # A grudge toward someone who is NOT in sight must not fire the directive —
+    # it keys off who is actually here, not every edge the dict happens to hold.
+    snapshot = _snapshot({"villagerId": WREN_ID, "name": "Wren", "distance": 9.0})
+    feelings = {
+        WREN_ID: _edge(WREN_ID, 12, 55, None),
+        BRAM_ID: _edge(BRAM_ID, -40, 10, "he spread lies"),  # absent villager
+    }
+    prompt = user_prompt(snapshot, [], [], feelings)
+    assert "You hold a grudge" not in prompt
+
+
+def test_system_prompt_renders_quirks_and_material_work():
+    prompt = system_prompt(
+        "Elara",
+        {"traits": ["warm"], "values": ["community"], "speechStyle": "friendly", "quirks": ["hums while working", "counts jars twice"]},
+        None,
+    )
+    assert "Quirks: hums while working; counts jars twice." in prompt
+    # the M2-3 rebalance: material action is named as legitimate
+    assert "material work" in prompt
+    assert "social actions over grand plans" not in prompt
+
+
+def test_system_prompt_omits_quirks_line_when_none():
+    prompt = system_prompt("Elara", {"traits": ["warm"]}, None)
+    assert "Quirks:" not in prompt
+
+
+def test_resources_in_sight_render_from_snapshot():
+    snapshot = _snapshot()
+    snapshot["nearbyResources"] = [
+        {"family": "wood", "nearestDistance": 33.7, "count": 25},
+        {"family": "dirt", "nearestDistance": 1.2, "count": 32},
+    ]
+    prompt = user_prompt(snapshot, [], [])
+    assert "Resources in sight (gather can reach these):" in prompt
+    assert "- wood: nearest 33.7 blocks away, 25 seen" in prompt
+    assert "- dirt: nearest 1.2 blocks away, 32 seen" in prompt
+
+
+def test_resources_scanned_empty_says_so_and_points_at_moving():
+    snapshot = _snapshot()
+    snapshot["nearbyResources"] = []
+    prompt = user_prompt(snapshot, [], [])
+    assert "Resources in sight: none" in prompt
+    assert "Moving somewhere new" in prompt
+
+
+def test_no_resources_section_when_field_absent():
+    # pre-M2-2 snapshot / scan disabled -> the section simply doesn't exist
+    prompt = user_prompt(_snapshot(), [], [])
+    assert "Resources in sight" not in prompt
+
+
+def test_last_decision_pairs_with_its_outcome_percept_and_claims_it():
+    percepts = [
+        {"type": "ActionFailed", "action": "gather", "detail": {"errorCode": "RESOURCE_NOT_FOUND"}},
+        {"type": "ActionCompleted", "action": "move", "detail": {"blocksTraveled": 4}},
+    ]
+    prompt = user_prompt(_snapshot(), percepts, [], last_decision=LastDecision("gather", {"resource": "wood"}))
+    assert 'Your last decision: gather {"resource": "wood"} → it FAILED: {"errorCode": "RESOURCE_NOT_FOUND"}' in prompt
+    # the claimed percept must not ALSO render under "Since your last turn"
+    assert prompt.count("RESOURCE_NOT_FOUND") == 1
+    # the unclaimed one still does
+    assert "your 'move' completed" in prompt
+
+
+def test_last_decision_without_outcome_is_honest():
+    prompt = user_prompt(_snapshot(), [], [], last_decision=LastDecision("move", {}))
+    assert "Your last decision: move → outcome not observed yet" in prompt
+
+
+def test_no_last_decision_section_by_default():
+    prompt = user_prompt(_snapshot(), [], [])
+    assert "Your last decision" not in prompt
+
+
+# ---------------------------------------------------------------- M2-8 civic
+
+from datetime import timedelta  # noqa: E402
+
+from agent_service.brain.civics import (  # noqa: E402
+    CandidateEntry,
+    CivicView,
+    ElectionCampaign,
+    Mayor,
+)
+
+ELECTION_ID = "019f8e2a-0000-7000-8000-0000e1ec0001"
+T0 = datetime(2026, 7, 9, 12, 0, 0, tzinfo=UTC)
+
+
+def _campaign(*candidates):
+    return ElectionCampaign(
+        election_id=ELECTION_ID,
+        office="mayor",
+        starts_at=T0,
+        nominating_ends_at=T0 + timedelta(minutes=10),
+        ends_at=T0 + timedelta(minutes=25),
+        candidates=tuple(candidates),
+    )
+
+
+BRAM_CANDIDATE = CandidateEntry(BRAM_ID, "Bram", "Grain tallies posted at dawn.")
+WREN_CANDIDATE = CandidateEntry(WREN_ID, "Wren", None)
+
+
+def test_voting_section_uses_the_proven_affordance_shape():
+    """The M2-7 smoke's 0/4 -> 4/4 wording is load-bearing: stakes named,
+    deadline named, no polite out, and the vote rides along."""
+    prompt = user_prompt(None, [], [], civic=CivicView(
+        campaign=_campaign(BRAM_CANDIDATE, WREN_CANDIDATE),
+        phase="voting", you_declared=False, you_voted=False, mayor=None,
+    ))
+    assert "VILLAGE AFFAIRS" in prompt
+    assert "a vote not cast is a voice lost" in prompt
+    assert "rides along with whatever else you do this turn" in prompt
+    assert f'electionId "{ELECTION_ID}"' in prompt
+    assert f"Bram (candidateVillagerId {BRAM_ID})" in prompt
+    assert '"Grain tallies posted at dawn."' in prompt
+    assert f"Wren (candidateVillagerId {WREN_ID})" in prompt  # platform-less renders too
+    assert "declare_candidacy" not in prompt  # wrong window's affordance never leaks
+
+
+def test_voting_section_suppresses_the_affordance_after_voting():
+    prompt = user_prompt(None, [], [], civic=CivicView(
+        campaign=_campaign(BRAM_CANDIDATE),
+        phase="voting", you_declared=False, you_voted=True, mayor=None,
+    ))
+    assert "You have cast your vote" in prompt
+    assert "governanceAction" not in prompt  # no ALREADY_VOTED spam invitation
+
+
+def test_nominating_section_offers_candidacy_until_declared():
+    open_prompt = user_prompt(None, [], [], civic=CivicView(
+        campaign=_campaign(), phase="nominating",
+        you_declared=False, you_voted=False, mayor=None,
+    ))
+    assert "no one has stepped forward yet" in open_prompt
+    assert 'action "declare_candidacy"' in open_prompt
+    assert "a candidacy not declared is a chance lost" in open_prompt
+
+    declared_prompt = user_prompt(None, [], [], civic=CivicView(
+        campaign=_campaign(BRAM_CANDIDATE), phase="nominating",
+        you_declared=True, you_voted=False, mayor=None,
+    ))
+    assert "Your name is already on the ballot" in declared_prompt
+    assert "governanceAction" not in declared_prompt
+
+
+def test_mayor_line_stands_after_the_campaign():
+    prompt = user_prompt(None, [], [], civic=CivicView(
+        campaign=None, phase=None, you_declared=False, you_voted=False,
+        mayor=Mayor(BRAM_ID, "Bram"),
+    ))
+    assert "The village mayor is Bram." in prompt
+    assert "VILLAGE AFFAIRS" not in prompt  # no campaign, no drumroll
+
+    own_prompt = user_prompt(None, [], [], civic=CivicView(
+        campaign=None, phase=None, you_declared=False, you_voted=False,
+        mayor=Mayor(BRAM_ID, "Bram"), you_are_mayor=True,
+    ))
+    assert "You are the mayor of the village." in own_prompt
+
+
+def test_no_civic_section_by_default():
+    assert "VILLAGE AFFAIRS" not in user_prompt(None, [], [])
+    assert "mayor" not in user_prompt(None, [], [])
+
+
+def test_civic_news_renderers_and_the_mixed_queue():
+    """New percept types render as village news; unknown types are still
+    skipped (the queue outlives any single deploy's vocabulary)."""
+    percepts = [
+        {"type": "ElectionStarted", "office": "mayor"},
+        {"type": "CandidateNominated", "candidateName": "Bram",
+         "platform": "Honest tallies.", "you": False},
+        {"type": "CandidateNominated", "you": True},
+        {"type": "ElectionDecided", "winnerName": "Bram", "you": False},
+        {"type": "GovernanceRejected", "action": "vote",
+         "message": "you already voted in this election"},
+        {"type": "SomeFuturePerceptType", "payload": "whatever"},
+        {"type": "ChatObserved", "speakerName": "Wren", "message": "did you vote yet?"},
+    ]
+    prompt = user_prompt(None, percepts, [])
+    assert "Village news since your last turn:" in prompt
+    assert "an election for mayor has been called" in prompt
+    assert 'Bram declared candidacy: "Honest tallies."' in prompt
+    assert "your candidacy is registered" in prompt
+    assert "Bram is the new mayor" in prompt
+    assert "your vote was refused: you already voted" in prompt
+    assert "SomeFuturePerceptType" not in prompt  # mixed-queue regression
+    assert 'Wren said: "did you vote yet?"' in prompt  # chat still renders
+
+
+def test_you_won_percept_is_second_person():
+    prompt = user_prompt(None, [{"type": "ElectionDecided", "winnerName": "Elara", "you": True}], [])
+    assert "YOU have been elected mayor" in prompt
+
+
+def test_community_goal_line_is_off_by_default_and_on_when_set():
+    base = system_prompt("Elara", {"traits": ["warm"]}, None)
+    assert "shared aim" not in base
+
+    steered = system_prompt(
+        "Elara", {"traits": ["warm"]}, None,
+        community_goal="the village needs a proper granary before winter",
+    )
+    assert steered.startswith(base)  # additive: one line, nothing else moves
+    assert "one shared aim: the village needs a proper granary before winter" in steered

@@ -13,6 +13,7 @@ def decision(**overrides) -> str:
         "importance": 2.0,
         "sentiment": 0.4,
         "relationshipUpdates": None,  # required-nullable (OpenAI strict mode)
+        "governanceAction": None,  # required-nullable (M2-7)
     }
     base.update(overrides)
     return json.dumps(base)
@@ -82,6 +83,7 @@ def test_idle_factory_is_always_contract_valid():
                 "importance": fallback.importance,
                 "sentiment": fallback.sentiment,
                 "relationshipUpdates": None,
+                "governanceAction": None,
             }
         )
     )
@@ -127,6 +129,80 @@ class TestRelationshipUpdates:
         update = {"villagerId": "x", "affinityDelta": 1, "trustDelta": 1, "reason": "r"}
         with pytest.raises(MalformedDecision):
             validate_decision(decision(relationshipUpdates=[update] * 4))
+
+
+ELECTION_ID = "019f8e2a-0000-7000-8000-0000e1ec0001"
+BRAM_ID = "019f8e2a-0000-7000-8000-0000000b2a44"
+
+
+def governance(**overrides):
+    base = {
+        "action": "vote",
+        "electionId": ELECTION_ID,
+        "candidateVillagerId": BRAM_ID,
+        "reason": "He shared his bread.",
+        "platform": None,
+    }
+    base.update(overrides)
+    return base
+
+
+class TestGovernanceAction:
+    def test_null_means_no_civic_action(self):
+        assert validate_decision(decision(governanceAction=None)).governance_action is None
+
+    def test_missing_field_is_malformed(self):
+        raw = json.loads(decision())
+        del raw["governanceAction"]
+        with pytest.raises(MalformedDecision):
+            validate_decision(json.dumps(raw))
+
+    def test_vote_maps_to_wire_params(self):
+        parsed = validate_decision(decision(governanceAction=governance()))
+        assert parsed.governance_action.action == "vote"
+        assert parsed.governance_action.params == {
+            "electionId": ELECTION_ID,
+            "candidateVillagerId": BRAM_ID,
+            "reason": "He shared his bread.",
+        }
+
+    def test_vote_without_reason_omits_the_key(self):
+        parsed = validate_decision(decision(governanceAction=governance(reason=None)))
+        assert "reason" not in parsed.governance_action.params
+
+    def test_declare_candidacy_maps_platform(self):
+        parsed = validate_decision(
+            decision(
+                governanceAction=governance(
+                    action="declare_candidacy",
+                    candidateVillagerId=None,
+                    reason=None,
+                    platform="Grain tallies posted at dawn.",
+                )
+            )
+        )
+        assert parsed.governance_action.action == "declare_candidacy"
+        assert parsed.governance_action.params == {
+            "electionId": ELECTION_ID,
+            "platform": "Grain tallies posted at dawn.",
+        }
+
+    def test_unknown_civic_action_is_malformed(self):
+        # propose_law is the M3 temptation — the outer enum rejects it whole.
+        with pytest.raises(MalformedDecision):
+            validate_decision(decision(governanceAction=governance(action="propose_law")))
+
+    def test_vote_without_candidate_is_dropped_not_fatal(self):
+        parsed = validate_decision(decision(governanceAction=governance(candidateVillagerId=None)))
+        assert parsed.governance_action is None  # civic add-on dropped...
+        assert parsed.action == "chat"  # ...but the world action survives
+
+    def test_hallucinated_election_id_is_dropped_not_fatal(self):
+        parsed = validate_decision(
+            decision(governanceAction=governance(electionId="the-big-election"))
+        )
+        assert parsed.governance_action is None
+        assert parsed.action == "chat"
 
 
 class TestToleranReaderNormalization:

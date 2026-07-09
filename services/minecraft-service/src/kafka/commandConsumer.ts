@@ -35,7 +35,9 @@ export class CommandConsumer {
     await this.consumer.connect()
     await this.consumer.subscribe({ topic: 'commands.minecraft' })
     await this.consumer.run({
-      partitionsConsumedConcurrently: 3,
+      // Matches the provisioned partition count (M2-4, scripts/provision-topics.mjs)
+      // so no partition ever waits behind another villager's slow action.
+      partitionsConsumedConcurrently: 6,
       eachMessage: async ({ message }) => {
         const raw = message.value?.toString()
         if (!raw) {

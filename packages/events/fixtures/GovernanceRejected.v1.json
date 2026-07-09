@@ -1,0 +1,19 @@
+{
+  "eventId": "019f8e2b-0015-7000-8000-00000000b015",
+  "eventType": "GovernanceRejected",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-08T19:14:02.000Z",
+  "source": "government-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000c3e55",
+  "correlationId": "019f8e2b-0015-7000-8000-c0de00000015",
+  "causationId": "019f8e2b-0016-7000-8000-00000000b016",
+  "payload": {
+    "commandId": "019f8e2b-0016-7000-8000-00000000b016",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000c3e55",
+    "action": "vote",
+    "electionId": "019f8e2a-0000-7000-8000-0000e1ec0001",
+    "errorCode": "ALREADY_VOTED",
+    "message": "You already voted in this election; your first vote stands and cannot be changed."
+  }
+}

@@ -102,4 +102,7 @@ class GatherParams(BaseModel):
         'wood',
         description='Resource family; the executor maps it to concrete block types.',
     )
-    maxDistance: confloat(ge=4.0, le=64.0) | None = 32
+    maxDistance: confloat(ge=4.0, le=64.0) | None = Field(
+        48,
+        description='Search radius in blocks. M1 shipped default 32; M2-1 raised it to 48 — the plaza sits ~40 blocks from the treeline and every M1 gather starved at small radii.',
+    )

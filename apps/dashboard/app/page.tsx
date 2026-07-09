@@ -12,7 +12,10 @@ export default function OverviewPage() {
             Autonomous villagers on a live Minecraft server — every thought, word, and step is an event.
           </p>
         </div>
-        <nav className="text-xs text-zinc-500">
+        <nav className="flex gap-4 text-xs text-zinc-500">
+          <Link href="/government" className="hover:text-zinc-300">
+            Government →
+          </Link>
           <Link href="/relationships" className="hover:text-zinc-300">
             Relationships →
           </Link>

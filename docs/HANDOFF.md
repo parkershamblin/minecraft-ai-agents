@@ -1,11 +1,775 @@
-# Session Handoff — Sprint 5 COMPLETE: M1-10 done, M1 DoD 5.5/6
+# Session Handoff — M2 CODE-COMPLETE (M2-1…M2-10 ✅): THE VILLAGE ELECTED A MAYOR · Episode 2 filming = Parker's session
 
-> Started at the Sprint 3 → Sprint 4 boundary (2026-07-07). A fresh session
-> should be able to continue from this file + `docs/architecture/07-m1-plan.md`
-> without asking questions. **All M1 tickets complete (M1-1…M1-10). M1 DoD:
-> 5 of 6 items verified with evidence, one half-item open (no organic grudge
-> at |affinity|>40 yet) plus the actual episode recording (Parker's filming
-> session — everything is staged for it, see "What M1-10 shipped").**
+> A fresh session should be able to continue from this file +
+> `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
+> (DoD 6/6, Episode 1 filmed). M2 is CODE-COMPLETE: all ten tickets shipped,
+> and the dress rehearsal ran the real thing — a fully organic election on
+> live llama deliberation: 20/20 candidacies, 20/20 votes, 100% turnout,
+> MAYOR BRAM seated (10 votes on his M1 bread-and-ledger reputation).
+> DoD #6's episode segment is Parker's filming session (`docs/demo-m2.md`
+> is the shot script). THE FLEET IS TICKING — see machine state.**
+
+## Session 2026-07-09 ~02:05–03:55 EDT — M2-10 shipped: the dress rehearsal elected a mayor
+
+- **What shipped** (`M2-10: election day — gate, steering lever, demo, and
+  the rehearsal`):
+  - **jacoco gate ON for government-service** (M1-10 pattern): one aggregate
+    LINE ratio ≥0.80 over adapter.in/** + application/** +
+    adapter.out.persistence/** (measured **92.3%** at gate time), wired
+    `finalizedBy(test)` so CI's fixed `gradlew test bootJar` enforces it;
+    the Kafka out-adapter stays measured-but-ungated (the SSE-relay analog,
+    same scoping call as event-service). `task test` = six suites, all
+    gates green — **M2 DoD #7 ✅**.
+  - **D2 steering lever staged**: `COMMUNITY_GOAL` env → one system-prompt
+    line ("The village talk lately keeps returning to one shared aim: …"),
+    OFF by default, plumbed settings→TickDeps→system_prompt→compose
+    (+prompt test, agent tests 129→130). Influencer personas documented as
+    villagers.json edits (zero code). Both levers are in demo-m2.md with
+    the warning: pull BEFORE opening an election, never during (the
+    restart-forgets rule).
+  - **`docs/demo-m2.md`** — the Episode 2 shot script: 7 money shots
+    (the announcement, someone steps forward, campaign chatter, the
+    receipts, the double vote that wasn't, election night + the mayoral
+    address, the why-did-she-vote replay), health commands, teardown, and
+    the DO-NOT-SET-OPENAI_API_KEY warning (strict-mode params bug).
+- **THE DRESS REHEARSAL — the arc ran itself, organically, first try:**
+  - Deploy: `up --build agent-service` ended the four-milestone image gap;
+    boot chain `ollama (warmed)` (the .env's `LLM_PROVIDER=openai` + blank
+    key degraded correctly — NOTE: do NOT add a key before the params
+    reshape), 20 tick loops, civic consumer subscribed. Warmup action mix
+    over the first fleet round: 16 move / 2 gather / 2 chat / 1 idle — the
+    M2-3 rebalance visible in the wild.
+  - **One seeded act**: `POST /elections {}` (defaults 600s/900s) at
+    07:20:24Z. Everything after was the villagers'.
+  - **Nominations**: ALL TWENTY villagers declared candidacy via the
+    command plane, each with a platform in their own voice — Vesper the
+    night-watch ("I have observed and learned from many of you"), Gideon
+    inventing credentials ("my experience as a close advisor to Elara"),
+    Tansy running on food access. Juniper told her bees the news; Vesper
+    campaigned in watch-idiom. **A 20/20 field is the affordance being TOO
+    persuasive** (llama agreeableness, the 0/4→4/4 sensitivity in the
+    other direction) — filming tune: soften to "if the office calls to
+    you…" or shorten nominations; recorded as the M3 prompt lever.
+  - **Voting**: 20/20 organic votes in the 15-minute window — **Bram won
+    10 of 20** in a twenty-way field (absolute majority), on the M1 canon:
+    his platform claimed "experience with the miller's family," and
+    Elara's vote reason echoed the line back — **the campaign message
+    propagated through the village and won the election.** Four self-votes;
+    Ines and Wren took 2 each. Zero operator input after the open.
+    **M2 DoD #1 ✅ (20≥2 candidacies, 20≥10 votes).**
+  - **The clock decided at 07:45:24Z**: Mayor Bram, governments row seated
+    (`governmentId=019f45d6-…`), ElectionDecided broadcast to every mind;
+    "You are the mayor of the village." now stands in Bram's every prompt.
+  - **DoD #2 ✅ — the replay**: ONE correlationId returns Elara's entire
+    civic tick from the ledger: DecisionMade (mid-storm-plot reasoning) →
+    ActionRequested + **GovernanceRequested** + VillagerTalked (the
+    single-call multi-plane tick, live) → VoteCast with her stated reason
+    ("Bram's dedication… and his experience with the miller's family") →
+    3× RelationshipChanged → MemoryFormed → ActionCompleted. Chain:
+    VoteCast ← GovernanceRequested ← DecisionMade, exactly as designed.
+  - **DoD #3 ✅ — the double vote that wasn't**: zero organic ALREADY_VOTED
+    during the window (nobody re-voted!); demo Shot 5 forced one on
+    rehearsal data — tally 20 before AND after, `GovernanceRejected
+    {ALREADY_VOTED}` in the ledger ("the first vote stands").
+  - **DoD #6 (page half) ✅**: `/government` live through the whole arc —
+    nominating countdown with the growing candidate roll, live tally,
+    receipts feed, decided banner (screenshots taken mid-arc + at the
+    decide). The episode-segment half is Parker's filming session.
+  - **Health across the ~45-min deliberation run**: MSPT avg 7.0–7.5 ms
+    (7× headroom), 21 players online throughout (Parker in-game), zero
+    container restarts, 565 ticks (265 scheduled + **300 reactive** — the
+    election chatter drove conversation; caps held), malformed ~7%.
+  - **The top drift stat (M3 tuning target): `civ_llm_governance_dropped_
+    total = 158`** — all arc long, llama kept inventing civic acts for
+    FICTIONAL elections ('storm_preparations_election',
+    'diamond-claims-dispute-election' — its own M1 storm/diamond plots!).
+    The M2-7 validation seam ate every single one (only ~5 uuid-shaped
+    misses reached the executor, earning honest UNKNOWN_ELECTION percepts).
+    Zero invalid commands on the wire. The defense works; the prompt
+    should still teach the exact id harder.
+- **DoD #4 (gather ≥80%) and #5 (grudge ≥2h)**: mechanics shipped and
+  measured in M2-1/M2-5 (gather live-proven; grudge cleared 3–5× in ledger
+  projection); the camera-day numbers ride Parker's filming run alongside
+  #6's segment.
+- **Machine state: THE FLEET IS TICKING — the zero-pollution era is over
+  by design.** 12 containers healthy; agent-service on the full M2 image
+  (M2-3 prompts + M2-7 schema + M2-8 civics + M2-10 lever),
+  `villager_count=20`, 60s ticks, reflections on, Ollama, budget 100M.
+  The rehearsal's election is CANON: government_db holds the village's
+  first government (Mayor Bram); agent_db/memory_db carry the campaign's
+  memories and relationship moves. To pause the village:
+  `docker stop ai-civilization-engine-agent-service-1` (bots stay
+  embodied; restart resumes ticks — but a restart forgets any MID-FLIGHT
+  election, so never pause during one). Ledger keeps everything.
+- **Next: Episode 2 filming (Parker)** — `docs/demo-m2.md` start to
+  finish; the world already has a sitting mayor, so the filmed election is
+  a RE-ELECTION (Bram defends his office — arguably better drama; or
+  `task nuke` for a fresh world at the cost of all canon, re-apply
+  connection-throttle -1 after). After filming: M3 planning (laws/living
+  law is the centerpiece; the M3 prompt levers recorded above: candidacy
+  affordance softening, election-id emphasis vs the 158 drops,
+  per-provider budgets, the OpenAI strict-mode params reshape).
+
+## Session 2026-07-09 ~01:15–02:00 EDT — M2-9 shipped (dashboard /government page)
+
+- **What shipped** (`M2-9: dashboard /government page`):
+  - **government-service** (small, additive): `GET /elections?limit=`
+    (newest first, tallies included, votes omitted) — the dashboard's
+    bootstrap; the deliberate M2-6 "no list endpoint" cut ended here, 04
+    table updated. `CandidateDto` gains `platform` (plain prose, unwrapped
+    from the jsonb string scalar) — the REST plane now shows the campaign
+    promises the wire events already carried. Tests 28→29 (newest-first +
+    votes-omitted assertions); container rebuilt live.
+  - **dashboard**: `/government` page + `components/Government.tsx` in the
+    M1-5 house style, plus one refinement: **SSE is the poke, react-query
+    is the truth** — civic events (ElectionStarted/CandidateNominated/
+    VoteCast/ElectionDecided) trigger a DEBOUNCED (800ms) query
+    invalidation instead of hand-merged state, so a vote burst is one
+    refetch and the tally can never drift from government-service (the
+    graph hand-merges only because force layouts hate refetch resets);
+    10s `refetchInterval` is the belt under the SSE suspenders (phase
+    flips nominating→voting emit NO event by design — polling + the
+    client countdown carry those). One EventSource per page (mounted by
+    ElectionPanel), queries deduped across panels by react-query.
+    Election card: phase chip, boundary countdown ("ballot box closes
+    in 0:12"), window times, total votes; candidate rows with platform
+    quotes, vote bars, "★ mayor?" leader marker during voting hardening
+    to "★ mayor" + the emerald winner banner at decide; annulled banner
+    with reason. **Vote-reasons feed** ("The receipts — why they voted"):
+    newest-first, voter → candidate names resolved from the agent-service
+    roster, reason verbatim, relative time. `/api/government/:path*`
+    rewrite (`GOVERNMENT_SERVICE_URL`, default localhost:8082); nav links
+    Overview ↔ Government ↔ Relationships; empty state explains the
+    operator lever. Typecheck-only CI unchanged (dashboard caller already
+    covers the paths).
+- **Live-verified in a real browser** (preview server + live stack): page
+  bootstrapped to the honest empty state ("No election has ever been
+  called"), then — WITHOUT A RELOAD — followed a real contested arc driven
+  through the command plane: candidacies appeared with platforms, phase
+  chip flipped to voting with the countdown ticking, three reasoned votes
+  landed in the tally (2–1) and the receipts feed (one early snapshot
+  raced the 800ms debounce and showed 0 — the very next look showed 3;
+  the poll would have healed it regardless), then the decided banner:
+  "The votes are counted — Bram is the new mayor of the village."
+  Screenshot taken; the page is episode-ready. Roster-truth note: the
+  page resolved `d0009`→Juniper and `d0004`→Ansel — my smoke script's
+  comments had guessed Tansy; **the page renders whatever the roster
+  says, which is the point**. Smoke rows wiped after (government_db
+  0 rows); all six suites green at the boundary.
+- **Machine state: stack UP, 12 containers healthy**; government-service
+  on the M2-9 image (list endpoint + platform in DTO). **agent-service
+  container UNCHANGED and now FOUR milestones stale — M2-10's filming
+  run MUST `up --build` agent-service first** (that deploy also brings
+  M2-7's schema + M2-8's civic consumer into the running fleet).
+  Narrative DBs untouched all session; ledger keeps the smoke's
+  governance events (append-only, causationId-null dev-tool practice).
+- **Next: M2-10 — election day (the M2 finale).** Full arc on the filming
+  preset: `up --build` agent-service (+ memory-service unchanged, but
+  `up --build` is the standard image-bake rule), operator opens the
+  election ON CAMERA with the filmable windows (600/900 via env or POST
+  body), nominations/campaign/votes fully organic (DoD #1: ≥2 organic
+  candidacies, ≥10/20 organic votes), DoD evidence pulled from the ledger
+  (per-vote causation chains — DoD #2), one live duplicate vote on
+  camera-day data (DoD #3), jacoco gate extended to government-service
+  (≥80 on adapter/application classes, `finalizedBy(test)` — the M1-10
+  pattern; current coverage is healthy but UNMEASURED against that scope
+  — leave slack), `docs/demo-m2.md` + Episode 2 shot list, D2 steering
+  knobs staged as filming levers (`COMMUNITY_GOAL` env → one system-prompt
+  line; influencer personas = villagers.json edits, zero code), HANDOFF.
+  Reminders for that session: budget 100M for Ollama; `task topics`
+  already provisioned; spawn-fleet.mjs re-embodies bots if the
+  minecraft-service container gets recreated; open elections only while
+  agent-service is up (the M2-8 restart-forgets limitation).
+
+## Session 2026-07-09 ~00:20–01:10 EDT — M2-8 shipped (civic perception + affordances)
+
+- **What shipped** (`M2-8: civic perception + campaign affordances`), all
+  agent-service except one government-service ordering fix:
+  - **`brain/civics.py`** — the in-memory civic working memory (M2-3
+    awareness precedent, deliberately not durable): one live
+    `ElectionCampaign` (office, three boundaries, candidates with
+    roster-resolved names + platforms, voter set) + the standing `Mayor`.
+    **Content-gated ingestion**: percepts age by delivery (ruling 7's guard,
+    unchanged) but institutions age by their own clocks — a late-delivered
+    ElectionStarted is accepted if its `endsAt` is still in the future,
+    an expired one is ignored. Phase math is advisory (server is the
+    authority; a boundary race earns an honest GovernanceRejected percept).
+    **No ElectionAnnulled event exists by design — silence IS the signal**:
+    an undecided campaign is hidden at close and forgotten after a 300s
+    grace. ElectionDecided seats the mayor even when the campaign is
+    unknown (restart amnesia), so the standing line self-heals one
+    election late. KNOWN LIMITATION (accepted, documented): an
+    agent-service restart mid-election forgets it (committed offsets never
+    replay the news) — open elections while agent-service is up.
+  - **Percept consumer** (`kafka/percepts.py`) — subscribes
+    `government.events` alongside world.events (same group; new topic
+    partitions start at `latest`, so the eventual redeploy meets no backlog
+    surprise). Civic branch: cache ingestion BEFORE the staleness gate
+    (content decides), percept fanout behind it (ruling 7). **Fanout rules**
+    (the scoping decisions): ElectionStarted / CandidateNominated /
+    ElectionDecided **broadcast to the injected roster** (id→name dict,
+    refreshed on seed — the "injected like the scheduler hook" AC);
+    percepts are **personalized at fanout** (`you: true` — prompts have no
+    self-id); GovernanceRejected goes ONLY to its actor (private teaching);
+    **VoteCast is cache-only, deliberately** — 20 villagers × 20 votes
+    would evict the chat drama from the 20-cap queues, and ballots should
+    influence through results, not herd signals; **civic events never
+    trigger reactive ticks** (an ElectionStarted waking 20 minds at once is
+    a GPU stampede; the 60s cadence carries the news within a tick).
+  - **Prompt** (`brain/prompts.py`) — the standing "Village affairs"
+    section renders from the cache every tick (percepts decay; an ongoing
+    election must not), in the M2-7 smoke's proven 0/4→4/4 shape: stakes +
+    deadline named, no polite out, "rides along with whatever else you do
+    this turn". Affordances are window-gated AND actor-gated:
+    already-voted / already-declared villagers see status lines instead
+    (no ALREADY_* rejection spam); nominating offers declare_candidacy,
+    voting offers vote, wrong-window affordances never leak (tested).
+    Standing mayor line after the arc ("The village mayor is Bram." /
+    **"You are the mayor of the village."** — M2-10's address line, free).
+    New percept renderers under "Village news since your last turn"
+    (candidacies with platforms, YOU-are-elected second person, rejection
+    messages verbatim — they're prescriptive prose from the executor);
+    unknown percept types still skipped (mixed-queue regression kept).
+  - Wiring: `TickDeps.civics` optional-by-default; deliberate() passes the
+    per-villager view; main.py injects CivicState + roster into the
+    consumer (boot + seed). Tests 105→129 (+10 civics, +6 fanout,
+    +7 prompt snapshots, +1 graph seam).
+- **THE HARNESS CAUGHT A REAL BUG LIVE** (and it's fixed + regression-
+  tested): government-service's `open()` registered the seeded candidacy's
+  after-commit send BEFORE the announcement's, so `CandidateNominated` hit
+  the wire before `ElectionStarted`; the civic cache (which keys
+  candidacies to a known election) dropped the seeded candidate — **the
+  voting prompt listed only the organic candidate; a real llama run could
+  never have voted for a seeded one**. Fix: emit ElectionStarted first
+  (same-key events share a partition, so consumer order = emission order);
+  new integration test `seededCandidaciesAreAnnouncedAfterTheElection`
+  (government tests 27→28); container rebuilt; wire order re-verified live
+  (offsets: ElectionStarted then CandidateNominated). The general lesson is
+  in the code comments: **announce the aggregate before its dependents —
+  after-commit synchronizations fire in registration order.**
+- **Live verify, zero-pollution** (the running agent-service container is
+  UNTOUCHABLE — stale image, tick-less, and its consumer group must not be
+  joined): a host-side harness with a GROUP-LESS consumer on the real
+  `government.events` fed the REAL PerceptConsumer + CivicState (in-memory
+  fake Redis — the live queues belong to the fleet) while a real election
+  ran: Elara's rendered prompt tracked every phase live — nominating
+  affordance → Wren's candidacy appearing with platform → the 4/4 voting
+  text → "You have cast your vote" suppression after her real VoteCast →
+  section vanishing at close → "The village mayor is Bram." after the
+  decide. Queues: rejection reached only Elara, zero VoteCast percepts,
+  `bram.you_are_mayor=True`. Bonus live proof: the arc ended 1–1 and the
+  **tie-break (earliest registered) decided it** — the domain rule on
+  camera-day rails.
+- **Machine state: stack UP, 12 containers healthy**; government-service
+  rebuilt again this session (emission-order fix); **agent-service
+  container is now FOUR milestones stale (pre-M2-3 image; M2-7 schema +
+  M2-8 civics not deployed)** — still `villager_count=0`, harmless, but
+  M2-9/M2-10's first deliberation run MUST `up --build` agent-service.
+  government_db wiped to 0 rows; narrative DBs untouched all session;
+  ledger keeps the smoke's governance events (append-only, accepted).
+- **Next: M2-9** — dashboard `/government` page: election card (phase +
+  window clock), candidate list, live tally (bootstrap `GET
+  /elections/{id}` + SSE filtered to VoteCast/ElectionDecided — the M1-5
+  pattern, no BFF), vote-reasons feed (the campaign's receipts), rewrite
+  `/api/government/*`, nav links both ways, typecheck-only CI. Note for
+  M2-9: government-service has no election LIST endpoint (deliberate M2-6
+  cut) — the page needs either the SSE ElectionStarted to learn ids, or
+  M2-9 adds `GET /elections?status=...` to government-service (small,
+  04-compatible).
+
+## Session 2026-07-08 ~23:25–00:15 EDT — M2-7 shipped, Sprint 7 closed, GO on the go/no-go
+
+- **What shipped** (`M2-7: governance command plane + contracts`), all four
+  code surfaces + contracts:
+  - **packages/events**: six new v1 schemas + fixtures + one invalid —
+    `commands/GovernanceRequested` (action enum declare_candidacy|vote,
+    per-action `$defs` DeclareCandidacyParams/VoteParams; **no timeoutMs** —
+    the governance plane has no watchdog, the clock + freshness guard bound
+    liveness), `government/ElectionStarted` (gains `nominatingEndsAt` over
+    the 03 sketch — consumers render deadlines without querying),
+    `CandidateNominated` (+`villagerId`, platform nullable),
+    `VoteCast` (+`candidateVillagerId`; emitted EXACTLY once per stored vote
+    so tallies count events 1:1), `ElectionDecided` (winnerCandidateId +
+    winnerVillagerId + villager-keyed zero-filled voteCounts + totalVotes;
+    the sketched `turnout` DROPPED — government-service can't honestly know
+    the electorate size), `GovernanceRejected` (errorCode enum WINDOW_CLOSED/
+    ALREADY_VOTED/ALREADY_A_CANDIDATE/NOT_A_CANDIDATE/UNKNOWN_ELECTION/
+    STALE_COMMAND/INVALID_PARAMS; aggregate = the acting VILLAGER — a
+    rejection may have no valid election). Fixtures thread one story: the
+    existing DecisionMade fixture causes GovernanceRequested{vote} causes
+    VoteCast, on Elara's tick correlation. `task gen` output committed;
+    03-events-kafka catalog rows updated to the shipped shapes.
+  - **agent-service**: DECISION_SCHEMA gains required-nullable
+    `governanceAction` — **deliberately FLAT** (action/electionId/
+    candidateVillagerId/reason/platform all at one level, every field
+    required-nullable): OpenAI-strict-safe by construction and kinder to
+    small models than nesting. `_parse_governance` maps it to the
+    GovernanceRequested wire params and validates against the REAL `$defs`
+    (M1-3 seam discipline) + real `uuid.UUID` parses (JSON-Schema `format:
+    uuid` is annotation-only — hallucinated ids must not become wire noise);
+    **a bad civic add-on is DROPPED (logged + `civ_llm_governance_dropped_
+    total`), never fails the world action** — semantic teaching is the
+    executor's job via rejection percepts. The act node publishes
+    GovernanceRequested to `commands.government` (key = villagerId,
+    causation = DecisionMade — DoD #2's chain), and DecisionMade's decision
+    string gains " + vote"/" + declare_candidacy". Missing governanceAction
+    key = malformed (the strict relationshipUpdates precedent); FakeProvider
+    script updated. Tests 95→105.
+  - **government-service**: spring-kafka consumer on commands.government
+    (`government-service.command-executor`, all 6 partitions) with **day-one
+    freshness guard** (ruling 7; >600s → GovernanceRejected{STALE_COMMAND})
+    and **transactional exactly-one-outcome**: Flyway V2 `processed_commands`
+    — the commandId claim (INSERT..ON CONFLICT DO NOTHING) commits atomically
+    with the state change, so a redelivery claims nothing and emits nothing
+    (stronger than the world plane's Redis mark-before-execute).
+    `GovernanceCommandService` = the single governance executor: vote
+    (ALREADY_VOTED checked BEFORE window — truer teaching), candidacy
+    (NOMINATING window, natural key → ALREADY_A_CANDIDATE), rejections in
+    prescriptive prose (the M2-1 diagnosis-quality lesson). Emission:
+    `KafkaGovernmentEvents` replaces the logging adapter behind the SAME
+    port (the M2-6 seam paid off — zero domain surgery), sends deferred to
+    **after-commit** (no ghost facts from rolled-back transactions; the
+    crash-between-commit-and-send residue = logged ledger gap, M1-9
+    precedent); `GovernmentEnvelopeFactory` is the hand-rolled Java envelope
+    builder (UuidV7 reuse, unit-tested field-for-field). REST vote/open/seed
+    paths now emit the same facts (causation null = operator plane).
+    Off-enum actions (propose_law, the M3 temptation) are PARKED at the
+    mapper, not rejected — GovernanceRejected.action couldn't carry them
+    validly. `civ.governance.kafka-enabled=false` runs the M2-6 broker-less
+    shape (the lifecycle test uses it). Tests 21→27 incl. the command-plane
+    Testcontainers scenario (Redpanda + Postgres): 8 commands → 2 facts +
+    6 rejections + redelivery-emits-nothing, claims accounted exactly.
+  - **event-service**: CIV_TOPICS default + explicit compose env now
+    archive `government.events` + `commands.government` (verified live:
+    the consumer holds all 30 partitions across 6 topics).
+  - **scripts/produce-gov-cmd.mjs**: the governance twin of produce-cmd.mjs
+    (the M2-7 filmable beat is literally this tool); `occurredAt` override
+    for staleness drills. Gotcha fixed in-tool: `||` not `??` for optional
+    positional args — `''` must mean "generate".
+- **Live end-to-end on the running stack** (both services rebuilt from the
+  worktree, `--no-deps`; bots + Paper untouched — Parker was in-game
+  throughout): a CONTESTED election with organic candidacies —
+  Bram and Tansy both declared via hand-published commands (platforms
+  verbatim in CandidateNominated), Bram's re-file → ALREADY_A_CANDIDATE,
+  3 votes with reasons → 3 VoteCast (causation = each command), Elara's
+  re-vote → ALREADY_VOTED, a 2h-old vote → STALE_COMMAND ("7200s old,
+  limit 600s"), and the clock decided **Bram 2–1** with villager-keyed
+  voteCounts. The ledger archived ALL of it (8 GovernanceRequested + 10
+  outcomes/facts; one `correlation-id=` query returns the command→VoteCast
+  pair — the DoD #2 replay works). Bonus: an accidentally-empty commandId
+  proved the poison-message path live (parked by BOTH consumers, zero
+  retries). government_db wiped to 0 rows after (smoke hygiene; ledger
+  keeps the events — append-only, causationId-null = dev-tool fingerprint).
+- **THE GO/NO-GO: GO.** llama3.1:8b against the new schema with a synthetic
+  "Village affairs" prompt: first draft (polite "if you would rather wait,
+  set null" + no stakes) went **0/4** — all valid decisions, all declined to
+  vote. Rewritten affordance (deadline named, "a vote not cast is a voice
+  lost", NO polite out, "the vote rides along with whatever else you do")
+  went **4/4 contract-valid**: exact electionId + candidateVillagerId every
+  time, memory-grounded choice (Bram — the shared bread), in-character
+  reasons quoting his platform, and the single-call multi-plane tick worked
+  (chat+vote ×2, move+vote ×2; 2.7–3.8s). **That 0/4→4/4 flip is M2-8's
+  design brief**: the civic section must name stakes + deadline, must not
+  offer an out, and must say the vote rides along with the world action.
+- **OpenAI half of the smoke: BLOCKED on key (blank by design) + a REAL
+  pre-existing finding.** The offline strict-mode structural audit shows the
+  world `params` free-form object (`{type: object}`, no properties) violates
+  strict-mode rules — **the OpenAI provider path 400s today, latent since
+  M1-3** (every live run has been Ollama; the "OpenAI filming fallback" was
+  never actually exercised). governanceAction was built flat/strict-safe for
+  exactly this reason and audits clean. Fix (reshape `params` to a
+  superset-with-nullables, then re-verify llama against the changed schema)
+  is a follow-up ticket BEFORE any OpenAI run — in CLAUDE.md as a gotcha
+  corollary. Parker's call whether to fund a key smoke sooner.
+- **Machine state: stack UP, 12 containers healthy**; event-service +
+  government-service run worktree-built images (rebuild from main after
+  merge is a no-op content-wise); agent-service container now THREE
+  milestones stale (pre-M2-3) and still `villager_count=0` — the next
+  deliberation run needs `up --build` (it also picks up the new
+  DECISION_SCHEMA). 20 bots + Parker online throughout; narrative DBs
+  untouched all session; government_db 0 rows; the ledger gained the smoke's
+  governance events (accepted practice).
+- **Next: M2-8** (Sprint 8 opener) — civic perception + campaign
+  affordances: perception consumer adds government.events (freshness-guarded
+  ruling 7), election events broadcast-fan-out to all alive villagers'
+  percept queues (roster injection like the scheduler hook), in-memory
+  civic-state cache rendered as a standing "Village affairs" prompt section
+  (percepts decay; an ongoing election must not), `governanceAction`
+  affordance text only while a window is open — **using the 4/4 prompt
+  shape from this session's smoke**, mixed-queue regression test.
+
+## Session 2026-07-08 ~22:45–23:20 EDT — M2-6 shipped, Sprint 7 opened
+
+- **What shipped** (`M2-6: government-service walking skeleton — election
+  state machine`): new `services/government-service` — Java 21 / Spring Boot
+  3.5.6 / Gradle 9.2, hexagonal mirroring event-service (adapter.in.rest +
+  adapter.in.scheduling / adapter.out.persistence + adapter.out.log /
+  application ports+service / domain records, hand-mapped — no Java codegen,
+  ruling 6). **Flyway V1 creates `elections`/`candidates`/`votes`/
+  `governments` ONLY** (laws/factions deliberately absent — ruling 8, header
+  comment says so for review). State machine scheduled → nominating → voting
+  → decided (+annulled) as a pure domain decision (`Election.duePhase`,
+  inclusive boundaries, one phase per step — a late clock cascades, never
+  skips), applied by a 5s scheduled clock through
+  `AdvanceElectionsUseCase.advance(now)` (explicit `now` ⇒ deterministic
+  tests). Windows configurable: defaults 600s/900s (the filmable
+  timescales), per-election overrides in the POST body, `ELECTION_*` env
+  levers in compose. REST per the frozen 04 contract: `POST /elections`
+  (operator lever; optional operator-seeded candidates, deduped),
+  `GET /elections/{id}` (candidates + live tally; `include=votes` adds
+  per-vote reasons — episode gold), and `POST /elections/{id}/votes`
+  (pulled in from 04 so the skeleton is drivable end-to-end:
+  **natural-key idempotent** per ruling 5 — 201 new / 200 existing even
+  after close, never re-counts, never switches candidate; problem+json
+  errorCodes `WINDOW_CLOSED`/`NOT_A_CANDIDATE`/`UNKNOWN_ELECTION`
+  pre-echo M2-7's GovernanceRejected vocabulary). Decide rule: plurality;
+  tie → earliest registered → id (total order); zero votes →
+  annulled(no_votes); no candidates at voting open → annulled(no_candidates).
+  `ElectionDecided` seats a `governments` row (mayoralty) **and dissolves the
+  incumbent** — a village has one mayor; re-elections just work. Vote-vs-
+  transition race closed with `SELECT FOR UPDATE` on the election row (the
+  agent-service lock pattern); the advance loop runs one TransactionTemplate
+  tx per election so a poisoned row can't wedge the clock. UUIDv7 row ids
+  from a small in-house generator (bit layout unit-tested; Java has no
+  built-in — M2-7's envelope builder will reuse it). Metrics:
+  `civ_elections_opened_total`, `civ_election_transitions_total{to}`,
+  `civ_votes_total{outcome}`. Wiring: compose entry on 8082 (+healthcheck;
+  first real feature = first compose appearance), Prometheus scrape job, CI
+  caller workflow (java + image, **its own file in `paths:`**, and
+  packages/events pre-included so M2-7's fixture consumption can't be
+  forgotten), `task test` now runs **six** suites.
+- **THE SEQUENCING RULING** (the plan row says "emits ElectionStarted/
+  ElectionDecided" but the government/* schemas are owned by M2-7):
+  **chose (b) — no Kafka emission in M2-6.** The domain fires
+  `GovernmentEventsPort.electionStarted/electionDecided` at exactly the
+  right two moments; M2-6 wires a structured-logging adapter (lines say
+  "log-only until M2-7 contracts"). Reasons: contract-first forbids
+  schemaless wire events; M2-7 owns the six-schema package as one coherent
+  review; nothing archives or consumes government.events until M2-7/M2-8
+  (events emitted now would expire unread from a 7d topic); and
+  government-service would have been the repo's FIRST Java Kafka producer —
+  that envelope-builder work belongs with M2-7's command plane. Net:
+  M2-7 swaps the adapter behind the port, zero domain surgery. Deliberately
+  **no spring-kafka dependency at all** — the integration test needs only
+  Postgres (no Redpanda container; ~3s suite).
+- **Tests 0 → 21** (16 unit: phase boundaries incl. never-skips, tally
+  tie-breaks, UUIDv7 bits; 5 Testcontainers integration against the real
+  pgvector Postgres image: full lifecycle with stepped clock, idempotent
+  re-vote — even for a different candidate, the first vote stands — all
+  three errorCodes, both annul paths incl. the late-clock cascade,
+  re-election dissolving the incumbent, validation 400s). Coverage is
+  REPORTED, not gated — the ≥80 jacoco gate is M2-10's AC per plan.
+- **Live-verified against the running stack** (image built from the
+  worktree, `up -d --build --no-deps government-service` attached to the
+  same compose project; the 11 running containers untouched): Flyway V1
+  applied to virgin government_db; two real elections on the real 5s clock.
+  Run 1 (15s/20s — tighter than hand-driven curl, and every "miss" returned
+  the CORRECT semantics: 201 in-window, WINDOW_CLOSED after close, 200
+  replay after close) decided **Elara mayor**; run 2 (8s/60s) recorded the
+  incumbent governmentId at open, 409'd the early vote, took 3 votes + a
+  200 duplicate, decided **Bram 2–1, dissolving Elara's government and
+  seating Bram's at the same instant**. Both port log lines fired;
+  `/actuator/prometheus` civ_ counters exactly right (2 opened, 2×3
+  transitions, 4 accepted, 4 duplicate). Smoke rows then deleted —
+  government_db back to 0 rows (mutable service state, not ledger; pristine
+  for the M2-10 arc).
+- **Worktree wrinkles found** (now CLAUDE.md gotchas): Git Bash mangles
+  `cmd /c` (`/c` → `C:\`, MSYS path conversion) so gradlew must run from
+  PowerShell there; worktrees don't carry `.env` (copy from the main repo
+  before compose); compose from a worktree attaches to the SAME project
+  (`name:` key) — `--no-deps` keeps live services untouched; bind-mounted
+  configs (prometheus.yml) still resolve to the checkout each container was
+  STARTED from, so the new scrape job goes live after merge + prometheus
+  restart (the metrics endpoint itself was verified directly).
+- **Machine state: stack UP, 12 containers** (11 unchanged + healthy
+  government-service on 8082), 20 tick-less bots, agent-service still
+  `villager_count=0` on the pre-M2-3 image, narrative DBs untouched all
+  session (only government_db was written, then wiped).
+- **Next: M2-7** — governance command plane + contracts: six schemas +
+  fixtures + committed `task gen` (`GovernanceRequested.v1` with per-action
+  `$defs` + invalid fixture; `ElectionStarted`/`CandidateNominated`/
+  `VoteCast`/`ElectionDecided`/`GovernanceRejected` v1), DECISION_SCHEMA
+  gains required-nullable `governanceAction` (M1-3 pattern), agent-service
+  publishes `commands.government` (causation = DecisionMade),
+  government-service consumes with **day-one freshness guard** (ruling 7)
+  and swaps LoggingGovernmentEvents for the Kafka adapter, event-service
+  archives both topics (CIV_TOPICS + compose), and the week-one
+  llama + OpenAI `governanceAction` smoke is the sprint go/no-go.
+
+## Session 2026-07-08 ~22:20–22:45 EDT — M2-5 shipped, Sprint 6 closed
+
+- **What shipped** (`M2-5: grudge persistence kit`), agent-service only:
+  `GRUDGE_AFFINITY_THRESHOLD = -20` in `villagers/relationships.py`;
+  `apply_update` gains keyword-only `ambient: bool = False` — when ambient
+  and `affinity_delta > 0` and the edge's current affinity ≤ −20, **both
+  deltas are halved** (decided under the existing `FOR UPDATE` row lock, so
+  the read-modify race can't skip damping; first-meeting rows default to 0
+  so they never dampen). `graph.py` passes `ambient=(source == "heuristic")`
+  — deliberation-sourced updates land whole (**a real apology still works**).
+  The feelings prompt section appends a behavioral directive when a grudge
+  edge is actually in sight ("refusing, avoiding, arguing, or cold words are
+  all legitimate; do not perform warmth you do not feel") — keyed off nearby
+  villagers, NOT every edge the dict holds (tested). Tests 87→95: +5 repo
+  integration (halved at ≤−20, boundary −20 vs −19, negative undamped,
+  deliberate undamped, first-meeting undamped), +3 prompt directive cases,
+  +2 assertions in existing tick tests (heuristic→ambient=True,
+  deliberation→False).
+- **THE MEASUREMENT (ledger replay, before/after — the AC):** method:
+  replay `RelationshipChanged` prev/new deltas per edge from the **verified
+  clean window** (≥ 2026-07-07T12:11Z, `source='agent-service'`; 0 fake
+  fingerprints in-window — the M1-10 repair exclusions), damping rule
+  applied to heuristic positives at running affinity ≤ −20, mirroring the
+  repo's round/clamp. Replays reconcile with canon exactly (Yara→Cassia
+  peak −54 at 13:08Z).
+  - **Yara→Cassia** (108 events): post-peak positive drift was **+195
+    points, 100% heuristic, 0 deliberation** — ambient chatter alone
+    carried −54 → **+90** by 23:14Z. That's the disease quantified: no
+    apology, no arc, just pleasantry erosion flipping a filmed grudge into
+    warm friendship. Before: half-life 6.30h, ≤−30 persistence 6.92h.
+    After: 6.68h / 7.30h — the wall-clock crossing moves modestly because
+    this edge's healing bunched into a dense evening chatter burst, but
+    within the grudge band the ambient healing rate is exactly halved.
+  - **Quill→Wren** (63 events): before — entered ≤−30, mean-reverted back
+    above −30 after **6.66h** (the afternoon watch's documented bounce),
+    then fresh conflict re-deepened it to −48 at data end. After — **never
+    re-crosses −30: 10.42h at ≤−30, held to end of data**; end-state −84
+    vs −48. The grudge that briefly dissolved now stays warm all evening.
+  - **DoD #5 (grudge ≤−30 persists ≥2h under ambient chatter): cleared
+    3–5× in projection.** Caveat stated: fixed-stream replay (live villagers
+    would behave differently — directionally conservative, since the new
+    directive adds cold behavior/fresh conflict on top of damping). Live
+    confirmation rides the M2-10 filming run.
+- **Machine state: stack UP** (unchanged), 20 tick-less bots, narrative DBs
+  untouched — measurement was read-only ledger SQL + scratchpad replay.
+  **Running agent-service image is now TWO prompt milestones stale**
+  (pre-M2-3): the next real deliberation run needs `up --build`.
+- **Sprint 6 closed without using the slip valve.** Next: **M2-6**
+  (Sprint 7): government-service walking skeleton — Spring Boot hexagonal
+  (event-service layout), Flyway V1 election tables only, election state
+  machine with filmable window durations, `POST /elections` operator lever,
+  `ElectionStarted`/`ElectionDecided`, compose entry + healthcheck +
+  Prometheus scrape + its own CI caller workflow (paths: gotcha),
+  Testcontainers integration test.
+
+## Session 2026-07-08 ~21:25–21:50 EDT — M2-4 shipped
+
+- **What shipped** (`M2-4: explicit 6-partition command topics`):
+  `scripts/provision-topics.mjs` — the executable topic map (world 6 /
+  agent 6 / social 3 / government 3 / commands.minecraft 6 /
+  commands.government 6; retention 7d facts, 24h commands), idempotent:
+  creates missing, converges `retention.ms` in place, **fails loud on a
+  partition-count mismatch** pointing at the new runbook (counts can't
+  change in place without rehashing keys = breaking per-villager ordering).
+  New `task topics`; `up`/`up:all` now provision **after infra `--wait`,
+  before the app profile starts** — explicit creation beats the producers'
+  auto-create race on a fresh cluster (Redpanda dev-mode auto-create stays
+  on as a net, and a race loser is caught as a mismatch). Consumer
+  `partitionsConsumedConcurrently` 3→6 (commandConsumer.ts).
+  `commands.government` + `government.events` provisioned **ahead of their
+  first producer**, so M2-6/M2-7 meet correctly-shaped topics.
+  `docs/runbooks/kafka-topic-migration.md` (drain→recreate→offset-reset) is
+  the new runbook; 03-events-kafka.md gains the `commands.government` row +
+  a "this table is provisioned, not aspirational" note. Also
+  `scripts/spawn-fleet.mjs`: re-embody the fleet without ticks — on the
+  zero-pollution preset (`villager_count=0`) `task seed` slices zero
+  villagers, so every session since M2-2 hand-rolled spawn envelopes; now
+  it's a one-liner (and the runbook's step 5).
+- **The live migration ran — the runbook's first execution.** All four
+  auto-created 1-partition topics migrated: drain verified (all 3 groups
+  TOTAL-LAG 0), consumers + memory-service stopped (producer on
+  agent.events — removes the auto-create race during the delete window),
+  topics deleted, `task topics` recreated at map shape, groups deleted
+  (**2 of 3 were already gone** — topic deletion strips a memberless
+  group's offsets and it gets GC'd; `GROUP_ID_NOT_FOUND` is success, noted
+  in the runbook), minecraft-service `up --build` (bakes 3→6), the rest
+  `start` not `up` (containers keep their env — agent-service stayed
+  `villager_count=0`, zero narrative pollution). Bonus finding: the doc's
+  "24h retention" on commands had been aspirational — auto-created topics
+  carry the cluster default (7d); it's real now.
+- **Verification, all held:** the 20 respawn commands spread across **all
+  six partitions** (rpk produce receipts); single consumer holds all 6,
+  lag 0; per-villager ordering — Elara's spawn + 2 idle canaries all on
+  partition 3 at offsets 0/2/3 in publication order; exactly-one-outcome —
+  22 ActionRequested archived, 22 ActionCompleted, 20 VillagerSpawned in
+  the ledger; fleet 20/20 online (~4-min gap; Parker was in-game the whole
+  time — Paper itself was never touched, his session rode through). All
+  five suites green (15 contracts / 53 ts / 87 py-agent / 46 py-memory /
+  event suite), zero new tests (kafka glue stays integration-verified, per
+  the coverage-gate scope).
+- **Machine state: stack UP**, 20 tick-less bots online, narrative DBs
+  untouched all session (canary + spawn commands are `causationId: null`
+  dev-tool practice, M2-1 precedent).
+- **Next: M2-5** — grudge persistence kit: behavioral directive in the
+  feelings prompt section (grudges constrain tone/choices), heuristic
+  asymmetry (*ambient* positive deltas halved onto edges with affinity
+  ≤ −20; deliberation-sourced deltas untouched — a real apology still
+  works), regression tests, grudge half-life measured from the ledger
+  before/after. It's the sprint's slip valve (may slip to Sprint 8).
+
+## Session 2026-07-08 ~21:10–21:25 EDT — M2-3 shipped (commit `65fe8d7`)
+
+- **What shipped** (`M2-3: prompt rebalance — resources in sight, action
+  awareness, quirks`), all in agent-service, prompt-side only (no contract,
+  no schema): the M1 "prefer small, concrete, **social** actions" steer is
+  rebalanced (material work — gathering, exploring, providing — named as
+  equally legitimate); **"Resources in sight"** section renders from the
+  M2-2 `nearbyResources` survey (absent field → no section, pre-M2-2
+  compatible; scanned-empty → honest "this spot is bare" + points at
+  moving); **action awareness** (Sid's #1 progression lever): new
+  `brain/awareness.py` holds an in-memory `LastDecision` per villager —
+  deliberate recalls it, act remembers it — and the prompt renders "Your
+  last decision: X → outcome", where the matching ActionCompleted/Failed
+  percept is CLAIMED (never renders twice: once as the pairing, not again
+  under "Since your last turn"), or an honest "outcome not observed yet";
+  **quirks** finally render in the system prompt (the M1-7 leftover
+  one-liner). All seams optional-by-default (`awareness=None`,
+  `last_decision=None`) — every pre-M2-3 caller/test unaffected.
+- **Deliberately in-memory** awareness (a restart forgets): the ledger and
+  memory stream are the durable record; this is working memory. Wired in
+  `main.py` via `TickDeps.awareness=ActionAwareness()`.
+- **Tests:** agent 78→87 (+6 prompt cases incl. claim-dedupe and
+  scanned-empty-vs-absent, +1 graph round-trip, +2 system-prompt cases);
+  all five suites green at the boundary. AC per plan (prompt snapshot
+  tests) satisfied; no live tick this session — the running agent-service
+  container is `villager_count=0` and still on the pre-M2-3 image, so the
+  **next real run needs `up --build`** (standard image-bake rule).
+- **PowerShell gotcha confirmed again:** PS 5.1 eats inner double quotes in
+  here-string args to native exes (git this time, produce-cmd before) —
+  write commit messages without embedded double quotes.
+- **Machine state: stack UP** (unchanged from M2-2 session: 20 tick-less
+  bots online, narrative DBs untouched).
+- **Next: M2-4** — `commands.minecraft` + `commands.government` explicit
+  6-partition provisioning (rpk via Taskfile), drain→recreate→offset-reset
+  runbook, `partitionsConsumedConcurrently` 3→6.
+
+## Session 2026-07-08 ~20:20–21:15 EDT — M2-2 shipped
+
+- **What shipped** (`M2-2: nearbyResources in WorldSnapshot`): WorldSnapshot.v1
+  gains additive optional `nearbyResources` `[{family, nearestDistance,
+  count}]` (schema + fixture + TS/py types regenerated); minecraft-service
+  surveys the RESOURCE_BLOCKS families (wood/stone/dirt) with per-family
+  `findBlocks` sweeps — count-capped (32 reported, 2× headroom requested),
+  **Y-banded ±16** (the M2-1 reachability finding: never advertise the
+  cliff-face spruce; the band is a post-filter because findBlocks probes
+  section palettes with position-less Blocks), merged into every 1s snapshot
+  from a cache. Field semantics: **absent = no scan yet / disabled; `[]` =
+  scanned, nothing in sight.** Config: `RESOURCE_SCAN_{INTERVAL_MS,DISTANCE,
+  COUNT_CAP,Y_BAND,MOVE_BLOCKS,MAX_AGE_MS}`; `INTERVAL_MS=0` disables.
+  ts tests 41→53; all five suites green.
+- **THE MEASUREMENT (the AC — and it caught a real problem pre-commit):**
+  ungated 5s scans across 20 bots **pinned a full CPU core** on
+  minecraft-service (~175 ms per bot-scan) — and that core is the single
+  Node event loop that executes every command. Paper never noticed:
+  findBlocks is **client-side**; the risk register's "scans lag the server"
+  worry aimed at the wrong victim. Fix shipped inside the ticket: a movement
+  gate (`shouldRescan`, unit-tested) — the 5s interval is only the *check*
+  cadence; the sweep runs only after ≥8 blocks of movement or a ≥60 s-old
+  survey. Numbers (20 idle bots, 6×20 s samples per phase): CPU baseline
+  scan-off **22–38%**, ungated **~100%**, gated **19–31%** (indistinguishable
+  from off); Paper MSPT 5s-avg 5–8 ms in **all three** phases.
+- **Live evidence:** Elara (mountainside, still holding her M2-1 loot) sees
+  `wood@4.4 / stone@1.2 / dirt@0.6` (counts capped at 32); Vesper (plaza)
+  sees `wood@33.7 count 25` — the M1 "no wood near the plaza" diagnosis made
+  visible to the LLM, and inside the default-48 gather range. Scan-off run:
+  field cleanly absent from a fresh snapshot. Zero `resource scan failed`
+  warnings across all phases.
+- **Smoke shape:** zero-pollution again — `VILLAGER_COUNT=0` via process env
+  (`.env` untouched, still the filming preset), 20 bots hand-spawned through
+  `produce-cmd` spawn commands. **Learned:** bot sessions do NOT survive a
+  minecraft-service container recreate (in-memory; nothing re-embodies from
+  the roster on boot) — re-publish spawns (or `task seed`) after any
+  recreate of that container.
+- **Machine state at session end: STACK UP** (all containers healthy), 20
+  tick-less bots online (agent-service running `villager_count=0` — no
+  deliberation, no narrative writes all session). Narrative DBs untouched.
+- **Next: M2-3** (soften the social-actions prompt line; render "Resources
+  in sight" from this field; "Your last decision → outcome" line; quirks
+  into the system prompt).
+
+## Session 2026-07-08 ~02:00–02:45 EDT — M2-1 shipped (commit `abf4ae6`)
+
+- **What shipped** (`M2-1: composite gather — equip best tool, prescriptive
+  failures, default 48`): GatherParams default 32→48 (schema + executor
+  fallback, clamp 4..64 unchanged, types regenerated); `BotSession.gather` is
+  the composite verb (find → plan tool → walk → **equip at the dig site** →
+  dig → collect — the pathfinder re-equips while digging its own way en
+  route, so pre-walk tool choices go stale); pure `planHarvest` +
+  `gatherFailureMessage` in `world/resources.ts`; **TOOL_REQUIRED** additive
+  ActionFailed enum value (stone dug bare-handed used to "complete" with
+  collected: 0 — now an honest, non-retryable, prescriptive failure naming
+  the missing tool class); observability lines `gather target found`
+  (block/position/distance) and `gather equipping tool`. ts tests 30→41;
+  all five suites green.
+- **Live smoke evidence (all in the ledger, ~06:14–06:23Z):** prescriptive
+  RESOURCE_NOT_FOUND at r=4 ("no wood within 4 blocks of (3, 121, 4) — try
+  maxDistance 48 (the cap is 64), or move somewhere new first");
+  `ResourceGathered{spruce_log, quantity: 2}` at distance 38 — **Elara left
+  the plaza and climbed the mountainside** (findable only because default is
+  48 now); TOOL_REQUIRED live on bare-hand stone; RCON-given stone_pickaxe →
+  `gather equipping tool` → `ResourceGathered{stone, quantity: 1}` in 7.2s.
+  Smoke ran with **VILLAGER_COUNT=0** + hand-published commands
+  (`produce-cmd`) — zero ticks, zero narrative pollution; the smoke's
+  command/outcome events sit in the ledger under Elara's id with
+  `causationId: null` (no DecisionMade parent = distinguishable from real
+  deliberation; append-only, accepted practice).
+- **Finding for M2-2/M2-3 (measured):** `findBlock` picks the 3D-nearest
+  match with **no reachability check**, and a pathfinder `goto` toward an
+  unreachable goal **never settles** (no NoPath rejection observed — the
+  watchdog is the only exit, 90s TIMEOUT with zero movement). First gather
+  attempt hit exactly that (spruce 20 blocks up a rock face), the identical
+  retry succeeded after world state shifted. So: TIMEOUT on gather ≠ broken —
+  it's often "target was never a fair ask"; the `gather target found` log
+  line now says which. `nearbyResources` (M2-2) should bias toward
+  *reachable* surface resources, and relocation prompting (M2-3) is what
+  gets bots off treeless mountaintops.
+- **Docker Desktop wouldn't start (twice)** — the stale-socket gotcha, with
+  a new wrinkle: the rename fix can RACE a crashed instance's own recovery,
+  which puts a zombie sock back. Refined procedure now in CLAUDE.md (verify
+  zero docker processes, rename, verify dirs gone, relaunch). Engine came up
+  on the second, verified application.
+- **Parker committed in parallel** (`69acb12`, 02:16 EDT — research addendum:
+  second independent read, MineCollab PDF confirmed real). The untracked
+  leftovers (`docs/research/emergent-garden-study.md`, `.claude/settings.json`)
+  remain untracked — still Parker's call.
+- **Machine state at session end: stack fully DOWN** (world saved via
+  `save-all flush` before down; 0 containers; volumes intact — narrative DBs
+  still carry filming canon untouched; Elara's PLAYER data in the world now
+  holds 2 spruce logs + the pickaxe + 1 cobblestone from the smoke).
+  Docker Desktop itself is RUNNING.
+- **Next: M2-2** (`nearbyResources` in WorldSnapshot — additive optional
+  field, count-capped findBlocks scan every ~5s, MSPT measured in AC).
+
+## Session 2026-07-08 — M2 planning (docs only, no code/stack touched)
+
+- **`docs/architecture/08-m2-plan.md` authored** — the M2 plan in the 07
+  house style: Sprints 6–8 ("Bodies that work" → "The campaign machine" →
+  "Election night"), printed arithmetic, named slip valves, DoD (7 items),
+  ticket-owned risk register. Core set per the research study's
+  recommendation: **A1–A3 + C1–C2 + D1–D2** mapped onto the roadmap's P2
+  scope.
+- **Key rulings made in the plan** (don't re-litigate): governance is a
+  *second command plane* (`commands.government`, government-service the
+  single governance executor, exactly-one-outcome ported); decision contract
+  gains required-nullable `governanceAction` (M1-3 precedent); vote
+  idempotency via natural keys; government = affordances not scripts
+  (operator seeds the election, politics must be organic); **no Java codegen
+  yet** (hand-mapped records, event-service precedent); freshness guards are
+  day-one ACs on every new consumer; BFF/analytics/OpenSearch/Loki/k6/laws/
+  factions all deferred again with reasons (plan ruling 8).
+- **D1 scope note:** Sid's full constitutional-amendment loop is
+  deliberately M3 ("living law"); M2 builds its substrate (command plane,
+  ballot box, seated government).
+- **Machine state:** stack fully DOWN this session (Docker Desktop not
+  running) — supersedes the 2026-07-07 "RUNNING" note below. Volumes
+  untouched; narrative DBs still carry the filming-day canon.
+- **Untracked leftovers noted, not committed:**
+  `docs/research/emergent-garden-study.md` (earlier partial study draft —
+  superseded by the committed `emergent-garden-lessons.md` but contains the
+  unique PDF-mislabeling warning; Parker to decide keep/commit/delete) and
+  `.claude/settings.json` (local plugin config).
+- **Next session: start M2-1** (composite gather + prescriptive failures) —
+  stack bring-up needed first (`task up:all` + Paper profile per the resume
+  commands at the bottom of this file).
 
 ## Project status
 
@@ -15,8 +779,10 @@
 - **78 agent-service tests green locally** (was 59; M1-4 added 10, M1-6
   added 2, M1-7 added 7). Dashboard typecheck clean (it has no test suite —
   CI runs typecheck). Other suites unchanged and green.
-- Test totals: **78 py-agent**, **46 py-memory** (19 → 42 in M1-9, +4
-  reflect-guard tests in M1-10), **30 ts-minecraft** (+1 stale-command),
+- Test totals: **87 py-agent** (78 → 87 in M2-3: prompt sections, awareness
+  round-trip), **46 py-memory** (19 → 42 in M1-9, +4
+  reflect-guard tests in M1-10), **53 ts-minecraft** (30 → 41 in M2-1, 41 → 53 in
+  M2-2: scan, Y-band, rescan gate, snapshot merge),
   8 java-event, **15 contract fixtures**. Coverage gate is **ON since M1-10**
   (agent brain/llm 96.4%, memory service/scoring 98.0%, event ingest/read
   87.8% — all ≥80 enforced). `task test` runs all five suites.
@@ -347,12 +1113,16 @@ deliberation. M1-8 is COMPLETE.**
      MINUTES (single-partition executor queue) — reconstruction windows
      must allow ~10 min, not 30s. 142 real llama lines heard in-game in the
      final 20 minutes; 76 reactive chat replies.
-  3. 🟡 HALF: friendship ✅ — Wren→Quill affinity +100 / trust 100, fully
-     organic (the chronicler keeps publicly correcting the rumor-monger and
-     she loves it), survives all repair passes. Grudge |affinity|>40: NOT
-     YET — post-repair min is −9. The negative-delta mechanics are live;
-     the village just hasn't had a real falling-out. Candidate episode
-     beat (Tansy↔Elara pantry rivalry was designed for this).
+  3. ✅ (closed 2026-07-07 afternoon): friendship — Wren→Quill affinity
+     +100 / trust 100, fully organic, survives all repair passes. Grudge
+     |affinity|>40 — **Yara→Cassia peaked −54 at 13:08Z**, formed 0→−54
+     entirely inside the verified clean window (12:11Z onward), all 49
+     RelationshipChanged deltas `source: agent-service` / heuristic on
+     real llama sentiment, zero fake fingerprints; still standing at −42
+     live at 19:15Z. Quill→Wren independently touched −40 / trust 0 the
+     same afternoon — the mechanic reproduces. (The "NOT YET / min −9"
+     reading was stale: the late filming window kept running after that
+     measurement.)
   4. ✅ Live graph verified in-browser during the day (345 clean edges,
      reasoned tooltips) + populated leaderboard.
   5. ✅ Coverage gate enforced; correlation trace: one id greps across
@@ -402,7 +1172,36 @@ when a connection dies mid-move (any Paper restart), freezing eachMessage
 and, with one partition, EVERY bot, with no crash event. Now `Promise.race`s
 the watchdog; regression test added; CLAUDE.md corollary 3.
 
-## Machine state at session end (2026-07-07 ~13:40Z)
+## Afternoon session (2026-07-07 ~19:10–20:00Z) — grudge DoD closed, gather diagnosis
+
+- **Stack brought back up** (Paper + infra + app, all healthy first try; seed
+  re-embodied 20/20 bots; agent on warmed llama3.1; reflections on; command
+  executor lag 0 — the wedge fix holding).
+- **DoD #3 grudge: CLOSED with ledger evidence** (see DoD list above). Key
+  dynamics finding: **grudges mean-revert under ambient positive chatter** —
+  a 40-min watch saw Yara→Cassia decay −45→−30 and Quill→Wren −40→−30;
+  the ±3 hearer-sentiment heuristic oscillates toward zero without fresh
+  conflict. Sustained grudges need negative-memory reinforcement or real
+  conflict events → M2 design note.
+- **"Bots don't move around / never gather" (Parker's observation) —
+  diagnosed, three compounding causes, all M1-scope design, no bug:**
+  1. System prompt line "Prefer small, concrete, social actions over grand
+     plans" (`brain/prompts.py`) steers llama away from material action.
+  2. The world snapshot carries NO environment info (only position, health,
+     food, time, nearby villagers, inventory) — the only coordinates the
+     LLM ever sees are villagers', so all move targets stay inside the
+     plaza cluster. Bots DO move (positions verified matching move targets;
+     267 moves since restart), just locally.
+  3. All 3 gather attempts failed `RESOURCE_NOT_FOUND` — no wood within
+     reach of the y≈120–130 plaza, and llama self-supplies `maxDistance:
+     10` (executor default is 32, cap 64).
+  Cheap M2 levers, in impact order: nearby-resources line in the snapshot
+  (contract change: schema + fixture + `task gen`), soften the
+  social-actions prompt line, prompt-doc `maxDistance: 48`. Minor: Ulric
+  repeatedly TIMEOUTs on moves (unreachable target?) — retryable,
+  non-fatal, worth a look if it persists.
+
+## Machine state at session end (2026-07-07 ~13:40Z) — SUPERSEDED: stack is RUNNING (afternoon session brought it back up; Parker in-game, 21/30 players)
 
 - **Stack fully DOWN** — clean shutdown after filming: world saved
   (`save-all flush`, Petra's meeting is canon), all profiles down,
@@ -417,6 +1216,16 @@ the watchdog; regression test added; CLAUDE.md corollary 3.
 - Next session candidates: M2 planning; episode-edit support (ledger pulls
   for overlays); the still-open organic grudge (Tansy's campaign against
   Bram is the live thread — his incoming edges were sliding all session).
+- **M2 planning input ready (2026-07-07 evening):**
+  `docs/research/emergent-garden-lessons.md` — deep study of Emergent
+  Garden's five videos + the three canon papers (Generative Agents, Project
+  Sid/PIANO, Mindcraft/MineCollab) cross-checked against our architecture.
+  §7 has M2 backlog candidates in five tracks (A physical competence,
+  B plans/reflection, C social dynamics, D government via Sid's
+  constitutional loop, E ledger analytics) plus rulings-to-carry (no live
+  codegen, no vision, single-call tick stays). Recommended M2 core set:
+  A1–A3 + C1–C2 + D1–D2. The gather fix is Track A (composite verbs +
+  prescriptive failures + nearbyResources percept — evidence-backed).
 
 Deferred to M2 by review: dashboard-service BFF, analytics-service, Loki, k6.
 New M2 candidates from this session: packages/shared-py (two envelope-builder
@@ -467,7 +1276,8 @@ cd "..\Minecraft 1.21.6 Server"; java -Xmx3G -jar server.jar nogui
 # seed + watch
 curl -X POST http://localhost:8001/internal/seed
 docker logs ai-civilization-engine-agent-service-1 -f | findstr "tick complete"
-# hand-publish any command (dev tool)
+# hand-publish any command (dev tool). PowerShell eats inner double quotes on
+# the way to node — escape them: '{\"resource\":\"wood\",\"maxDistance\":4}'
 node scripts/produce-cmd.mjs <villagerId> <action> '<paramsJson>' [timeoutMs]
 ```
 

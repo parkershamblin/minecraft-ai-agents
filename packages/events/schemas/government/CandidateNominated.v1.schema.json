@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/government/CandidateNominated.v1.schema.json",
+  "title": "CandidateNominatedPayload",
+  "description": "A candidacy registered. Organic candidacies are caused by a GovernanceRequested{declare_candidacy} (causationId = that command's eventId); operator-seeded candidacies (POST /elections convenience) are roots (causationId null). Carries villagerId so consumers never need the candidates-table surrogate id to say who is running. Producer: government-service on government.events, aggregate = the Election.",
+  "type": "object",
+  "properties": {
+    "electionId": { "type": "string", "format": "uuid" },
+    "candidateId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The candidates-table row id (referenced by VoteCast.candidateId and ElectionDecided.winnerCandidateId)."
+    },
+    "villagerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Who is running."
+    },
+    "platform": {
+      "type": ["string", "null"],
+      "maxLength": 300,
+      "description": "The campaign promise; null for operator-seeded candidates."
+    }
+  },
+  "required": ["electionId", "candidateId", "villagerId", "platform"],
+  "additionalProperties": false
+}

@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     kafka_brokers: str = "localhost:9092"
     redis_url: str = "redis://localhost:6379"
 
+    # --- Filming levers (D2, staged in M2-10) --------------------------------
+    # One system-prompt line naming a village-wide aim. OFF by default —
+    # steering is a lever the operator pulls only if the arc stalls.
+    community_goal: str = ""
+
     # --- The tick — the single number that drives cost and latency ----------
     tick_interval_seconds: int = 60
     villager_count: int = 1  # walking skeleton: ONE villager; CIV-10 sets 3

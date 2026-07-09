@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/government/VoteCast.v1.schema.json",
+  "title": "VoteCastPayload",
+  "description": "A vote landed — emitted EXACTLY ONCE per stored vote (the (electionId, voterId) natural key): a redelivered command is deduped, a fresh re-vote is rejected ALREADY_VOTED, so ledger replays and the dashboard's SSE tally can count VoteCast events 1:1. causationId = the GovernanceRequested command (DoD #2: VoteCast <- GovernanceRequested <- DecisionMade), or null when cast via the operator REST plane. Producer: government-service on government.events, aggregate = the Election.",
+  "type": "object",
+  "properties": {
+    "electionId": { "type": "string", "format": "uuid" },
+    "voterId": { "type": "string", "format": "uuid" },
+    "candidateId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The candidates-table row id."
+    },
+    "candidateVillagerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The villager voted for — consumers render 'Yara voted for Bram' without a government_db join."
+    },
+    "reason": {
+      "type": ["string", "null"],
+      "maxLength": 300,
+      "description": "The voter's stated why — episode gold; null when unstated."
+    }
+  },
+  "required": ["electionId", "voterId", "candidateId", "candidateVillagerId", "reason"],
+  "additionalProperties": false
+}

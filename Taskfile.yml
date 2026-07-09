@@ -10,14 +10,22 @@ vars:
 
 tasks:
   up:
-    desc: Start the infra profile (Postgres, Redis, Redpanda, Prometheus, Grafana) — healthcheck-gated
+    desc: Start the infra profile (Postgres, Redis, Redpanda, Prometheus, Grafana) — healthcheck-gated, then provision topics
     cmds:
       - "{{.COMPOSE}} --profile infra up -d --wait"
+      - node scripts/provision-topics.mjs
 
   up:all:
-    desc: Infra + app profiles (app entries land with each service's first feature)
+    desc: Infra + app profiles (app entries land with each service's first feature). Infra first, then topics, THEN app — explicit provisioning must beat the producers' auto-create race on a fresh cluster
     cmds:
+      - "{{.COMPOSE}} --profile infra up -d --wait"
+      - node scripts/provision-topics.mjs
       - "{{.COMPOSE}} --profile infra --profile app up -d --wait"
+
+  topics:
+    desc: Provision the Kafka topic map explicitly (idempotent; fails loud on partition mismatch — see docs/runbooks/kafka-topic-migration.md)
+    cmds:
+      - node scripts/provision-topics.mjs
 
   down:
     desc: Stop everything (volumes preserved)
@@ -51,7 +59,7 @@ tasks:
       - curl -s -X POST http://localhost:8001/internal/seed
 
   test:
-    desc: Run all test suites (contracts, minecraft, agent, memory, event)
+    desc: Run all test suites (contracts, minecraft, agent, memory, event, government)
     vars:
       # .\gradlew.bat (explicit path, double-backslash survives the POSIX
       # shell): bare batch names fail under NoDefaultCurrentDirectoryInExePath=1
@@ -63,3 +71,4 @@ tasks:
       - cd services/agent-service && uv run pytest -q
       - cd services/memory-service && uv run pytest -q
       - cd services/event-service && {{.GRADLEW}} test
+      - cd services/government-service && {{.GRADLEW}} test

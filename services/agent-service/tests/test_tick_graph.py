@@ -2,6 +2,7 @@
 memory service, collected publishes. Asserts the wiring the demo depends on —
 correlation threading, causation chain, VillagerTalked on chat, MemoryFormed."""
 
+import json
 import uuid
 from datetime import UTC, datetime
 
@@ -142,3 +143,147 @@ async def test_no_snapshot_still_ticks():
 
     assert result["outcome"].decision.action in ("chat", "move", "idle")
     assert published.by_type("DecisionMade")  # blind, but still thinking
+
+
+class ScriptedLLM:
+    """One fixed decision, for tests that need a specific shape."""
+
+    name = "fake"
+    model = "scripted"
+
+    def __init__(self, decision_dict):
+        self._text = json.dumps(decision_dict)
+
+    async def complete(self, system, user):
+        from agent_service.llm.providers import LLMResponse
+
+        return LLMResponse(
+            text=self._text, tokens_in=0, tokens_out=0, latency_seconds=0.0,
+            provider=self.name, model=self.model,
+        )
+
+
+ELECTION_ID = "019f8e2a-0000-7000-8000-0000e1ec0001"
+BRAM_ID = "019f8e2a-0000-7000-8000-0000000b2a44"
+
+
+async def test_governance_action_publishes_the_second_command_plane():
+    published = Collected()
+    civic = ScriptedLLM(
+        {
+            "action": "chat",
+            "params": {"message": "Bram has my vote — he shared his bread."},
+            "reasoning": "The voting window is open and my mind is made up.",
+            "importance": 6.0,
+            "sentiment": 0.6,
+            "relationshipUpdates": None,
+            "governanceAction": {
+                "action": "vote",
+                "electionId": ELECTION_ID,
+                "candidateVillagerId": BRAM_ID,
+                "reason": "He shared his bread when the pantry ran low.",
+                "platform": None,
+            },
+        }
+    )
+    base = deps(publish=published)
+    base.llm = civic
+    graph = build_tick_graph(base)
+
+    await run_tick(graph, ELARA)
+
+    decision = published.by_type("DecisionMade")[0]
+    [(topic, command)] = [
+        (topic, envelope)
+        for topic, envelope in published.envelopes
+        if envelope["eventType"] == "GovernanceRequested"
+    ]
+
+    # the second command plane: right topic, per-villager key, threaded causation
+    assert topic == "commands.government"
+    assert command["aggregateId"] == str(ELARA.id)
+    assert command["correlationId"] == decision["correlationId"]
+    assert command["causationId"] == decision["eventId"]
+    assert command["payload"]["commandId"] == command["eventId"]
+    assert command["payload"]["action"] == "vote"
+    assert command["payload"]["params"] == {
+        "electionId": ELECTION_ID,
+        "candidateVillagerId": BRAM_ID,
+        "reason": "He shared his bread when the pantry ran low.",
+    }
+
+    # the world action still happened, and the ledger's decision names both
+    assert published.by_type("ActionRequested")
+    assert "+ vote" in decision["payload"]["decision"]
+
+
+async def test_no_governance_action_means_nothing_on_that_plane():
+    published = Collected()
+    graph = build_tick_graph(deps(publish=published))  # FakeProvider: governanceAction null
+
+    await run_tick(graph, ELARA)
+
+    assert published.by_type("GovernanceRequested") == []
+
+
+async def test_civic_state_reaches_deliberation():
+    """The M2-8 seam: deps.civics -> per-villager view -> VILLAGE AFFAIRS in
+    the user prompt. Optional-by-default — every deps() above passes None."""
+    from datetime import timedelta
+
+    from agent_service.brain.civics import CivicState
+
+    class SpyLLM(ScriptedLLM):
+        def __init__(self, decision_dict):
+            super().__init__(decision_dict)
+            self.user_prompts: list[str] = []
+
+        async def complete(self, system, user):
+            self.user_prompts.append(user)
+            return await super().complete(system, user)
+
+    civics = CivicState()
+    now = datetime.now(UTC)
+    civics.election_started({
+        "electionId": ELECTION_ID,
+        "office": "mayor",
+        "startsAt": (now - timedelta(minutes=1)).isoformat(),
+        "nominatingEndsAt": (now + timedelta(minutes=9)).isoformat(),
+        "endsAt": (now + timedelta(minutes=24)).isoformat(),
+    })
+
+    spy = SpyLLM({
+        "action": "idle", "params": {}, "reasoning": "listening",
+        "importance": 1.0, "sentiment": 0.0,
+        "relationshipUpdates": None, "governanceAction": None,
+    })
+    base = deps()
+    base.llm = spy
+    base.civics = civics
+    graph = build_tick_graph(base)
+
+    await run_tick(graph, ELARA)
+
+    [prompt] = spy.user_prompts
+    assert "VILLAGE AFFAIRS" in prompt
+    assert 'action "declare_candidacy"' in prompt  # nominating window is open
+
+
+async def test_awareness_round_trips_across_ticks():
+    """Tick 1's decision is remembered; tick 2 recalls it (Sid's Action
+    Awareness). Awareness is optional — deps without it (every test above)
+    must keep working, which they just did."""
+    from agent_service.brain.awareness import ActionAwareness
+
+    awareness = ActionAwareness()
+    base = deps()
+    base.awareness = awareness
+    graph = build_tick_graph(base)
+
+    result = await run_tick(graph, ELARA)
+    first = result["outcome"].decision
+
+    remembered = awareness.recall(ELARA.id)
+    assert remembered is not None
+    assert remembered.action == first.action
+    assert remembered.params == first.params

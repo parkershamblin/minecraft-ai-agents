@@ -50,8 +50,18 @@ flowchart LR
 | `social.events` | agent-service | `event-service.event-store`, `analytics-service.projections`, `dashboard-service.ws-fanout`, `agent-service.perception` | 3 | 7 days | `aggregateId` (speaker/initiator villagerId) |
 | `government.events` | government-service (P2+) | `event-service.event-store`, `analytics-service.projections`, `dashboard-service.ws-fanout`, `agent-service.perception` | 3 | 7 days | `aggregateId` (electionId / lawId / factionId) |
 | `commands.minecraft` | agent-service | `minecraft-service.command-executor`, `event-service.event-store` | 6 | 24 hours | `aggregateId` (villagerId) |
+| `commands.government` | agent-service (M2-7+) | `government-service.command-executor` (M2-6+), `event-service.event-store` | 6 | 24 hours | `aggregateId` (villagerId — the acting villager; per-villager civic ordering, same guarantee as `commands.minecraft`) |
 
 Retention can stay short because Kafka is transport, not storage — anything older than the topic window lives forever in the event store (see §5). Partition counts are sized for 20 villagers with headroom to demonstrate parallel consumption; scaling to 100+ villagers is a partition-count and consumer-instance change, not a redesign.
+
+**This table is provisioned, not aspirational (since M2-4):** `task topics`
+(`scripts/provision-topics.mjs` — the executable copy of this table) creates
+every topic explicitly and converges retention; `task up`/`up:all` run it
+before the app profile starts, so auto-creation-at-default-1 never decides a
+topic's shape. Changing a partition count on a live cluster requires the
+drain → recreate → offset-reset procedure in
+`docs/runbooks/kafka-topic-migration.md`. Keep table and script in step —
+review checks both when either changes.
 
 **The command/event split (CQRS).** `commands.minecraft` carries *intent* — `ActionRequested` messages that ask minecraft-service to do something and may be rejected or fail; the four `*.events` topics carry immutable *facts* about what already happened. This is the write-side/read-side split of CQRS: agent-service issues commands, minecraft-service is the **single executor** that turns them into `ActionCompleted`/`ActionFailed` facts on `world.events`, and every read model (analytics projections, dashboard) is built purely from facts. Commands and events never share a topic. The event store *does* archive commands (second consumer group above) — not to act on them, but because the causation chain `DecisionMade → ActionRequested → ActionCompleted` is the product: "why did she do that" replays break in the middle without the command link.
 
@@ -179,10 +189,12 @@ Example — a `VillagerTalked` fact on `social.events`, caused by the `DecisionM
 | `RelationshipChanged` | P1 | `social.events` | `villagerId: uuid, targetId: uuid, previousAffinity: float, newAffinity: float, previousTrust: float, newTrust: float, reason: string` — both relationship dimensions, matching the `relationships` table |
 | `BetrayalRecorded` | P4 | `social.events` | `betrayerId: uuid, victimId: uuid, description: string, severity: float, factionId: uuid\|null` |
 | `ActionRequested` | P1 | `commands.minecraft` | `commandId: uuid, villagerId: uuid, action: enum(spawn\|despawn\|move\|gather\|chat\|follow\|idle), params: object, priority: int, timeoutMs: int` — command, not a fact; `spawn`/`despawn` manage the bot session itself |
-| `ElectionStarted` | P2 | `government.events` | `electionId: uuid, office: string, startsAt: timestamp, endsAt: timestamp` |
-| `CandidateNominated` | P2 | `government.events` | `electionId: uuid, candidateId: uuid, platform: string` |
-| `VoteCast` | P2 | `government.events` | `electionId: uuid, voterId: uuid, candidateId: uuid, reason: string` |
-| `ElectionDecided` | P2 | `government.events` | `electionId: uuid, winnerId: uuid, voteCounts: object, turnout: float` |
+| `GovernanceRequested` | P2 | `commands.government` | `commandId: uuid, villagerId: uuid, action: enum(declare_candidacy\|vote), params: object` — command, not a fact; government-service is the single executor; no timeoutMs (no watchdog — the election clock + the consumer's freshness guard bound liveness). Shipped M2-7 |
+| `ElectionStarted` | P2 | `government.events` | `electionId: uuid, office: string, startsAt: timestamp, nominatingEndsAt: timestamp, endsAt: timestamp` — all three window boundaries, so consumers render deadlines without querying government-service. Shipped M2-7 |
+| `CandidateNominated` | P2 | `government.events` | `electionId: uuid, candidateId: uuid, villagerId: uuid, platform: string\|null` — villagerId says who is running (consumers never need the candidates-table id); platform null when operator-seeded. Shipped M2-7 |
+| `VoteCast` | P2 | `government.events` | `electionId: uuid, voterId: uuid, candidateId: uuid, candidateVillagerId: uuid, reason: string\|null` — emitted exactly once per stored vote (natural key), so tallies may count events 1:1. Shipped M2-7 |
+| `ElectionDecided` | P2 | `government.events` | `electionId: uuid, winnerCandidateId: uuid, winnerVillagerId: uuid, voteCounts: object (candidateVillagerId → int), totalVotes: int` — the sketched `turnout` was dropped at schema time: government-service cannot honestly know the electorate size; totalVotes ships instead. Shipped M2-7 |
+| `GovernanceRejected` | P2 | `government.events` | `commandId: uuid, villagerId: uuid, action: enum, electionId: uuid\|null, errorCode: enum(WINDOW_CLOSED\|ALREADY_VOTED\|ALREADY_A_CANDIDATE\|NOT_A_CANDIDATE\|UNKNOWN_ELECTION\|STALE_COMMAND\|INVALID_PARAMS), message: string` — the exactly-one-outcome twin of the facts above; aggregate = the acting villager. Shipped M2-7 |
 | `LawProposed` | P3 | `government.events` | `lawId: uuid, proposerId: uuid, title: string, description: string` |
 | `LawEnacted` | P3 | `government.events` | `lawId: uuid, enactedById: uuid, effectiveAt: timestamp` |
 | `LawBroken` | P3 | `government.events` | `lawId: uuid, violatorId: uuid, evidence: string, witnessIds: uuid[]` |

@@ -8,6 +8,7 @@ that to DecisionMade{error:true} + idle — never a crash.
 """
 
 import json
+import uuid as _uuid
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
@@ -17,6 +18,9 @@ from jsonschema import Draft202012Validator
 
 # Villagers may not spawn/despawn themselves — those are platform commands.
 DELIBERATE_ACTIONS = ("move", "gather", "chat", "follow", "idle")
+
+# The civic verbs (M2-7). Laws (M3) and factions (M4) are deliberately absent.
+GOVERNANCE_ACTIONS = ("declare_candidacy", "vote")
 
 # The outer shape handed to structured-output modes (OpenAI json_schema /
 # Ollama format). params stays free-form here — strict mode dislikes
@@ -46,8 +50,42 @@ DECISION_SCHEMA: dict[str, Any] = {
                 "additionalProperties": False,
             },
         },
+        # Civic action (M2-7), same required-nullable discipline. DELIBERATELY
+        # FLAT — no nested params object: every field explicit and nullable,
+        # which is both OpenAI-strict-safe by construction and kinder to small
+        # models than nesting. null = no civic action this tick (the default
+        # whenever no election context is in the prompt). Mapped to the
+        # GovernanceRequested wire shape and validated against its $defs
+        # before anything is published.
+        "governanceAction": {
+            "type": ["object", "null"],
+            "properties": {
+                "action": {"type": "string", "enum": list(GOVERNANCE_ACTIONS)},
+                "electionId": {"type": "string"},
+                "candidateVillagerId": {
+                    "type": ["string", "null"],
+                    "description": "vote: whom to vote for; null for declare_candidacy",
+                },
+                "reason": {"type": ["string", "null"], "maxLength": 300},
+                "platform": {
+                    "type": ["string", "null"],
+                    "maxLength": 300,
+                    "description": "declare_candidacy: the campaign promise; null for vote",
+                },
+            },
+            "required": ["action", "electionId", "candidateVillagerId", "reason", "platform"],
+            "additionalProperties": False,
+        },
     },
-    "required": ["action", "params", "reasoning", "importance", "sentiment", "relationshipUpdates"],
+    "required": [
+        "action",
+        "params",
+        "reasoning",
+        "importance",
+        "sentiment",
+        "relationshipUpdates",
+        "governanceAction",
+    ],
     "additionalProperties": False,
 }
 
@@ -99,6 +137,15 @@ class RelationshipUpdate:
 
 
 @dataclass(frozen=True)
+class GovernanceAction:
+    """A civic intent, already mapped to the GovernanceRequested wire params
+    and validated against its $defs — safe to publish as-is."""
+
+    action: str
+    params: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class Decision:
     action: str
     params: dict[str, Any]
@@ -106,6 +153,7 @@ class Decision:
     importance: float
     sentiment: float
     relationship_updates: tuple[RelationshipUpdate, ...] = ()
+    governance_action: GovernanceAction | None = None
 
     @staticmethod
     def idle(reasoning: str) -> "Decision":
@@ -123,6 +171,12 @@ def find_contracts_dir(start: Path | None = None) -> Path:
     raise FileNotFoundError("packages/events/schemas not found walking up from " + str(current))
 
 
+_GOVERNANCE_DEF_BY_ACTION = {
+    "declare_candidacy": "DeclareCandidacyParams",
+    "vote": "VoteParams",
+}
+
+
 @cache
 def _validators() -> tuple[Draft202012Validator, dict[str, Draft202012Validator]]:
     contract_path = find_contracts_dir() / "commands" / "ActionRequested.v1.schema.json"
@@ -134,6 +188,69 @@ def _validators() -> tuple[Draft202012Validator, dict[str, Draft202012Validator]
         for action, def_name in _PARAMS_DEF_BY_ACTION.items()
     }
     return outer, per_action
+
+
+@cache
+def _governance_validators() -> dict[str, Draft202012Validator]:
+    """Per-action validators over the REAL GovernanceRequested $defs — the
+    same seam discipline as world params: nothing reaches the wire that the
+    executor's contract would reject."""
+    contract_path = find_contracts_dir() / "commands" / "GovernanceRequested.v1.schema.json"
+    defs = json.loads(contract_path.read_text(encoding="utf-8"))["$defs"]
+    return {
+        action: Draft202012Validator({**defs[def_name], "$defs": defs})
+        for action, def_name in _GOVERNANCE_DEF_BY_ACTION.items()
+    }
+
+
+def _parse_governance(raw: dict[str, Any] | None) -> GovernanceAction | None:
+    """Map the flat decision-level governanceAction onto GovernanceRequested
+    wire params and validate against the contract $defs. Unlike world params,
+    a bad civic add-on never fails the whole decision: it is DROPPED (logged +
+    counted) and the tick proceeds — a mangled vote just doesn't happen.
+    Semantic rejections (wrong window, double vote) are the executor's job and
+    come back as GovernanceRejected percepts; this seam only guards syntax."""
+    if raw is None:
+        return None
+
+    from agent_service.logging import logger
+    from agent_service.metrics import llm_governance_dropped_total
+
+    action = raw["action"]  # enum-enforced by the outer schema
+
+    def dropped(why: str) -> None:
+        llm_governance_dropped_total.inc()
+        logger.warning("governanceAction dropped", action=action, reason=why)
+
+    for uuid_field in ("electionId", "candidateVillagerId"):
+        value = raw.get(uuid_field)
+        if value is not None:
+            try:
+                _uuid.UUID(str(value))
+            except ValueError:
+                # `format: uuid` is annotation-only in JSON Schema — parse for
+                # real, or hallucinated ids become INVALID_PARAMS wire noise.
+                dropped(f"{uuid_field} is not a uuid: {value!r}")
+                return None
+
+    params: dict[str, Any] = {"electionId": raw["electionId"]}
+    if action == "vote":
+        if raw.get("candidateVillagerId") is None:
+            dropped("vote without candidateVillagerId")
+            return None
+        params["candidateVillagerId"] = raw["candidateVillagerId"]
+        if raw.get("reason"):
+            params["reason"] = raw["reason"]
+    else:  # declare_candidacy
+        if raw.get("platform"):
+            params["platform"] = raw["platform"]
+
+    validator = _governance_validators()[action]
+    errors = sorted(validator.iter_errors(params), key=lambda e: e.json_path)
+    if errors:
+        dropped("; ".join(e.message for e in errors[:3]))
+        return None
+    return GovernanceAction(action=action, params=params)
 
 
 def validate_decision(raw_text: str) -> Decision:
@@ -176,4 +293,5 @@ def validate_decision(raw_text: str) -> Decision:
             )
             for u in (data.get("relationshipUpdates") or [])
         ),
+        governance_action=_parse_governance(data.get("governanceAction")),
     )

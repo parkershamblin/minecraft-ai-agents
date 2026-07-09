@@ -41,6 +41,27 @@
       "minimum": 0,
       "maximum": 24000,
       "description": "Minecraft ticks: 0 = dawn, 6000 = noon, 13000 = dusk, 18000 = midnight."
+    },
+    "nearbyResources": {
+      "type": "array",
+      "description": "Gatherable resource families in range (additive, M2-2). Refreshed on its own ~5s cadence — deliberately staler than the 1s snapshot (findBlocks scans are the cost). The scan is biased to the villager's altitude band, so entries lean reachable; count saturates at the scan cap. Absent (not empty) when no scan has run yet.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "family": {
+            "type": "string",
+            "description": "A resource family the gather action accepts (wood/stone/dirt)."
+          },
+          "nearestDistance": { "type": "number", "minimum": 0 },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Blocks seen, capped by the scan — read 'at least'."
+          }
+        },
+        "required": ["family", "nearestDistance", "count"],
+        "additionalProperties": false
+      }
     }
   },
   "required": ["villagerId", "capturedAt", "position", "health", "inventory", "nearbyVillagers", "timeOfDay"],

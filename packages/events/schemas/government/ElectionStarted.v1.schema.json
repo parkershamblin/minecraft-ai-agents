@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/government/ElectionStarted.v1.schema.json",
+  "title": "ElectionStartedPayload",
+  "description": "An election was opened (the operator lever — the one seeded step; everything after must be organic, 08-m2-plan ruling 2). Carries all three window boundaries so consumers can render 'nominations close at X' without querying government-service. Producer: government-service on government.events, aggregate = the Election. Root event (causationId null): the operator's REST call has no envelope parent.",
+  "type": "object",
+  "properties": {
+    "electionId": { "type": "string", "format": "uuid" },
+    "office": { "type": "string", "description": "P2: 'mayor'." },
+    "startsAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Nominating opens (inclusive)."
+    },
+    "nominatingEndsAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Voting opens (inclusive). Additive refinement over the 03-events sketch: the civic prompt needs this boundary."
+    },
+    "endsAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Voting closes; the clock decides (or annuls) at this boundary."
+    }
+  },
+  "required": ["electionId", "office", "startsAt", "nominatingEndsAt", "endsAt"],
+  "additionalProperties": false
+}

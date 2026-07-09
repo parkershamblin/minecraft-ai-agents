@@ -15,6 +15,8 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from agent_service.brain.awareness import ActionAwareness
+from agent_service.brain.civics import CivicState
 from agent_service.brain.graph import TickDeps, VillagerBrief, build_tick_graph
 from agent_service.brain.scheduler import TickScheduler
 from agent_service.db import make_engine, make_session_factory
@@ -61,7 +63,9 @@ async def lifespan(app: FastAPI):
 
     publisher = EventPublisher(settings.kafka_brokers)
     await publisher.start()
+    civics = CivicState()
     percepts = PerceptConsumer(settings.kafka_brokers, redis)
+    percepts.civics = civics  # institutions -> working memory (M2-8)
     await percepts.start()
 
     graph = build_tick_graph(
@@ -71,6 +75,9 @@ async def lifespan(app: FastAPI):
             llm=llm,
             publish=publisher.publish,
             relationships=relationships,
+            awareness=ActionAwareness(),
+            civics=civics,
+            community_goal=settings.community_goal or None,
             percepts_max=settings.percepts_max_per_tick,
             memories_k=settings.memories_per_tick,
         )
@@ -82,13 +89,18 @@ async def lifespan(app: FastAPI):
         max_reactive_per_5min=settings.max_reactive_per_5min,
         imminent_s=settings.reactive_imminent_seconds,
     )
-    scheduler.ensure([_brief(v) for v in await repo.list_alive(settings.villager_count)])
+    roster = await repo.list_alive(settings.villager_count)
+    scheduler.ensure([_brief(v) for v in roster])
     percepts.on_chat_percept = scheduler.request_reactive  # ears -> mind (M1-2)
+    # Election news broadcasts to every alive villager; the same map resolves
+    # candidate/mayor names for percepts (refreshed on seed).
+    percepts.roster = {str(v.id): v.name for v in roster}
 
     app.state.repo = repo
     app.state.relationships = relationships
     app.state.publisher = publisher
     app.state.scheduler = scheduler
+    app.state.percepts = percepts
     logger.info("agent-service ready")
     yield
 
@@ -172,7 +184,7 @@ async def seed() -> dict:
     """Provision villagers.json (first VILLAGER_COUNT), emit VillagerCreated,
     publish spawn commands, and start their tick loops."""
     result = await seed_villagers(app.state.repo, app.state.publisher, settings.villager_count)
-    app.state.scheduler.ensure(
-        [_brief(v) for v in await app.state.repo.list_alive(settings.villager_count)]
-    )
+    roster = await app.state.repo.list_alive(settings.villager_count)
+    app.state.scheduler.ensure([_brief(v) for v in roster])
+    app.state.percepts.roster = {str(v.id): v.name for v in roster}
     return result

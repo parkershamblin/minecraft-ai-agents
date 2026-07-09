@@ -25,6 +25,20 @@ class NearbyVillager(BaseModel):
     distance: confloat(ge=0.0)
 
 
+class NearbyResource(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    family: str = Field(
+        ...,
+        description='A resource family the gather action accepts (wood/stone/dirt).',
+    )
+    nearestDistance: confloat(ge=0.0)
+    count: conint(ge=1) = Field(
+        ..., description="Blocks seen, capped by the scan — read 'at least'."
+    )
+
+
 class Position(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -50,4 +64,8 @@ class WorldSnapshot(BaseModel):
     timeOfDay: conint(ge=0, le=24000) = Field(
         ...,
         description='Minecraft ticks: 0 = dawn, 6000 = noon, 13000 = dusk, 18000 = midnight.',
+    )
+    nearbyResources: list[NearbyResource] | None = Field(
+        None,
+        description="Gatherable resource families in range (additive, M2-2). Refreshed on its own ~5s cadence — deliberately staler than the 1s snapshot (findBlocks scans are the cost). The scan is biased to the villager's altitude band, so entries lean reachable; count saturates at the scan cap. Absent (not empty) when no scan has run yet.",
     )

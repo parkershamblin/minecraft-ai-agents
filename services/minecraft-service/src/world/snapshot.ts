@@ -1,4 +1,5 @@
 import { type Position, distance, round1, roundPos } from './position.ts'
+import type { ResourceSighting } from './resources.ts'
 import type { WorldSnapshot } from '@civ/events/ts'
 
 /** The slice of a mineflayer Bot the snapshot needs — mockable in tests. */
@@ -26,6 +27,9 @@ export function buildSnapshot(
   villagerId: string,
   bot: BotLike,
   others: NearbyVillager[],
+  // null = no resource scan has run (or it's disabled) → field omitted;
+  // [] = scanned and nothing in sight → field present and empty.
+  resources: ResourceSighting[] | null = null,
   capturedAt: Date = new Date(),
 ): WorldSnapshot | null {
   if (!bot.entity) {
@@ -53,5 +57,6 @@ export function buildSnapshot(
         distance: round1(distance(o.position as Position, position)),
       })),
     timeOfDay: Math.max(0, Math.min(24000, Math.round(bot.time.timeOfDay))),
+    ...(resources !== null && { nearbyResources: resources }),
   } as WorldSnapshot
 }

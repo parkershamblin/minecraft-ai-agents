@@ -210,12 +210,19 @@ export class CommandExecutor {
         const session = this.requireSession(payload.villagerId)
         const { resource, maxDistance } = payload.params as { resource?: string; maxDistance?: number }
         try {
-          return await session.gather(resource ?? 'wood', Math.min(Math.max(maxDistance ?? 32, 4), 64))
+          // 48 mirrors the contract default (GatherParams); clamp 4..64 unchanged
+          return await session.gather(resource ?? 'wood', Math.min(Math.max(maxDistance ?? 48, 4), 64))
         } catch (err) {
-          if ((err as Error & { code?: string }).code === 'RESOURCE_NOT_FOUND') {
+          const code = (err as Error & { code?: string }).code
+          if (code === 'RESOURCE_NOT_FOUND') {
             // honest outcome: the world simply has none nearby — retryable
             // from a different spot on a future tick
             throw new ActionError('RESOURCE_NOT_FOUND', (err as Error).message, true)
+          }
+          if (code === 'TOOL_REQUIRED') {
+            // also honest, but NOT retryable: the same empty hands fail the
+            // same way — the message says what would change that
+            throw new ActionError('TOOL_REQUIRED', (err as Error).message, false)
           }
           throw err
         }

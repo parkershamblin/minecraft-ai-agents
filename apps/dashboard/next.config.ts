@@ -4,6 +4,7 @@ import type { NextConfig } from 'next'
 // this job over at M1/M2). Host-run services by default; compose overrides.
 const AGENT = process.env.AGENT_SERVICE_URL ?? 'http://localhost:8001'
 const EVENTS = process.env.EVENT_SERVICE_URL ?? 'http://localhost:8081'
+const GOVERNMENT = process.env.GOVERNMENT_SERVICE_URL ?? 'http://localhost:8082'
 
 const nextConfig: NextConfig = {
   // gzip buffers the proxied SSE stream for browser clients (curl, which
@@ -13,6 +14,7 @@ const nextConfig: NextConfig = {
     return [
       { source: '/api/agent/:path*', destination: `${AGENT}/:path*` },
       { source: '/api/events/:path*', destination: `${EVENTS}/:path*` },
+      { source: '/api/government/:path*', destination: `${GOVERNMENT}/:path*` },
     ]
   },
 }

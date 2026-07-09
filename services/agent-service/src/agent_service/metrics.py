@@ -31,6 +31,11 @@ llm_malformed_total = Counter(
     "LLM responses that failed decision-contract validation (tick fell back to idle)",
 )
 
+llm_governance_dropped_total = Counter(
+    "civ_llm_governance_dropped_total",
+    "governanceAction fields dropped for failing the GovernanceRequested contract (tick proceeded without the civic action)",
+)
+
 llm_budget_tripped = Gauge(
     "civ_llm_budget_tripped",
     "1 while the daily token budget circuit breaker is open (deliberation on fake)",

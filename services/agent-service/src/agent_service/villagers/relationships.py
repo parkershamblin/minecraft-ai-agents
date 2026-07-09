@@ -17,6 +17,12 @@ from uuid6 import uuid7
 
 from agent_service.villagers.models import Relationship, Villager
 
+# An edge at or below this is a grudge. Ambient positive drift heals it at half
+# speed (M2-5 — measured M1: the ±3 hearer-sentiment heuristic mean-reverts any
+# grudge to zero under ordinary plaza chatter), and the prompt tells the
+# villager the grudge legitimately constrains tone and choices.
+GRUDGE_AFFINITY_THRESHOLD = -20
+
 
 @dataclass(frozen=True)
 class RelationshipChange:
@@ -84,7 +90,13 @@ class RelationshipRepo:
         affinity_delta: float,
         trust_delta: float,
         reason: str | None = None,
+        *,
+        ambient: bool = False,
     ) -> RelationshipChange:
+        """`ambient=True` marks background drift (the hearer-sentiment
+        heuristic) as opposed to a delta the LLM deliberately chose: ambient
+        goodwill onto a grudge edge is halved, a deliberate one lands whole —
+        a real apology still works."""
         now = datetime.now(UTC)
         try:
             async with self._sessions() as session:
@@ -97,8 +109,15 @@ class RelationshipRepo:
                     )
                 ).scalar_one_or_none()
 
+                # (0, 50) = schema defaults for a first meeting
+                previous_affinity, previous_trust = (
+                    (row.affinity, row.trust) if row is not None else (0, 50)
+                )
+                if ambient and affinity_delta > 0 and previous_affinity <= GRUDGE_AFFINITY_THRESHOLD:
+                    affinity_delta /= 2
+                    trust_delta /= 2
+
                 if row is None:
-                    previous_affinity, previous_trust = 0, 50  # schema defaults
                     row = Relationship(
                         id=uuid7(),
                         villager_id=villager_id,
@@ -114,7 +133,6 @@ class RelationshipRepo:
                     )
                     session.add(row)
                 else:
-                    previous_affinity, previous_trust = row.affinity, row.trust
                     row.affinity = _clamp(previous_affinity + affinity_delta, -100, 100)
                     row.trust = _clamp(previous_trust + trust_delta, 0, 100)
                     row.interaction_count += 1

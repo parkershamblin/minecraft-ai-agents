@@ -18,6 +18,7 @@ from agent_service.brain.prompts import system_prompt, user_prompt
 from agent_service.events.envelope import (
     TOPIC_AGENT,
     TOPIC_COMMANDS,
+    TOPIC_GOVERNMENT_COMMANDS,
     TOPIC_SOCIAL,
     build_envelope,
 )
@@ -43,6 +44,9 @@ class TickDeps:
     llm: Any  # LLMProvider-shaped: complete()
     publish: Any  # async (topic, envelope) -> None
     relationships: Any = None  # RelationshipRepo-shaped: apply_update() (None: feature off, e.g. old tests)
+    awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
+    civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
+    community_goal: str | None = None  # D2 filming lever: one system-prompt line
     percepts_max: int = 10
     memories_k: int = 6
 
@@ -95,12 +99,15 @@ def build_tick_graph(deps: TickDeps):
         feelings = await _nearby_feelings(state)
         outcome = await decide_safely(
             deps.llm,
-            system_prompt(villager.name, villager.personality, villager.backstory),
+            system_prompt(villager.name, villager.personality, villager.backstory,
+                          community_goal=deps.community_goal),
             user_prompt(
                 state.get("snapshot"),
                 state.get("percepts", []),
                 state.get("memories", []),
                 feelings,
+                last_decision=deps.awareness.recall(villager.id) if deps.awareness else None,
+                civic=deps.civics.snapshot(str(villager.id)) if deps.civics else None,
             ),
         )
         return {"outcome": outcome}
@@ -111,12 +118,15 @@ def build_tick_graph(deps: TickDeps):
         outcome = state["outcome"]
         decision = outcome.decision
 
+        decision_text = f"{decision.action} {decision.params}" if decision.params else decision.action
+        if decision.governance_action is not None:
+            decision_text += f" + {decision.governance_action.action}"
         decision_event = build_envelope(
             "DecisionMade",
             villager.id,
             {
                 "villagerId": str(villager.id),
-                "decision": f"{decision.action} {decision.params}" if decision.params else decision.action,
+                "decision": decision_text,
                 "reasoning": decision.reasoning,
                 "llmProvider": outcome.provider,
                 "llmModel": outcome.model,
@@ -148,6 +158,29 @@ def build_tick_graph(deps: TickDeps):
             ),
         )
 
+        if decision.governance_action is not None:
+            # The second command plane (08-m2-plan ruling 3): a tick can act in
+            # the world AND in civic life. Params were validated against the
+            # GovernanceRequested $defs at decision time; causation threads
+            # DoD #2's replay: VoteCast <- GovernanceRequested <- DecisionMade.
+            governance_command_id = uuid7()
+            await deps.publish(
+                TOPIC_GOVERNMENT_COMMANDS,
+                build_envelope(
+                    "GovernanceRequested",
+                    villager.id,
+                    {
+                        "commandId": str(governance_command_id),
+                        "villagerId": str(villager.id),
+                        "action": decision.governance_action.action,
+                        "params": decision.governance_action.params,
+                    },
+                    correlation_id=correlation,
+                    causation_id=decision_event["eventId"],
+                    event_id=governance_command_id,
+                ),
+            )
+
         if decision.action == "chat":
             snapshot = state.get("snapshot") or {}
             await deps.publish(
@@ -170,6 +203,10 @@ def build_tick_graph(deps: TickDeps):
             )
 
         await _apply_relationships(state, decision_event["eventId"])
+        if deps.awareness is not None:
+            # Remember what was actually requested — a malformed deliberation
+            # degraded to idle should be remembered as the idle it became.
+            deps.awareness.remember(villager.id, decision.action, decision.params)
         return {"decision_event_id": decision_event["eventId"]}
 
     async def _apply_relationships(state: TickState, decision_event_id: str) -> None:
@@ -212,7 +249,12 @@ def build_tick_graph(deps: TickDeps):
                 continue  # no self-edges, even if the LLM tries
             try:
                 change = await deps.relationships.apply_update(
-                    villager.id, uuid.UUID(target_id), affinity_delta, trust_delta, reason
+                    villager.id,
+                    uuid.UUID(target_id),
+                    affinity_delta,
+                    trust_delta,
+                    reason,
+                    ambient=(source == "heuristic"),
                 )
             except Exception as exc:  # noqa: BLE001 — hallucinated ids must not kill the tick
                 logger.warning(
