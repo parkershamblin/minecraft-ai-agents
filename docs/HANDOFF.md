@@ -1,10 +1,66 @@
-# Session Handoff — M2 IN PROGRESS: M2-1 ✅ M2-2 ✅ M2-3 ✅ M2-4 ✅, next M2-5 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: SPRINT 6 COMPLETE (M2-1…M2-5 ✅), next M2-6 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
-> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is underway:
-> M2-1…M2-4 shipped — next unit of work is M2-5 (grudge persistence kit,
-> the slip-valve ticket), which closes Sprint 6.**
+> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is COMPLETE
+> (M2-1…M2-5, no slip needed) — next unit of work is M2-6 (government-service
+> walking skeleton + election state machine), which opens Sprint 7 "The
+> campaign machine".**
+
+## Session 2026-07-08 ~22:20–22:45 EDT — M2-5 shipped, Sprint 6 closed
+
+- **What shipped** (`M2-5: grudge persistence kit`), agent-service only:
+  `GRUDGE_AFFINITY_THRESHOLD = -20` in `villagers/relationships.py`;
+  `apply_update` gains keyword-only `ambient: bool = False` — when ambient
+  and `affinity_delta > 0` and the edge's current affinity ≤ −20, **both
+  deltas are halved** (decided under the existing `FOR UPDATE` row lock, so
+  the read-modify race can't skip damping; first-meeting rows default to 0
+  so they never dampen). `graph.py` passes `ambient=(source == "heuristic")`
+  — deliberation-sourced updates land whole (**a real apology still works**).
+  The feelings prompt section appends a behavioral directive when a grudge
+  edge is actually in sight ("refusing, avoiding, arguing, or cold words are
+  all legitimate; do not perform warmth you do not feel") — keyed off nearby
+  villagers, NOT every edge the dict holds (tested). Tests 87→95: +5 repo
+  integration (halved at ≤−20, boundary −20 vs −19, negative undamped,
+  deliberate undamped, first-meeting undamped), +3 prompt directive cases,
+  +2 assertions in existing tick tests (heuristic→ambient=True,
+  deliberation→False).
+- **THE MEASUREMENT (ledger replay, before/after — the AC):** method:
+  replay `RelationshipChanged` prev/new deltas per edge from the **verified
+  clean window** (≥ 2026-07-07T12:11Z, `source='agent-service'`; 0 fake
+  fingerprints in-window — the M1-10 repair exclusions), damping rule
+  applied to heuristic positives at running affinity ≤ −20, mirroring the
+  repo's round/clamp. Replays reconcile with canon exactly (Yara→Cassia
+  peak −54 at 13:08Z).
+  - **Yara→Cassia** (108 events): post-peak positive drift was **+195
+    points, 100% heuristic, 0 deliberation** — ambient chatter alone
+    carried −54 → **+90** by 23:14Z. That's the disease quantified: no
+    apology, no arc, just pleasantry erosion flipping a filmed grudge into
+    warm friendship. Before: half-life 6.30h, ≤−30 persistence 6.92h.
+    After: 6.68h / 7.30h — the wall-clock crossing moves modestly because
+    this edge's healing bunched into a dense evening chatter burst, but
+    within the grudge band the ambient healing rate is exactly halved.
+  - **Quill→Wren** (63 events): before — entered ≤−30, mean-reverted back
+    above −30 after **6.66h** (the afternoon watch's documented bounce),
+    then fresh conflict re-deepened it to −48 at data end. After — **never
+    re-crosses −30: 10.42h at ≤−30, held to end of data**; end-state −84
+    vs −48. The grudge that briefly dissolved now stays warm all evening.
+  - **DoD #5 (grudge ≤−30 persists ≥2h under ambient chatter): cleared
+    3–5× in projection.** Caveat stated: fixed-stream replay (live villagers
+    would behave differently — directionally conservative, since the new
+    directive adds cold behavior/fresh conflict on top of damping). Live
+    confirmation rides the M2-10 filming run.
+- **Machine state: stack UP** (unchanged), 20 tick-less bots, narrative DBs
+  untouched — measurement was read-only ledger SQL + scratchpad replay.
+  **Running agent-service image is now TWO prompt milestones stale**
+  (pre-M2-3): the next real deliberation run needs `up --build`.
+- **Sprint 6 closed without using the slip valve.** Next: **M2-6**
+  (Sprint 7): government-service walking skeleton — Spring Boot hexagonal
+  (event-service layout), Flyway V1 election tables only, election state
+  machine with filmable window durations, `POST /elections` operator lever,
+  `ElectionStarted`/`ElectionDecided`, compose entry + healthcheck +
+  Prometheus scrape + its own CI caller workflow (paths: gotcha),
+  Testcontainers integration test.
 
 ## Session 2026-07-08 ~21:25–21:50 EDT — M2-4 shipped
 
