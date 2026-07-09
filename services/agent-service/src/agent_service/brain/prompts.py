@@ -4,13 +4,14 @@ words a villager thinks with are unit-testable and diffable in review."""
 import json
 from typing import Any
 
+from agent_service.brain.awareness import LastDecision
 from agent_service.memory_client import RetrievedMemory
 
 SYSTEM_TEMPLATE = """You are {name}, a villager in a small Minecraft settlement.
 Personality traits: {traits}.
 You value: {values}.
 Speech style: {speech_style}.
-Backstory: {backstory}
+{quirks_line}Backstory: {backstory}
 
 Each turn you choose exactly ONE next action and respond ONLY with JSON matching the schema you are given.
 Available actions and their params:
@@ -22,15 +23,17 @@ Available actions and their params:
 
 Also rate this moment for your own memory: importance (0-10, how much you'll want to remember this) and sentiment (-1 to 1, how it feels).
 If this moment changed how you feel about someone, set relationshipUpdates to a list of {{"villagerId", "affinityDelta" (-20..20), "trustDelta" (-20..20), "reason"}} — otherwise set it to null. Only include villagers whose villagerId you can see in the snapshot or overheard lines.
-Stay in character. Prefer small, concrete, social actions over grand plans."""
+Stay in character. Prefer small, concrete actions over grand plans — and material work (gathering, exploring, providing) is as much a villager's life as conversation."""
 
 
 def system_prompt(name: str, personality: dict[str, Any], backstory: str | None) -> str:
+    quirks = "; ".join(personality.get("quirks", []))
     return SYSTEM_TEMPLATE.format(
         name=name,
         traits=", ".join(personality.get("traits", [])) or "unremarkable",
         values=", ".join(personality.get("values", [])) or "a quiet life",
         speech_style=personality.get("speechStyle", "plain"),
+        quirks_line=f"Quirks: {quirks}.\n" if quirks else "",
         backstory=backstory or "You have always lived here.",
     )
 
@@ -65,11 +68,32 @@ def _feelings_section(
     return "How you feel about those nearby:\n" + "\n".join(lines)
 
 
+def _resources_section(snapshot: dict[str, Any]) -> str | None:
+    """The M2-2 survey, voiced. Absent field = no scan ran (old snapshot or
+    scan disabled) -> no section; [] = the scan looked and found nothing ->
+    say so honestly and point at the fix (moving), because 'no section' would
+    read as 'resources are not a thing here'."""
+    resources = snapshot.get("nearbyResources")
+    if resources is None:
+        return None
+    if not resources:
+        return (
+            "Resources in sight: none — this spot is bare. "
+            "Moving somewhere new would reveal more."
+        )
+    lines = "\n".join(
+        f"- {r['family']}: nearest {r['nearestDistance']} blocks away, {r['count']} seen"
+        for r in resources
+    )
+    return "Resources in sight (gather can reach these):\n" + lines
+
+
 def user_prompt(
     snapshot: dict[str, Any] | None,
     percepts: list[dict[str, Any]],
     memories: list[RetrievedMemory],
     feelings: dict[str, Any] | None = None,
+    last_decision: LastDecision | None = None,
 ) -> str:
     sections: list[str] = []
 
@@ -85,10 +109,34 @@ def user_prompt(
             f"- nearby villagers: {nearby or 'nobody in sight'}\n"
             f"- inventory: {', '.join(f'{i['count']} {i['item']}' for i in snapshot.get('inventory', [])) or 'empty'}"
         )
+        resources = _resources_section(snapshot)
+        if resources:
+            sections.append(resources)
     else:
         sections.append(
             "You cannot sense the world right now (no snapshot) — you may still think, speak, or wait."
         )
+
+    # Action awareness (Sid): pair the previous decision with its observed
+    # outcome. The matching outcome percept is CLAIMED here so it doesn't
+    # render twice; an unmatched decision gets an honest "no outcome yet".
+    claimed_index: int | None = None
+    if last_decision is not None:
+        for i, percept in enumerate(percepts):
+            if (
+                percept.get("type") in ("ActionCompleted", "ActionFailed")
+                and percept.get("action") == last_decision.action
+            ):
+                claimed_index = i
+                break
+        if claimed_index is None:
+            outcome = "outcome not observed yet — it may still be underway"
+        elif percepts[claimed_index].get("type") == "ActionCompleted":
+            outcome = f"it completed: {json.dumps(percepts[claimed_index]['detail'])}"
+        else:
+            outcome = f"it FAILED: {json.dumps(percepts[claimed_index]['detail'])}"
+        params = f" {json.dumps(last_decision.params)}" if last_decision.params else ""
+        sections.append(f"Your last decision: {last_decision.action}{params} → {outcome}")
 
     # Feelings for the villagers actually in sight (read seam wired -> not None).
     if feelings is not None:
@@ -100,7 +148,9 @@ def user_prompt(
     # the queue outlives any single deploy's vocabulary.
     action_lines = []
     overheard_lines = []
-    for percept in percepts:
+    for i, percept in enumerate(percepts):
+        if i == claimed_index:
+            continue  # already voiced in "Your last decision"
         kind = percept.get("type")
         if kind == "ActionCompleted":
             action_lines.append(f"- your '{percept['action']}' completed: {json.dumps(percept['detail'])}")

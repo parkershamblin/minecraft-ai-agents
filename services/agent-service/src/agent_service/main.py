@@ -15,6 +15,7 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from agent_service.brain.awareness import ActionAwareness
 from agent_service.brain.graph import TickDeps, VillagerBrief, build_tick_graph
 from agent_service.brain.scheduler import TickScheduler
 from agent_service.db import make_engine, make_session_factory
@@ -71,6 +72,7 @@ async def lifespan(app: FastAPI):
             llm=llm,
             publish=publisher.publish,
             relationships=relationships,
+            awareness=ActionAwareness(),
             percepts_max=settings.percepts_max_per_tick,
             memories_k=settings.memories_per_tick,
         )

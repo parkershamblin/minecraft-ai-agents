@@ -142,3 +142,23 @@ async def test_no_snapshot_still_ticks():
 
     assert result["outcome"].decision.action in ("chat", "move", "idle")
     assert published.by_type("DecisionMade")  # blind, but still thinking
+
+
+async def test_awareness_round_trips_across_ticks():
+    """Tick 1's decision is remembered; tick 2 recalls it (Sid's Action
+    Awareness). Awareness is optional — deps without it (every test above)
+    must keep working, which they just did."""
+    from agent_service.brain.awareness import ActionAwareness
+
+    awareness = ActionAwareness()
+    base = deps()
+    base.awareness = awareness
+    graph = build_tick_graph(base)
+
+    result = await run_tick(graph, ELARA)
+    first = result["outcome"].decision
+
+    remembered = awareness.recall(ELARA.id)
+    assert remembered is not None
+    assert remembered.action == first.action
+    assert remembered.params == first.params

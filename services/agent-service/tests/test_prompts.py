@@ -1,6 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
+from agent_service.brain.awareness import LastDecision
 from agent_service.brain.prompts import system_prompt, user_prompt
 from agent_service.villagers.relationships import RelationshipEdge
 
@@ -105,3 +106,69 @@ def test_feelings_section_absent_when_nobody_nearby():
     # seam wired (feelings={}) but nobody in sight -> no section, no crash.
     prompt = user_prompt(_snapshot(), [], [], {})
     assert "How you feel" not in prompt
+
+
+def test_system_prompt_renders_quirks_and_material_work():
+    prompt = system_prompt(
+        "Elara",
+        {"traits": ["warm"], "values": ["community"], "speechStyle": "friendly", "quirks": ["hums while working", "counts jars twice"]},
+        None,
+    )
+    assert "Quirks: hums while working; counts jars twice." in prompt
+    # the M2-3 rebalance: material action is named as legitimate
+    assert "material work" in prompt
+    assert "social actions over grand plans" not in prompt
+
+
+def test_system_prompt_omits_quirks_line_when_none():
+    prompt = system_prompt("Elara", {"traits": ["warm"]}, None)
+    assert "Quirks:" not in prompt
+
+
+def test_resources_in_sight_render_from_snapshot():
+    snapshot = _snapshot()
+    snapshot["nearbyResources"] = [
+        {"family": "wood", "nearestDistance": 33.7, "count": 25},
+        {"family": "dirt", "nearestDistance": 1.2, "count": 32},
+    ]
+    prompt = user_prompt(snapshot, [], [])
+    assert "Resources in sight (gather can reach these):" in prompt
+    assert "- wood: nearest 33.7 blocks away, 25 seen" in prompt
+    assert "- dirt: nearest 1.2 blocks away, 32 seen" in prompt
+
+
+def test_resources_scanned_empty_says_so_and_points_at_moving():
+    snapshot = _snapshot()
+    snapshot["nearbyResources"] = []
+    prompt = user_prompt(snapshot, [], [])
+    assert "Resources in sight: none" in prompt
+    assert "Moving somewhere new" in prompt
+
+
+def test_no_resources_section_when_field_absent():
+    # pre-M2-2 snapshot / scan disabled -> the section simply doesn't exist
+    prompt = user_prompt(_snapshot(), [], [])
+    assert "Resources in sight" not in prompt
+
+
+def test_last_decision_pairs_with_its_outcome_percept_and_claims_it():
+    percepts = [
+        {"type": "ActionFailed", "action": "gather", "detail": {"errorCode": "RESOURCE_NOT_FOUND"}},
+        {"type": "ActionCompleted", "action": "move", "detail": {"blocksTraveled": 4}},
+    ]
+    prompt = user_prompt(_snapshot(), percepts, [], last_decision=LastDecision("gather", {"resource": "wood"}))
+    assert 'Your last decision: gather {"resource": "wood"} → it FAILED: {"errorCode": "RESOURCE_NOT_FOUND"}' in prompt
+    # the claimed percept must not ALSO render under "Since your last turn"
+    assert prompt.count("RESOURCE_NOT_FOUND") == 1
+    # the unclaimed one still does
+    assert "your 'move' completed" in prompt
+
+
+def test_last_decision_without_outcome_is_honest():
+    prompt = user_prompt(_snapshot(), [], [], last_decision=LastDecision("move", {}))
+    assert "Your last decision: move → outcome not observed yet" in prompt
+
+
+def test_no_last_decision_section_by_default():
+    prompt = user_prompt(_snapshot(), [], [])
+    assert "Your last decision" not in prompt
