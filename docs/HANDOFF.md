@@ -1,11 +1,114 @@
-# Session Handoff — M2 IN PROGRESS: M2-9 ✅, next M2-10 (the finale) · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 CODE-COMPLETE (M2-1…M2-10 ✅): THE VILLAGE ELECTED A MAYOR · Episode 2 filming = Parker's session
 
 > A fresh session should be able to continue from this file +
-> `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
-> complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 is at M2-9 of 10 —
-> only M2-10 remains: election day (filming run + jacoco gate extension +
-> demo-m2.md). Before ANY deliberation run: `up --build` agent-service
-> (its container is FOUR milestones stale).**
+> `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
+> (DoD 6/6, Episode 1 filmed). M2 is CODE-COMPLETE: all ten tickets shipped,
+> and the dress rehearsal ran the real thing — a fully organic election on
+> live llama deliberation: 20/20 candidacies, 20/20 votes, 100% turnout,
+> MAYOR BRAM seated (10 votes on his M1 bread-and-ledger reputation).
+> DoD #6's episode segment is Parker's filming session (`docs/demo-m2.md`
+> is the shot script). THE FLEET IS TICKING — see machine state.**
+
+## Session 2026-07-09 ~02:05–03:55 EDT — M2-10 shipped: the dress rehearsal elected a mayor
+
+- **What shipped** (`M2-10: election day — gate, steering lever, demo, and
+  the rehearsal`):
+  - **jacoco gate ON for government-service** (M1-10 pattern): one aggregate
+    LINE ratio ≥0.80 over adapter.in/** + application/** +
+    adapter.out.persistence/** (measured **92.3%** at gate time), wired
+    `finalizedBy(test)` so CI's fixed `gradlew test bootJar` enforces it;
+    the Kafka out-adapter stays measured-but-ungated (the SSE-relay analog,
+    same scoping call as event-service). `task test` = six suites, all
+    gates green — **M2 DoD #7 ✅**.
+  - **D2 steering lever staged**: `COMMUNITY_GOAL` env → one system-prompt
+    line ("The village talk lately keeps returning to one shared aim: …"),
+    OFF by default, plumbed settings→TickDeps→system_prompt→compose
+    (+prompt test, agent tests 129→130). Influencer personas documented as
+    villagers.json edits (zero code). Both levers are in demo-m2.md with
+    the warning: pull BEFORE opening an election, never during (the
+    restart-forgets rule).
+  - **`docs/demo-m2.md`** — the Episode 2 shot script: 7 money shots
+    (the announcement, someone steps forward, campaign chatter, the
+    receipts, the double vote that wasn't, election night + the mayoral
+    address, the why-did-she-vote replay), health commands, teardown, and
+    the DO-NOT-SET-OPENAI_API_KEY warning (strict-mode params bug).
+- **THE DRESS REHEARSAL — the arc ran itself, organically, first try:**
+  - Deploy: `up --build agent-service` ended the four-milestone image gap;
+    boot chain `ollama (warmed)` (the .env's `LLM_PROVIDER=openai` + blank
+    key degraded correctly — NOTE: do NOT add a key before the params
+    reshape), 20 tick loops, civic consumer subscribed. Warmup action mix
+    over the first fleet round: 16 move / 2 gather / 2 chat / 1 idle — the
+    M2-3 rebalance visible in the wild.
+  - **One seeded act**: `POST /elections {}` (defaults 600s/900s) at
+    07:20:24Z. Everything after was the villagers'.
+  - **Nominations**: ALL TWENTY villagers declared candidacy via the
+    command plane, each with a platform in their own voice — Vesper the
+    night-watch ("I have observed and learned from many of you"), Gideon
+    inventing credentials ("my experience as a close advisor to Elara"),
+    Tansy running on food access. Juniper told her bees the news; Vesper
+    campaigned in watch-idiom. **A 20/20 field is the affordance being TOO
+    persuasive** (llama agreeableness, the 0/4→4/4 sensitivity in the
+    other direction) — filming tune: soften to "if the office calls to
+    you…" or shorten nominations; recorded as the M3 prompt lever.
+  - **Voting**: 20/20 organic votes in the 15-minute window — **Bram won
+    10 of 20** in a twenty-way field (absolute majority), on the M1 canon:
+    his platform claimed "experience with the miller's family," and
+    Elara's vote reason echoed the line back — **the campaign message
+    propagated through the village and won the election.** Four self-votes;
+    Ines and Wren took 2 each. Zero operator input after the open.
+    **M2 DoD #1 ✅ (20≥2 candidacies, 20≥10 votes).**
+  - **The clock decided at 07:45:24Z**: Mayor Bram, governments row seated
+    (`governmentId=019f45d6-…`), ElectionDecided broadcast to every mind;
+    "You are the mayor of the village." now stands in Bram's every prompt.
+  - **DoD #2 ✅ — the replay**: ONE correlationId returns Elara's entire
+    civic tick from the ledger: DecisionMade (mid-storm-plot reasoning) →
+    ActionRequested + **GovernanceRequested** + VillagerTalked (the
+    single-call multi-plane tick, live) → VoteCast with her stated reason
+    ("Bram's dedication… and his experience with the miller's family") →
+    3× RelationshipChanged → MemoryFormed → ActionCompleted. Chain:
+    VoteCast ← GovernanceRequested ← DecisionMade, exactly as designed.
+  - **DoD #3 ✅ — the double vote that wasn't**: zero organic ALREADY_VOTED
+    during the window (nobody re-voted!); demo Shot 5 forced one on
+    rehearsal data — tally 20 before AND after, `GovernanceRejected
+    {ALREADY_VOTED}` in the ledger ("the first vote stands").
+  - **DoD #6 (page half) ✅**: `/government` live through the whole arc —
+    nominating countdown with the growing candidate roll, live tally,
+    receipts feed, decided banner (screenshots taken mid-arc + at the
+    decide). The episode-segment half is Parker's filming session.
+  - **Health across the ~45-min deliberation run**: MSPT avg 7.0–7.5 ms
+    (7× headroom), 21 players online throughout (Parker in-game), zero
+    container restarts, 565 ticks (265 scheduled + **300 reactive** — the
+    election chatter drove conversation; caps held), malformed ~7%.
+  - **The top drift stat (M3 tuning target): `civ_llm_governance_dropped_
+    total = 158`** — all arc long, llama kept inventing civic acts for
+    FICTIONAL elections ('storm_preparations_election',
+    'diamond-claims-dispute-election' — its own M1 storm/diamond plots!).
+    The M2-7 validation seam ate every single one (only ~5 uuid-shaped
+    misses reached the executor, earning honest UNKNOWN_ELECTION percepts).
+    Zero invalid commands on the wire. The defense works; the prompt
+    should still teach the exact id harder.
+- **DoD #4 (gather ≥80%) and #5 (grudge ≥2h)**: mechanics shipped and
+  measured in M2-1/M2-5 (gather live-proven; grudge cleared 3–5× in ledger
+  projection); the camera-day numbers ride Parker's filming run alongside
+  #6's segment.
+- **Machine state: THE FLEET IS TICKING — the zero-pollution era is over
+  by design.** 12 containers healthy; agent-service on the full M2 image
+  (M2-3 prompts + M2-7 schema + M2-8 civics + M2-10 lever),
+  `villager_count=20`, 60s ticks, reflections on, Ollama, budget 100M.
+  The rehearsal's election is CANON: government_db holds the village's
+  first government (Mayor Bram); agent_db/memory_db carry the campaign's
+  memories and relationship moves. To pause the village:
+  `docker stop ai-civilization-engine-agent-service-1` (bots stay
+  embodied; restart resumes ticks — but a restart forgets any MID-FLIGHT
+  election, so never pause during one). Ledger keeps everything.
+- **Next: Episode 2 filming (Parker)** — `docs/demo-m2.md` start to
+  finish; the world already has a sitting mayor, so the filmed election is
+  a RE-ELECTION (Bram defends his office — arguably better drama; or
+  `task nuke` for a fresh world at the cost of all canon, re-apply
+  connection-throttle -1 after). After filming: M3 planning (laws/living
+  law is the centerpiece; the M3 prompt levers recorded above: candidacy
+  affordance softening, election-id emphasis vs the 158 drops,
+  per-provider budgets, the OpenAI strict-mode params reshape).
 
 ## Session 2026-07-09 ~01:15–02:00 EDT — M2-9 shipped (dashboard /government page)
 

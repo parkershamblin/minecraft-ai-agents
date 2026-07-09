@@ -77,6 +77,7 @@ async def lifespan(app: FastAPI):
             relationships=relationships,
             awareness=ActionAwareness(),
             civics=civics,
+            community_goal=settings.community_goal or None,
             percepts_max=settings.percepts_max_per_tick,
             memories_k=settings.memories_per_tick,
         )

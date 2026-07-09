@@ -322,3 +322,15 @@ def test_civic_news_renderers_and_the_mixed_queue():
 def test_you_won_percept_is_second_person():
     prompt = user_prompt(None, [{"type": "ElectionDecided", "winnerName": "Elara", "you": True}], [])
     assert "YOU have been elected mayor" in prompt
+
+
+def test_community_goal_line_is_off_by_default_and_on_when_set():
+    base = system_prompt("Elara", {"traits": ["warm"]}, None)
+    assert "shared aim" not in base
+
+    steered = system_prompt(
+        "Elara", {"traits": ["warm"]}, None,
+        community_goal="the village needs a proper granary before winter",
+    )
+    assert steered.startswith(base)  # additive: one line, nothing else moves
+    assert "one shared aim: the village needs a proper granary before winter" in steered

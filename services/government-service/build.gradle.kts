@@ -45,12 +45,40 @@ tasks.withType<Test> {
     systemProperty("api.version", "1.44")
 }
 
-// Coverage is reported from day one; the ≥80 VERIFICATION gate lands in M2-10
-// alongside the filming run (per docs/architecture/08-m2-plan.md), mirroring
-// how event-service's gate arrived in M1-10.
+// M2-10: the coverage gate, ON, scoped like event-service's (M1-10 pattern):
+// REST + Kafka in-adapters, the application core, and the JDBC stores they
+// share — one aggregate ratio (measured 92.3% at gate time). config/, domain
+// records, the Kafka out-adapter (the SSE-relay analog) and the boot class
+// stay measured-but-ungated.
 jacoco { toolVersion = "0.8.12" }
+
+private fun org.gradle.api.tasks.SourceSetContainer.gatedClasses() =
+    getByName("main").output.asFileTree.matching {
+        include(
+            "ai/civ/governmentservice/adapter/in/**",
+            "ai/civ/governmentservice/application/**",
+            "ai/civ/governmentservice/adapter/out/persistence/**",
+        )
+    }
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports { csv.required.set(true) }
 }
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.test)
+    classDirectories.setFrom(sourceSets.gatedClasses())
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+}
+
+// `test` alone enforces the gate — CI's fixed `gradlew test bootJar` needs no change.
+tasks.test { finalizedBy(tasks.jacocoTestCoverageVerification) }

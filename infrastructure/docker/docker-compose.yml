@@ -188,6 +188,9 @@ services:
       LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-2000000}
       TICK_INTERVAL_SECONDS: ${TICK_INTERVAL_SECONDS:-60}
       VILLAGER_COUNT: ${VILLAGER_COUNT:-1}
+      # D2 filming lever (M2-10): one shared-aim line in every system prompt.
+      # Blank = off; pulled only if the arc stalls (plan ruling).
+      COMMUNITY_GOAL: ${COMMUNITY_GOAL:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     extra_hosts:
       - "host.docker.internal:host-gateway"

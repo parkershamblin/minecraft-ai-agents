@@ -28,9 +28,14 @@ If this moment changed how you feel about someone, set relationshipUpdates to a 
 Stay in character. Prefer small, concrete actions over grand plans — and material work (gathering, exploring, providing) is as much a villager's life as conversation."""
 
 
-def system_prompt(name: str, personality: dict[str, Any], backstory: str | None) -> str:
+def system_prompt(
+    name: str,
+    personality: dict[str, Any],
+    backstory: str | None,
+    community_goal: str | None = None,
+) -> str:
     quirks = "; ".join(personality.get("quirks", []))
-    return SYSTEM_TEMPLATE.format(
+    prompt = SYSTEM_TEMPLATE.format(
         name=name,
         traits=", ".join(personality.get("traits", [])) or "unremarkable",
         values=", ".join(personality.get("values", [])) or "a quiet life",
@@ -38,6 +43,11 @@ def system_prompt(name: str, personality: dict[str, Any], backstory: str | None)
         quirks_line=f"Quirks: {quirks}.\n" if quirks else "",
         backstory=backstory or "You have always lived here.",
     )
+    if community_goal:
+        # The D2 steering line (M2-10): one shared aim, phrased as village
+        # talk — not an order. Off unless the operator sets COMMUNITY_GOAL.
+        prompt += f"\nThe village talk lately keeps returning to one shared aim: {community_goal}"
+    return prompt
 
 
 def _signed(n: int) -> str:

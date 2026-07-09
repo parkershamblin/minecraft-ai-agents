@@ -46,6 +46,7 @@ class TickDeps:
     relationships: Any = None  # RelationshipRepo-shaped: apply_update() (None: feature off, e.g. old tests)
     awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
     civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
+    community_goal: str | None = None  # D2 filming lever: one system-prompt line
     percepts_max: int = 10
     memories_k: int = 6
 
@@ -98,7 +99,8 @@ def build_tick_graph(deps: TickDeps):
         feelings = await _nearby_feelings(state)
         outcome = await decide_safely(
             deps.llm,
-            system_prompt(villager.name, villager.personality, villager.backstory),
+            system_prompt(villager.name, villager.personality, villager.backstory,
+                          community_goal=deps.community_goal),
             user_prompt(
                 state.get("snapshot"),
                 state.get("percepts", []),
