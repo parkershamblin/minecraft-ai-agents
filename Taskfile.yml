@@ -59,7 +59,7 @@ tasks:
       - curl -s -X POST http://localhost:8001/internal/seed
 
   test:
-    desc: Run all test suites (contracts, minecraft, agent, memory, event)
+    desc: Run all test suites (contracts, minecraft, agent, memory, event, government)
     vars:
       # .\gradlew.bat (explicit path, double-backslash survives the POSIX
       # shell): bare batch names fail under NoDefaultCurrentDirectoryInExePath=1
@@ -71,3 +71,4 @@ tasks:
       - cd services/agent-service && uv run pytest -q
       - cd services/memory-service && uv run pytest -q
       - cd services/event-service && {{.GRADLEW}} test
+      - cd services/government-service && {{.GRADLEW}} test

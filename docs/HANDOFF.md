@@ -1,11 +1,108 @@
-# Session Handoff — M2 IN PROGRESS: SPRINT 6 COMPLETE (M2-1…M2-5 ✅), next M2-6 · M1 COMPLETE (DoD 6/6)
+# Session Handoff — M2 IN PROGRESS: SPRINT 7 OPEN (M2-6 ✅), next M2-7 · M1 COMPLETE (DoD 6/6)
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 is fully
 > complete (M1-1…M1-10, DoD 6/6, Episode 1 filmed). M2 Sprint 6 is COMPLETE
-> (M2-1…M2-5, no slip needed) — next unit of work is M2-6 (government-service
-> walking skeleton + election state machine), which opens Sprint 7 "The
-> campaign machine".**
+> (M2-1…M2-5); Sprint 7 "The campaign machine" is OPEN with M2-6 shipped —
+> next unit of work is M2-7 (governance command plane + contracts).**
+
+## Session 2026-07-08 ~22:45–23:20 EDT — M2-6 shipped, Sprint 7 opened
+
+- **What shipped** (`M2-6: government-service walking skeleton — election
+  state machine`): new `services/government-service` — Java 21 / Spring Boot
+  3.5.6 / Gradle 9.2, hexagonal mirroring event-service (adapter.in.rest +
+  adapter.in.scheduling / adapter.out.persistence + adapter.out.log /
+  application ports+service / domain records, hand-mapped — no Java codegen,
+  ruling 6). **Flyway V1 creates `elections`/`candidates`/`votes`/
+  `governments` ONLY** (laws/factions deliberately absent — ruling 8, header
+  comment says so for review). State machine scheduled → nominating → voting
+  → decided (+annulled) as a pure domain decision (`Election.duePhase`,
+  inclusive boundaries, one phase per step — a late clock cascades, never
+  skips), applied by a 5s scheduled clock through
+  `AdvanceElectionsUseCase.advance(now)` (explicit `now` ⇒ deterministic
+  tests). Windows configurable: defaults 600s/900s (the filmable
+  timescales), per-election overrides in the POST body, `ELECTION_*` env
+  levers in compose. REST per the frozen 04 contract: `POST /elections`
+  (operator lever; optional operator-seeded candidates, deduped),
+  `GET /elections/{id}` (candidates + live tally; `include=votes` adds
+  per-vote reasons — episode gold), and `POST /elections/{id}/votes`
+  (pulled in from 04 so the skeleton is drivable end-to-end:
+  **natural-key idempotent** per ruling 5 — 201 new / 200 existing even
+  after close, never re-counts, never switches candidate; problem+json
+  errorCodes `WINDOW_CLOSED`/`NOT_A_CANDIDATE`/`UNKNOWN_ELECTION`
+  pre-echo M2-7's GovernanceRejected vocabulary). Decide rule: plurality;
+  tie → earliest registered → id (total order); zero votes →
+  annulled(no_votes); no candidates at voting open → annulled(no_candidates).
+  `ElectionDecided` seats a `governments` row (mayoralty) **and dissolves the
+  incumbent** — a village has one mayor; re-elections just work. Vote-vs-
+  transition race closed with `SELECT FOR UPDATE` on the election row (the
+  agent-service lock pattern); the advance loop runs one TransactionTemplate
+  tx per election so a poisoned row can't wedge the clock. UUIDv7 row ids
+  from a small in-house generator (bit layout unit-tested; Java has no
+  built-in — M2-7's envelope builder will reuse it). Metrics:
+  `civ_elections_opened_total`, `civ_election_transitions_total{to}`,
+  `civ_votes_total{outcome}`. Wiring: compose entry on 8082 (+healthcheck;
+  first real feature = first compose appearance), Prometheus scrape job, CI
+  caller workflow (java + image, **its own file in `paths:`**, and
+  packages/events pre-included so M2-7's fixture consumption can't be
+  forgotten), `task test` now runs **six** suites.
+- **THE SEQUENCING RULING** (the plan row says "emits ElectionStarted/
+  ElectionDecided" but the government/* schemas are owned by M2-7):
+  **chose (b) — no Kafka emission in M2-6.** The domain fires
+  `GovernmentEventsPort.electionStarted/electionDecided` at exactly the
+  right two moments; M2-6 wires a structured-logging adapter (lines say
+  "log-only until M2-7 contracts"). Reasons: contract-first forbids
+  schemaless wire events; M2-7 owns the six-schema package as one coherent
+  review; nothing archives or consumes government.events until M2-7/M2-8
+  (events emitted now would expire unread from a 7d topic); and
+  government-service would have been the repo's FIRST Java Kafka producer —
+  that envelope-builder work belongs with M2-7's command plane. Net:
+  M2-7 swaps the adapter behind the port, zero domain surgery. Deliberately
+  **no spring-kafka dependency at all** — the integration test needs only
+  Postgres (no Redpanda container; ~3s suite).
+- **Tests 0 → 21** (16 unit: phase boundaries incl. never-skips, tally
+  tie-breaks, UUIDv7 bits; 5 Testcontainers integration against the real
+  pgvector Postgres image: full lifecycle with stepped clock, idempotent
+  re-vote — even for a different candidate, the first vote stands — all
+  three errorCodes, both annul paths incl. the late-clock cascade,
+  re-election dissolving the incumbent, validation 400s). Coverage is
+  REPORTED, not gated — the ≥80 jacoco gate is M2-10's AC per plan.
+- **Live-verified against the running stack** (image built from the
+  worktree, `up -d --build --no-deps government-service` attached to the
+  same compose project; the 11 running containers untouched): Flyway V1
+  applied to virgin government_db; two real elections on the real 5s clock.
+  Run 1 (15s/20s — tighter than hand-driven curl, and every "miss" returned
+  the CORRECT semantics: 201 in-window, WINDOW_CLOSED after close, 200
+  replay after close) decided **Elara mayor**; run 2 (8s/60s) recorded the
+  incumbent governmentId at open, 409'd the early vote, took 3 votes + a
+  200 duplicate, decided **Bram 2–1, dissolving Elara's government and
+  seating Bram's at the same instant**. Both port log lines fired;
+  `/actuator/prometheus` civ_ counters exactly right (2 opened, 2×3
+  transitions, 4 accepted, 4 duplicate). Smoke rows then deleted —
+  government_db back to 0 rows (mutable service state, not ledger; pristine
+  for the M2-10 arc).
+- **Worktree wrinkles found** (now CLAUDE.md gotchas): Git Bash mangles
+  `cmd /c` (`/c` → `C:\`, MSYS path conversion) so gradlew must run from
+  PowerShell there; worktrees don't carry `.env` (copy from the main repo
+  before compose); compose from a worktree attaches to the SAME project
+  (`name:` key) — `--no-deps` keeps live services untouched; bind-mounted
+  configs (prometheus.yml) still resolve to the checkout each container was
+  STARTED from, so the new scrape job goes live after merge + prometheus
+  restart (the metrics endpoint itself was verified directly).
+- **Machine state: stack UP, 12 containers** (11 unchanged + healthy
+  government-service on 8082), 20 tick-less bots, agent-service still
+  `villager_count=0` on the pre-M2-3 image, narrative DBs untouched all
+  session (only government_db was written, then wiped).
+- **Next: M2-7** — governance command plane + contracts: six schemas +
+  fixtures + committed `task gen` (`GovernanceRequested.v1` with per-action
+  `$defs` + invalid fixture; `ElectionStarted`/`CandidateNominated`/
+  `VoteCast`/`ElectionDecided`/`GovernanceRejected` v1), DECISION_SCHEMA
+  gains required-nullable `governanceAction` (M1-3 pattern), agent-service
+  publishes `commands.government` (causation = DecisionMade),
+  government-service consumes with **day-one freshness guard** (ruling 7)
+  and swaps LoggingGovernmentEvents for the Kafka adapter, event-service
+  archives both topics (CIV_TOPICS + compose), and the week-one
+  llama + OpenAI `governanceAction` smoke is the sprint go/no-go.
 
 ## Session 2026-07-08 ~22:20–22:45 EDT — M2-5 shipped, Sprint 6 closed
 

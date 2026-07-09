@@ -16,14 +16,18 @@ villagers as bots and emitting world facts. `memory-service` (Python, pgvector)
 owns the generative-agents memory stream in `memory_db` (recency × importance ×
 relevance retrieval). `event-service` (Java 21, Spring Boot) consumes every
 topic — including commands, for causation chains — into an append-only Postgres
-ledger with cursor-paged reads and an SSE live feed. Relationships are directed
+ledger with cursor-paged reads and an SSE live feed. `government-service`
+(Java 21, Spring Boot, hexagonal like event-service) owns
+elections/governments in `government_db`: the clock-driven election state
+machine (scheduled → nominating → voting → decided) and the idempotent ballot
+box — REST-driven since M2-6; it joins the Kafka planes with M2-7's contracts. Relationships are directed
 edges (affinity −100..100, trust 0..100); every change is a
 `RelationshipChanged` ledger event. Kafka = Redpanda locally. Contracts live in
 `packages/events` (JSON Schema → generated TS/Python types; additive-only
 within a version). `apps/dashboard` is Next.js reading via rewrites + SSE.
 
 Ports: 3000 dashboard · 8001 agent · 8002 memory · 8003 minecraft ·
-8080 BFF (M2) · 8081 event · 8082 government (P2) · 8083 analytics (M2) ·
+8080 BFF (M2) · 8081 event · 8082 government · 8083 analytics (M2) ·
 3001 Grafana · 9090 Prometheus · 8085 Redpanda console · 25565 Minecraft.
 
 ## Start / stop the stack
@@ -85,6 +89,9 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   won't resolve bare batch names from the CWD: `cmd /c gradlew.bat` fails with
   "not recognized" there while working fine in a normal terminal. Use the
   explicit form `cmd /c .\gradlew.bat` (the Taskfile does since M1-9).
+  Second trap in the same pit (M2-6): GIT BASH converts `/c` into `C:\`
+  (MSYS path mangling) — cmd prints its banner, runs NOTHING, exits 0.
+  Run gradlew from PowerShell (or `cmd //c` in Git Bash).
 - Git Bash mangles `/paths` in `docker run -v` args — use PowerShell for
   Docker volume mounts.
 - kafkajs has no built-in Snappy codec (rpk produces snappy by default) —
@@ -160,6 +167,14 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   throttle admits **one bot per minute** (~20 min to full recovery). Set
   `connection-throttle: -1` in `/data/bukkit.yml` — done Jul 2026; survives
   restarts (volume) but NOT `task nuke`, so re-apply after a nuke.
+- Worktree sessions vs the live stack (M2-6): worktrees don't carry `.env`
+  (gitignored) — copy it from the main repo or compose's `--env-file .env`
+  fails. Compose run from a worktree attaches to the SAME running project
+  (the `name:` key), so `up -d --build --no-deps <service>` deploys the
+  worktree's code without recreating anything else. But bind-mounted configs
+  (prometheus.yml, postgres-init) resolve relative to the compose file each
+  container was STARTED from — a worktree-side config edit reaches a running
+  container only after merge + that container's restart.
 - Paper persists difficulty per-world in `level.dat`, which overrides
   `server.properties` on boot for existing worlds. An RCON `difficulty` change
   is in-memory until a world save — run `save-all` after it, or the container's

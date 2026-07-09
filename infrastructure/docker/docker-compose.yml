@@ -229,6 +229,31 @@ services:
       retries: 18
       start_period: 30s
 
+  government-service:
+    # First compose appearance = first real feature (M2-6: election state
+    # machine). No Kafka wiring yet — the command consumer + event producer
+    # land with M2-7's contracts.
+    build: ../../services/government-service
+    profiles: [app]
+    ports: ["8082:8082"]
+    environment:
+      POSTGRES_HOST: postgres
+      GOVERNMENT_DB_USER: government_service
+      GOVERNMENT_DB_PASSWORD: government_service_dev
+      # Filming levers: window durations without a rebuild (seconds).
+      ELECTION_NOMINATING_WINDOW_SECONDS: ${ELECTION_NOMINATING_WINDOW_SECONDS:-600}
+      ELECTION_VOTING_WINDOW_SECONDS: ${ELECTION_VOTING_WINDOW_SECONDS:-900}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8082/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+
   minecraft:
     # Off by default (profile). Containerized PaperMC — enabled at M1-8, when 20
     # bots outgrow the vanilla host server. The vanilla host server stays the

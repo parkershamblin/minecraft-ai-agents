@@ -1,0 +1,36 @@
+server:
+  port: ${PORT:8082}
+
+spring:
+  application:
+    name: government-service
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/government_db
+    username: ${GOVERNMENT_DB_USER:government_service}
+    password: ${GOVERNMENT_DB_PASSWORD:government_service_dev}
+  mvc:
+    problemdetails:
+      enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+civ:
+  election:
+    # Filmable timescales (08-m2-plan M2-6): long enough for ~10 deliberations
+    # per villager per window at the 60s filming tick, short enough for one
+    # episode. POST /elections can override per election (dev/test windows).
+    nominating-window-seconds: ${ELECTION_NOMINATING_WINDOW_SECONDS:600}
+    voting-window-seconds: ${ELECTION_VOTING_WINDOW_SECONDS:900}
+    # The scheduled clock driving scheduled -> nominating -> voting -> decided.
+    clock-ms: ${ELECTION_CLOCK_MS:5000}
