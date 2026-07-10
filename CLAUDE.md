@@ -188,3 +188,12 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   10s stop window can discard it. `DIFFICULTY` env in compose only seeds new
   worlds. Both servers run offline mode: op entries need the offline UUID
   (derived from the name), not the Mojang one.
+- RCON `data get` output is ELLIPSIZED server-side past ~150 chars (measured
+  2026-07-09: a literal `...` mid-SNBT) — full-inventory reads are impossible;
+  read per-slot (`Inventory[i].id` / `.count`, stop at "Found no elements").
+  And the player Inventory NBT is a DENSE list that reindexes whenever the
+  player moves items, while each RCON command lands on a separate tick: a
+  single per-slot pass can tear (missed stack → its reappearance books a
+  phantom haul in delta-based counters). Scan twice, accept only two identical
+  passes (`humanInventory.ts:fetchHumanInventoryStable`); a discarded cycle
+  loses nothing because deltas compare against the last ACCEPTED scan.

@@ -33,6 +33,15 @@ const schema = z.object({
   // Freshness guard on commands.minecraft (same failure class as the percept
   // guard): a stale committed offset must never replay the past into the world.
   COMMAND_MAX_AGE_SECONDS: z.coerce.number().int().min(1).default(600),
+  // Per-player inventory metrics: one process-wide poll — in-memory reads for
+  // bots, per-slot RCON `data get` for humans. 0 disables the poller entirely.
+  INVENTORY_POLL_INTERVAL_MS: z.coerce.number().int().min(0).default(15000),
+  // RCON on the Paper container (compose-internal minecraft:25575, never
+  // published to the host). Empty host = human-inventory polling disabled;
+  // bots don't need RCON. Must match the minecraft service's RCON_PASSWORD.
+  RCON_HOST: z.string().default(''),
+  RCON_PORT: z.coerce.number().int().default(25575),
+  RCON_PASSWORD: z.string().default('civ_rcon'),
 })
 
 export type Config = z.infer<typeof schema>

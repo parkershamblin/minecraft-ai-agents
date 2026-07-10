@@ -1,0 +1,161 @@
+{
+  "uid": "civ-materials",
+  "title": "Materials & Inventory",
+  "tags": ["ai-civilization-engine"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-3h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "player",
+        "label": "Player",
+        "type": "query",
+        "query": "label_values(civ_player_inventory_items, player)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "selected": false, "text": "All", "value": "$__all" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "bargauge",
+      "title": "Top collectors — items gained (dashboard range)",
+      "gridPos": { "h": 10, "w": 10, "x": 0, "y": 0 },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "topk(15, sum by (player) (increase(civ_materials_collected_total{run_mode=\"compose\"}[$__range])))",
+          "legendFormat": "{{player}}",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "bargauge",
+      "title": "Top materials (dashboard range)",
+      "gridPos": { "h": 10, "w": 10, "x": 10, "y": 0 },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "topk(15, sum by (item) (increase(civ_materials_collected_total{run_mode=\"compose\"}[$__range])))",
+          "legendFormat": "{{item}}",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Items collected (range)",
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "sum(increase(civ_materials_collected_total{run_mode=\"compose\"}[$__range]))",
+          "legendFormat": "items"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Players tracked",
+      "gridPos": { "h": 5, "w": 4, "x": 20, "y": 5 },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "sum(civ_players_tracked{run_mode=\"compose\"})",
+          "legendFormat": "players"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Collection rate by player (items/min)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (player) (rate(civ_materials_collected_total{run_mode=\"compose\"}[5m])) * 60",
+          "legendFormat": "{{player}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Collection rate by material (items/min)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum by (item) (rate(civ_materials_collected_total{run_mode=\"compose\"}[5m])) * 60",
+          "legendFormat": "{{item}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Current inventory — $player",
+      "gridPos": { "h": 12, "w": 12, "x": 0, "y": 19 },
+      "options": { "sortBy": [{ "displayName": "count", "desc": true }] },
+      "fieldConfig": { "defaults": { "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "civ_player_inventory_items{run_mode=\"compose\", player=~\"$player\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "run_mode": true },
+            "renameByName": { "Value": "count" }
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Collected by player & material (dashboard range)",
+      "gridPos": { "h": 12, "w": 12, "x": 12, "y": 19 },
+      "options": { "sortBy": [{ "displayName": "collected", "desc": true }] },
+      "fieldConfig": { "defaults": { "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "sum by (player, item, kind) (increase(civ_materials_collected_total{run_mode=\"compose\", player=~\"$player\"}[$__range])) > 0",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true },
+            "renameByName": { "Value": "collected" }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -32,6 +32,11 @@ const { pathfinder, Movements, goals } = mineflayerPathfinder
  *  its retry (a block that defeated four attempts fell on the fifth). */
 const GATHER_TARGET_BLACKLIST_MS = 10 * 60_000
 
+/** Process-global so no two spawns — across reconnects, death-respawns, OR
+ *  brand-new BotSession instances for the same username — ever share a
+ *  generation number (a collision would defeat the tracker's re-baseline). */
+let nextSpawnGeneration = 0
+
 type SpawnReason = 'seed' | 'respawn' | 'reconnect'
 
 interface SessionDeps {
@@ -52,6 +57,9 @@ interface SessionDeps {
 export class BotSession {
   bot: Bot | null = null
 
+  /** Set on every 'spawn' (connect AND death-respawn) — the inventory tracker
+   *  re-baselines whenever it changes, so deltas never span a body swap. */
+  private spawnGeneration = 0
   private despawned = false
   private nextSpawnReason: SpawnReason = 'seed'
   private reconnectDelayMs = 1_000
@@ -83,6 +91,10 @@ export class BotSession {
 
   get active(): boolean {
     return this.bot?.entity !== undefined && !this.despawned
+  }
+
+  get generation(): number {
+    return this.spawnGeneration
   }
 
   /** Resolves with the spawn reason once the bot is standing in the world. */
@@ -120,6 +132,13 @@ export class BotSession {
 
   private wire(bot: Bot): void {
     bot.loadPlugin(pathfinder)
+    // Persistent, unlike the once() below: mineflayer re-emits 'spawn' after a
+    // death-respawn on the SAME connection, and each respawn is a fresh
+    // inventory state — deltas across it would book re-collected death drops
+    // (and the respawn sync race) as fabricated hauls.
+    bot.on('spawn', () => {
+      this.spawnGeneration = ++nextSpawnGeneration
+    })
     bot.once('spawn', () => this.onSpawn())
     bot.on('death', () => {
       this.nextSpawnReason = 'respawn'

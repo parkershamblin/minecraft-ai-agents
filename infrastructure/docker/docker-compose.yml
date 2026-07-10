@@ -129,6 +129,13 @@ services:
       KAFKA_BROKERS: redpanda:29092
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # RCON to the Paper container (compose-internal, port never published) —
+      # the inventory poller reads human players' inventories via per-slot
+      # `data get`. Unreachable RCON (e.g. vanilla host-server fallback)
+      # degrades gracefully to bots-only metrics.
+      RCON_HOST: ${RCON_HOST:-minecraft}
+      RCON_PORT: ${RCON_PORT:-25575}
+      RCON_PASSWORD: ${RCON_PASSWORD:-civ_rcon}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

@@ -6,6 +6,7 @@ import type { EventProducer } from '../kafka/producer.ts'
 import { BotSession } from './BotSession.ts'
 import { Roster } from '../redis/roster.ts'
 import { ChatRouter } from '../world/chatRouter.ts'
+import type { BotInventoryView } from '../world/inventoryPoller.ts'
 import type { NearbyVillager } from '../world/snapshot.ts'
 
 /**
@@ -64,6 +65,33 @@ export class BotRegistry {
     return [...this.sessions.values()]
       .filter((s) => s.villagerId !== villagerId && s.active)
       .map((s) => ({ villagerId: s.villagerId, name: s.username, position: s.position }))
+  }
+
+  /** Live bot inventories for the metrics poller — cheap in-memory reads. */
+  inventoryViews(): BotInventoryView[] {
+    const views: BotInventoryView[] = []
+    for (const session of this.sessions.values()) {
+      const bot = session.bot
+      if (!session.active || !bot) {
+        continue
+      }
+      views.push({
+        username: session.username,
+        generation: session.generation,
+        items: bot.inventory.items().map((item) => ({ name: item.name, count: item.count })),
+      })
+    }
+    return views
+  }
+
+  /** Tab-list humans: everyone online minus our own bots. null = no active bot to ask. */
+  humanPlayerNames(): string[] | null {
+    const own = new Set([...this.sessions.values()].map((s) => s.username))
+    const bot = [...this.sessions.values()].find((s) => s.active && s.bot)?.bot
+    if (!bot) {
+      return null
+    }
+    return Object.keys(bot.players).filter((name) => !own.has(name))
   }
 
   /** Idempotent: spawning an already-active villager is a no-op success. */

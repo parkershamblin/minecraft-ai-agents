@@ -31,6 +31,39 @@ export const reconnects = new Counter({
   registers: [registry],
 })
 
+// Per-player material tracking (post-M2). `player` is the in-game username —
+// the repo's first entity-level label, bounded by MAX_PLAYERS (30) × item
+// types actually touched. kind: villager (bot) | player (human via RCON).
+export const playerInventoryItems = new Gauge({
+  name: 'civ_player_inventory_items',
+  help: 'Current inventory count per player and item',
+  labelNames: ['player', 'item', 'kind'] as const,
+  registers: [registry],
+})
+
+export const materialsCollected = new Counter({
+  name: 'civ_materials_collected_total',
+  help: 'Items gained per player and item (positive inventory deltas between polls)',
+  labelNames: ['player', 'item', 'kind'] as const,
+  registers: [registry],
+})
+
+export const inventoryPolls = new Counter({
+  name: 'civ_inventory_polls_total',
+  help: 'Inventory poll cycles by source (bots = in-memory, rcon = human players)',
+  labelNames: ['source', 'outcome'] as const,
+  registers: [registry],
+})
+
+// civ_player_inventory_items only has series for held items, so it undercounts
+// empty-handed players — this gauge is the honest "who is being watched" count.
+export const playersTracked = new Gauge({
+  name: 'civ_players_tracked',
+  help: 'Players currently tracked by the inventory poller',
+  labelNames: ['kind'] as const,
+  registers: [registry],
+})
+
 /** /healthz + /metrics on the canonical minecraft-service port (8003). */
 export function startAdminServer(port: number): http.Server {
   const server = http.createServer(async (req, res) => {
