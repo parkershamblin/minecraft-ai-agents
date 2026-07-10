@@ -178,6 +178,78 @@ export function scanNearbyResources(bot: ScannableBot, opts: ScanOptions): Resou
   return sightings
 }
 
+/** Blacklist key for a block position — whole-block resolution. */
+export function targetKey(p: Position): string {
+  return `${Math.round(p.x)},${Math.round(p.y)},${Math.round(p.z)}`
+}
+
+/**
+ * Choose the nearest candidate that hasn't recently defeated this bot.
+ * findBlock is deterministic from a standing position, so without memory a
+ * failed target gets re-picked every tick — measured 2026-07-09: one
+ * half-harvested slope spruce ate five watchdogs across three villagers,
+ * drawing them in from up to 27 blocks away. Failed targets are marked
+ * before the attempt and cleared on completion (the dedupe pattern), and
+ * marks EXPIRE: world state shifts, and a block that defeated four attempts
+ * was harvested on the fifth.
+ */
+export function pickGatherTarget<T extends Position>(
+  candidates: readonly T[],
+  origin: Position,
+  blacklist: ReadonlyMap<string, number>,
+  now: number,
+): T | null {
+  let best: T | null = null
+  let bestDistance = Infinity
+  for (const candidate of candidates) {
+    const until = blacklist.get(targetKey(candidate))
+    if (until !== undefined && until > now) {
+      continue
+    }
+    const d = distance(candidate, origin)
+    if (d < bestDistance) {
+      bestDistance = d
+      best = candidate
+    }
+  }
+  return best
+}
+
+/**
+ * Prescriptive prose for "wood exists here, but every block of it has
+ * recently defeated you" — saying "no wood within N blocks" would be a lie,
+ * and the honest fix is different: stand somewhere new.
+ */
+export function allTargetsBlacklistedMessage(resource: string): string {
+  return `the ${resource} in sight keeps defeating you from this spot — move somewhere new before trying again`
+}
+
+/**
+ * The in-world line a villager speaks when setting off to harvest — spoken
+ * AFTER the fail-fast checks, so an announced dig is always genuinely
+ * attempted. Names the block and its coordinates: a watcher who sees it can
+ * `/tp` to the speaker and spectate the attempt as it happens.
+ */
+export function gatherStartAnnouncement(resource: string, blockType: string, target: Position): string {
+  const material = blockType.replace(/_/g, ' ')
+  return `Heading to gather ${resource} — ${material} at (${Math.round(target.x)}, ${Math.round(target.y)}, ${Math.round(target.z)}).`
+}
+
+/**
+ * The in-world line a villager speaks after a successful harvest. Spoken
+ * chat is world-visible: nearby villagers hear it (ChatObserved → percepts),
+ * so a haul becomes social information — and a human watcher can't miss it.
+ * Null when nothing was collected: announcing a zero would be a lie the
+ * whole village hears.
+ */
+export function gatherAnnouncement(blockType: string, collected: number): string | null {
+  if (collected <= 0) {
+    return null
+  }
+  const material = blockType.replace(/_/g, ' ')
+  return `Gathered ${collected} ${material}${collected === 1 ? '' : 's'}!`
+}
+
 /**
  * Prescriptive RESOURCE_NOT_FOUND prose. This exact string is what the
  * villager reads on its next tick (ActionFailed → percept → prompt), so the

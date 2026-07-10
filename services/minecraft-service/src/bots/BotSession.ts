@@ -12,15 +12,25 @@ import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
 import {
   RESOURCE_YIELD,
   type ResourceSighting,
+  allTargetsBlacklistedMessage,
   blockNamesFor,
+  gatherAnnouncement,
   gatherFailureMessage,
+  gatherStartAnnouncement,
+  pickGatherTarget,
   planHarvest,
   scanNearbyResources,
   shouldRescan,
+  targetKey,
 } from '../world/resources.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
+
+/** How long a failed gather target stays off the menu. Long enough to stop
+ *  the every-tick re-pick loop, short enough that shifted world state gets
+ *  its retry (a block that defeated four attempts fell on the fifth). */
+const GATHER_TARGET_BLACKLIST_MS = 10 * 60_000
 
 type SpawnReason = 'seed' | 'respawn' | 'reconnect'
 
@@ -51,6 +61,8 @@ export class BotSession {
   /** last survey result, merged into every snapshot until the next scan (null until one runs) */
   private nearbyResources: ResourceSighting[] | null = null
   private lastScan: { position: Position; at: number } | null = null
+  /** gather targets that recently defeated this bot: targetKey → expiry ms */
+  private readonly gatherBlacklist = new Map<string, number>()
   private movement: MovementTracker
   private spawnWaiters: Array<(reason: SpawnReason) => void> = []
   private log
@@ -311,17 +323,30 @@ export class BotSession {
     if (!names) {
       throw new Error(`unknown resource family '${resource}'`)
     }
-    const block = bot.findBlock({
+    const now = Date.now()
+    for (const [key, until] of this.gatherBlacklist) {
+      if (until <= now) {
+        this.gatherBlacklist.delete(key)
+      }
+    }
+    const candidates = bot.findBlocks({
       matching: (candidate) => names.includes(candidate.name),
       maxDistance,
+      count: 16,
     })
+    const targetPosition = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
+    const block = targetPosition ? bot.blockAt(targetPosition) : null
     if (!block) {
-      const err = new Error(gatherFailureMessage(resource, maxDistance, this.position))
+      const err = new Error(
+        candidates.length > 0
+          ? allTargetsBlacklistedMessage(resource)
+          : gatherFailureMessage(resource, maxDistance, this.position),
+      )
       ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
       throw err
     }
-    // findBlock picks the 3D-nearest match with no reachability check — when
-    // a gather times out, THIS line says whether the target was a fair ask.
+    // The scan has no reachability check — when a gather times out, THIS
+    // line says whether the target was a fair ask.
     const target = { x: block.position.x, y: block.position.y, z: block.position.z }
     this.log.info(
       { resource, blockType: block.name, target, distance: round1(distance(this.position as Position, target)) },
@@ -348,6 +373,11 @@ export class BotSession {
         .reduce((sum, item) => sum + item.count, 0)
     const before = countYield()
 
+    // Mark before the attempt, clear on completion (the dedupe pattern): if
+    // the walk/dig never settles — the watchdog abandons this promise — the
+    // mark survives and the next gather picks a different block.
+    this.gatherBlacklist.set(targetKey(target), now + GATHER_TARGET_BLACKLIST_MS)
+    bot.chat(gatherStartAnnouncement(resource, block.name, target))
     await bot.pathfinder.goto(new goals.GoalGetToBlock(block.position.x, block.position.y, block.position.z))
     // Choose the tool AT THE DIG SITE, from the current inventory — the
     // pathfinder digs its own way through obstacles and re-equips as it
@@ -363,7 +393,33 @@ export class BotSession {
     await bot.pathfinder.goto(new goals.GoalNear(block.position.x, block.position.y, block.position.z, 0))
     await new Promise((resolve) => setTimeout(resolve, 1_500))
 
+    if (countYield() === before) {
+      // On slopes the drop rolls away from the dig spot (measured 2026-07-09:
+      // 6 of 15 digs collected nothing) — chase the item entity instead of
+      // trusting the spot. Best-effort: a failed chase still ends as an
+      // honest completion, never a timeout.
+      const drop = bot.nearestEntity(
+        (entity) => entity.name === 'item' && entity.position.distanceTo(block.position) < 8,
+      )
+      if (drop) {
+        try {
+          await bot.pathfinder.goto(new goals.GoalNear(drop.position.x, drop.position.y, drop.position.z, 0))
+          await new Promise((resolve) => setTimeout(resolve, 700))
+        } catch {
+          this.log.info({ blockType }, 'drop chase failed — reporting the honest count')
+        }
+      }
+    }
+
     const collected = Math.max(0, countYield() - before)
+    if (collected > 0) {
+      // Only a real haul clears the mark. A zero-collect completion means the
+      // block won — measured live 2026-07-09: the server can silently REJECT
+      // a cliff-face dig (client thinks it broke; RCON shows the log still
+      // standing), and clearing on completion re-exposed that ghost target
+      // to every future scan.
+      this.gatherBlacklist.delete(targetKey(target))
+    }
     const position = { x: block.position.x, y: block.position.y, z: block.position.z }
     void this.deps.producer.publish(
       'world.events',
@@ -373,6 +429,10 @@ export class BotSession {
         payload: { villagerId: this.villagerId, resourceType: blockType, quantity: collected, position },
       }),
     )
+    const announcement = gatherAnnouncement(blockType, collected)
+    if (announcement) {
+      bot.chat(announcement)
+    }
     return { resource, blockType, position, collected }
   }
 

@@ -1,4 +1,4 @@
-# Session Handoff — M2 CODE-COMPLETE (M2-1…M2-10 ✅): THE VILLAGE ELECTED A MAYOR · Episode 2 filming = Parker's session
+# Session Handoff — M2 COMPLETE + MERGED (main=origin=`3d5c166`) · post-M2 gather kit shipped · Episode 2 filming = Parker's session
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
@@ -8,6 +8,83 @@
 > MAYOR BRAM seated (10 votes on his M1 bread-and-ledger reputation).
 > DoD #6's episode segment is Parker's filming session (`docs/demo-m2.md`
 > is the shot script). THE FLEET IS TICKING — see machine state.**
+
+## Session 2026-07-09 evening — M2 merged+pushed; live gather watch → the gather kit
+
+- **The merge (morning-after housekeeping):** local ff-merge of the M2 branch
+  met Parker's own GitHub-side PR #1 merge (`3d5c166`, tree bit-identical to
+  the tested `5c11ba3`) — local main ff'd onto it, no rebase, all cited SHAs
+  intact; `main = origin/main = 3d5c166`; **all 7 CI workflows green** on the
+  merge (government-service's first Linux CI run passed — the gradlew exec
+  bit held). Prometheus restarted post-merge → the M2-6-deferred
+  government-service scrape job is LIVE (11/11 targets up). Branch + its
+  `.claude/worktrees` worktree deleted local+remote (worktree was clean).
+- **The stack had died silently ~15:00 EDT** (every container Exited 255
+  simultaneously = Docker engine/machine event, hours after the rehearsal —
+  the fleet had ticked unattended all day; canon safe in volumes). Rebuilt in
+  body-before-mind order: infra → topics → Paper (`connection-throttle: -1`
+  survived) → app minus agent-service → `spawn-fleet` → minds last. The
+  M1-10 STALE_COMMAND guard correctly ate 11 pre-crash commands (~12.7h old)
+  on reboot. Reflections drained the day's backlog at exactly the 12-runs/hr
+  global cap (35 insight events = 12 runs — the cap bounds LLM runs, not
+  insights; verified 12 distinct villagers).
+- **Parker watched in-game; report was "they just talk, no gathering" — the
+  ledger disagreed** (gathers were happening on the NW slope, away from the
+  plaza chat cluster). Root causes found and fixed as the **gather kit**
+  (all in minecraft-service; ts tests 53→64, typecheck clean, all six suites
+  green at this commit):
+  - **Gather announcements** (`gatherStartAnnouncement` / `gatherAnnouncement`
+    in `world/resources.ts`, spoken in `BotSession.gather`): "Heading to
+    gather wood — spruce log at (x, y, z)." on commit (AFTER the fail-fast
+    checks — an announced dig is always attempted), "Gathered 2 spruce
+    logs!" on a real haul (silent on zero). Parker's flow: see chat →
+    `/tp <name>` → spectate. Announcements are world-visible chat → other
+    villagers hear them as percepts (hauls became social information).
+  - **Per-bot gather-target blacklist** (`pickGatherTarget`/`targetKey`;
+    findBlock → findBlocks(16) + post-filter): mark-before-attempt,
+    **cleared only on collected>0**, 10-min TTL. Kills the deterministic
+    re-pick loop (measured live: one unpathable slope spruce ate 5+
+    watchdogs across 3 villagers, drawn from up to 27 blocks; Maren picked
+    the identical block 3 ticks running; post-fix Nils visibly skipped his
+    marked block, and Ulric — 4 straight timeouts — completed a dig on his
+    next attempt). When every candidate is marked:
+    `allTargetsBlacklistedMessage` = honest "the wood in sight keeps
+    defeating you from this spot — move somewhere new" (recruits the M2-3
+    relocation behavior; llama took the hint live).
+  - **Drop-chase collect**: if inventory delta is 0 after the dig+wait, find
+    the nearest `item` entity within 8 blocks and walk to it (try/caught —
+    a failed chase still ends as an honest completion). Slopes were rolling
+    ~40% of drops away from the dig spot.
+  - **GHOST-BLOCK FINDING (the night's discovery, M3 ticket):** RCON proved
+    `(-16, 144, -16)` is STILL spruce_log after THREE "successful" qty-0
+    digs by different villagers — **Paper silently rejects some cliff-face
+    digs** (client thinks it broke, server disagrees, no drop ever exists).
+    That's why the collected>0 condition on blacklist-clear matters: a
+    zero-collect completion keeps the mark, so a ghost block taxes each bot
+    once per TTL instead of forever. M3 candidates: post-dig `blockAt`
+    verify (the server sends a correction packet), tree-column blacklist
+    marks (per-block granularity pays one watchdog per log of a bad tree),
+    collect-step upgrades.
+  - **D2 lever pulled: `COMMUNITY_GOAL`** ("laying in a great winter
+    woodpile - every able hand gathering logs between errands") **is now in
+    `.env`** — gather attempts jumped fleet-wide. **REMOVE the line +
+    restart agent-service before filming organic politics.**
+- **Live result:** ~25 logs banked organically in ~75 min (Elara 5, Bram 5,
+  Juniper 4, Ansel 3 dark-oak ranging 120 blocks east, Cassia/Tansy/Maren…),
+  announcements streaming in chat, depletion→relocate and
+  blacklist→move-on loops both observed end-to-end. Four
+  minecraft-service deploys tonight (each = fleet respawn via spawn-fleet;
+  minds paused during each — the body-before-mind choreography).
+- **Machine state: FLEET TICKING on the full kit** — 12 containers healthy,
+  minds on ollama (warmed) w/ 20 tick loops + COMMUNITY_GOAL, budget 100M.
+  **Mayor-line amnesia**: the crash+restarts wiped the in-memory civic
+  cache, so "The village mayor is Bram" is absent from prompts until the
+  next ElectionDecided (memories of the campaign persist; government_db
+  canon intact). Election/relationship canon untouched all session.
+- **Next: Episode 2 filming (Parker)** — remember: remove COMMUNITY_GOAL
+  first, filmed election is a re-election (or `task nuke` + re-apply
+  connection-throttle). Then **M3 planning** (living law + the recorded
+  prompt levers + tonight's gather-robustness list).
 
 ## Session 2026-07-09 ~02:05–03:55 EDT — M2-10 shipped: the dress rehearsal elected a mayor
 

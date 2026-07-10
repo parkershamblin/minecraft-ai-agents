@@ -3,13 +3,86 @@ import {
   RESOURCE_BLOCKS,
   RESOURCE_YIELD,
   blockNamesFor,
+  allTargetsBlacklistedMessage,
+  gatherAnnouncement,
   gatherFailureMessage,
+  gatherStartAnnouncement,
+  pickGatherTarget,
   planHarvest,
+  targetKey,
   scanNearbyResources,
   shouldRescan,
   type DiggableBlock,
   type ScannableBot,
 } from '../src/world/resources.ts'
+
+describe('pickGatherTarget', () => {
+  const origin = { x: 0, y: 64, z: 0 }
+  const near = { x: 2, y: 64, z: 0 }
+  const far = { x: 10, y: 64, z: 0 }
+
+  it('picks the nearest candidate when nothing is blacklisted', () => {
+    expect(pickGatherTarget([far, near], origin, new Map(), 1_000)).toBe(near)
+  })
+
+  it('skips a blacklisted nearest and falls through to the next', () => {
+    const blacklist = new Map([[targetKey(near), 5_000]])
+    expect(pickGatherTarget([near, far], origin, blacklist, 1_000)).toBe(far)
+  })
+
+  it('an expired mark no longer blocks its target — the world may have shifted', () => {
+    const blacklist = new Map([[targetKey(near), 5_000]])
+    expect(pickGatherTarget([near, far], origin, blacklist, 5_000)).toBe(near)
+  })
+
+  it('returns null when every candidate is blacklisted (caller says: move)', () => {
+    const blacklist = new Map([
+      [targetKey(near), 5_000],
+      [targetKey(far), 5_000],
+    ])
+    expect(pickGatherTarget([near, far], origin, blacklist, 1_000)).toBeNull()
+  })
+
+  it('returns null on no candidates at all (plain RESOURCE_NOT_FOUND)', () => {
+    expect(pickGatherTarget([], origin, new Map(), 1_000)).toBeNull()
+  })
+})
+
+describe('allTargetsBlacklistedMessage', () => {
+  it('tells the truth — the resource exists, the spot is the problem', () => {
+    expect(allTargetsBlacklistedMessage('wood')).toBe(
+      'the wood in sight keeps defeating you from this spot — move somewhere new before trying again',
+    )
+  })
+})
+
+describe('gatherStartAnnouncement', () => {
+  it('names the resource, the block, and the coordinates a watcher can visit', () => {
+    expect(gatherStartAnnouncement('wood', 'spruce_log', { x: -16, y: 145, z: -16 })).toBe(
+      'Heading to gather wood — spruce log at (-16, 145, -16).',
+    )
+  })
+
+  it('rounds fractional target coordinates to whole blocks', () => {
+    expect(gatherStartAnnouncement('stone', 'stone', { x: 1.6, y: 64.2, z: -0.4 })).toBe(
+      'Heading to gather stone — stone at (2, 64, 0).',
+    )
+  })
+})
+
+describe('gatherAnnouncement', () => {
+  it('speaks a plural haul in plain words', () => {
+    expect(gatherAnnouncement('spruce_log', 2)).toBe('Gathered 2 spruce logs!')
+  })
+
+  it('speaks a single item without the plural s', () => {
+    expect(gatherAnnouncement('stone', 1)).toBe('Gathered 1 stone!')
+  })
+
+  it('stays silent on an empty haul — announcing a zero would be a lie', () => {
+    expect(gatherAnnouncement('spruce_log', 0)).toBeNull()
+  })
+})
 
 describe('resource families', () => {
   it('every contract enum value maps to concrete blocks', () => {
