@@ -17,6 +17,11 @@ a GPU stampede; the scheduled cadence carries the news within a tick).
 Cache ingestion is CONTENT-gated and happens even for stale deliveries —
 see brain/civics.py; the percept fanout stays behind the freshness guard
 (ruling 7).
+
+Hazard percepts (powder snow): HazardEncountered goes only to the villager
+whose body met the hazard. The trapped phase also requests a reactive tick —
+being buried in freezing snow should interrupt a train of thought; escaped
+and escape_failed just queue for the next scheduled turn.
 """
 
 import asyncio
@@ -128,6 +133,28 @@ class PerceptConsumer:
                     "occurredAt": envelope.get("occurredAt"),
                 },
             )
+
+        elif event_type == "HazardEncountered":
+            villager_id = payload.get("villagerId")
+            if not villager_id:
+                return
+            await self._push(
+                villager_id,
+                {
+                    "type": "HazardEncountered",
+                    "hazardType": payload.get("hazardType"),
+                    "phase": payload.get("phase"),
+                    "position": payload.get("position"),
+                    "detail": payload.get("detail"),
+                    "sourceEventId": envelope.get("eventId"),
+                    "correlationId": envelope.get("correlationId"),
+                    "occurredAt": envelope.get("occurredAt"),
+                },
+            )
+            if payload.get("phase") == "trapped" and self.on_chat_percept:
+                # The generic wake lever (named for its first caller): a body
+                # sinking in freezing snow must not wait for the cadence.
+                self.on_chat_percept(villager_id, envelope.get("eventId"))
 
         elif event_type == "ChatObserved":
             speaker_id = payload.get("villagerId")  # null when a player spoke

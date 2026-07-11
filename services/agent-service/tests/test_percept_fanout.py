@@ -151,6 +151,84 @@ async def test_stale_events_never_become_percepts():
     assert redis.store == {}
 
 
+# ------------------------------------------------------------------- hazards
+
+
+def hazard_envelope(phase="trapped", villager_id=ELARA, detail=None, occurred_at=None):
+    return {
+        "eventId": "019f8e2b-4444-7000-8000-000000000004",
+        "eventType": "HazardEncountered",
+        "correlationId": "019f8e2b-4444-7000-8000-00000000c0de",
+        "occurredAt": occurred_at or _now(),
+        "payload": {
+            "villagerId": villager_id,
+            "hazardType": "powder_snow",
+            "phase": phase,
+            "position": {"x": 42.3, "y": 143.0, "z": -212.6},
+            "detail": detail,
+        },
+    }
+
+
+async def test_hazard_percept_reaches_only_its_villager():
+    redis = FakeRedis()
+    consumer = _bare(redis)  # on_chat_percept=None: trapped must queue, not crash
+
+    await consumer.handle(hazard_envelope("trapped", detail="chest-deep in the drift"))
+
+    assert list(redis.store) == [f"percepts:{ELARA}"]  # no broadcast
+    [raw] = redis.store[f"percepts:{ELARA}"]
+    percept = json.loads(raw)
+    assert percept["type"] == "HazardEncountered"
+    assert percept["hazardType"] == "powder_snow"
+    assert percept["phase"] == "trapped"
+    assert percept["position"] == {"x": 42.3, "y": 143.0, "z": -212.6}
+    assert percept["detail"] == "chest-deep in the drift"
+    assert percept["sourceEventId"] == "019f8e2b-4444-7000-8000-000000000004"
+    assert percept["correlationId"] == "019f8e2b-4444-7000-8000-00000000c0de"
+
+
+async def test_trapped_hazard_requests_a_reactive_tick():
+    """Being buried in freezing snow must not wait for the scheduled cadence."""
+    redis = FakeRedis()
+    consumer = _bare(redis)
+    requests = []
+    consumer.on_chat_percept = lambda villager_id, cause: requests.append((villager_id, cause)) or True
+
+    await consumer.handle(hazard_envelope("trapped"))
+
+    assert requests == [(ELARA, "019f8e2b-4444-7000-8000-000000000004")]
+    assert f"percepts:{ELARA}" in redis.store  # queued as well as woken
+
+
+async def test_resolved_hazard_phases_queue_without_waking():
+    redis = FakeRedis()
+    consumer = _bare(redis)
+    requests = []
+    consumer.on_chat_percept = lambda villager_id, cause: requests.append((villager_id, cause)) or True
+
+    await consumer.handle(hazard_envelope("escaped"))
+    await consumer.handle(hazard_envelope("escape_failed"))
+
+    assert requests == []
+    assert len(redis.store[f"percepts:{ELARA}"]) == 2
+
+
+async def test_stale_hazard_never_becomes_a_percept():
+    redis = FakeRedis()
+    consumer = _bare(redis)
+    await consumer.handle(hazard_envelope("trapped", occurred_at="2026-07-01T00:00:00Z"))
+    assert redis.store == {}
+
+
+async def test_hazard_without_villager_id_is_ignored():
+    redis = FakeRedis()
+    consumer = _bare(redis)
+    await consumer.handle(hazard_envelope("trapped", villager_id=None))
+    await consumer.handle(hazard_envelope("trapped", villager_id=""))
+    assert redis.store == {}
+
+
 # ---------------------------------------------------------------- M2-8 civic
 
 

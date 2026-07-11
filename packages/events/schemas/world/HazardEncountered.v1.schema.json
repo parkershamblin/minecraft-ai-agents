@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/HazardEncountered.v1.schema.json",
+  "title": "HazardEncounteredPayload",
+  "description": "A villager's body met an environmental hazard (e.g. sank into powder snow) and the executor's escape reflex responded. Emitted once per phase transition: trapped when the hazard is detected, then escaped or escape_failed when the reflex resolves. Producer: minecraft-service on world.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "hazardType": {
+      "type": "string",
+      "description": "The concrete hazard, named after the world feature: powder_snow today; lava, fire, drowning are future values."
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["trapped", "escaped", "escape_failed"],
+      "description": "trapped = hazard detected around the body; escaped = the reflex freed the villager; escape_failed = the reflex gave up this round (it will retry)."
+    },
+    "position": { "$ref": "#/$defs/Position" },
+    "detail": {
+      "type": ["string", "null"],
+      "description": "Human-readable color for prompts and the ledger: blocks dug, seconds stuck, failure reason."
+    }
+  },
+  "required": ["villagerId", "hazardType", "phase", "position", "detail"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    }
+  }
+}

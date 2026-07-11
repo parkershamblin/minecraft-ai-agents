@@ -298,6 +298,17 @@ def build_tick_graph(deps: TickDeps):
                 content += f" (Earlier, my {percept['action']} failed.)"
             elif kind == "ChatObserved":
                 content += f' (I heard {percept.get("speakerName", "someone")} say: "{percept.get("message", "")}")'
+            elif kind == "HazardEncountered":
+                hazard = str(percept.get("hazardType") or "a hazard").replace("_", " ")
+                pos = percept.get("position") or {}
+                near = f"({round(pos.get('x', 0))}, {round(pos.get('y', 0))}, {round(pos.get('z', 0))})"
+                phase = percept.get("phase")
+                if phase == "trapped":
+                    content += f" (I was trapped in {hazard} near {near}.)"
+                elif phase == "escaped":
+                    content += f" (Earlier I dug myself out of {hazard} near {near}.)"
+                elif phase == "escape_failed":
+                    content += f" (I fought the {hazard} near {near} and could not get free.)"
 
         record = await deps.memory.store(
             villager.id,

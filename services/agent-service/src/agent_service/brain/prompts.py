@@ -54,6 +54,12 @@ def _signed(n: int) -> str:
     return f"+{n}" if n > 0 else str(n)
 
 
+def _pos(position: dict[str, Any] | None) -> str:
+    """Whole-block coordinates — a villager thinks in blocks, not decimals."""
+    p = position or {}
+    return f"({round(p.get('x', 0))}, {round(p.get('y', 0))}, {round(p.get('z', 0))})"
+
+
 def _feelings_section(
     snapshot: dict[str, Any] | None, feelings: dict[str, Any]
 ) -> str | None:
@@ -256,6 +262,7 @@ def user_prompt(
     action_lines = []
     overheard_lines = []
     news_lines = []
+    hazard_this_tick = False
     for i, percept in enumerate(percepts):
         if i == claimed_index:
             continue  # already voiced in "Your last decision"
@@ -264,6 +271,21 @@ def user_prompt(
             action_lines.append(f"- your '{percept['action']}' completed: {json.dumps(percept['detail'])}")
         elif kind == "ActionFailed":
             action_lines.append(f"- your '{percept['action']}' FAILED: {json.dumps(percept['detail'])}")
+        elif kind == "HazardEncountered":
+            hazard = str(percept.get("hazardType") or "a hazard").replace("_", " ")
+            where = _pos(percept.get("position"))
+            phase = percept.get("phase")
+            if phase == "trapped":
+                line = f"- you are SUNK in {hazard} at {where}, freezing and barely able to move"
+            elif phase == "escaped":
+                line = f"- you dug free of the {hazard} at {where}"
+            elif phase == "escape_failed":
+                line = f"- you fought the {hazard} at {where} and are still trapped"
+            else:
+                continue  # an unknown phase is unknown vocabulary — skipped
+            hazard_this_tick = True
+            detail = percept.get("detail")
+            action_lines.append(f"{line} — {detail}" if detail else line)
         elif kind == "ChatObserved" and len(overheard_lines) < 5:
             overheard_lines.append(f'- {percept.get("speakerName", "someone")} said: "{percept.get("message", "")}"')
         elif kind == "ElectionStarted":
@@ -290,6 +312,14 @@ def user_prompt(
             news_lines.append(
                 f"- your {percept.get('action', 'request')} was refused: {percept.get('message', 'no reason given')}"
             )
+    if hazard_this_tick:
+        # The survival directive (powder-snow fix): without it, models file
+        # "I am freezing" under smalltalk and carry on with the grand plan.
+        action_lines.append(
+            "The ground here can swallow you. Weigh survival in this decision — "
+            "get off the deep snow, keep that spot out of your future plans, and "
+            "consider warning your neighbors in chat; do not linger where you sink."
+        )
     if action_lines:
         sections.append("Since your last turn:\n" + "\n".join(action_lines))
     if overheard_lines:

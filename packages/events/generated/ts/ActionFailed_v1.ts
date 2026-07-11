@@ -27,6 +27,7 @@ export interface ActionFailedPayload {
     | "BOT_DISCONNECTED"
     | "UNKNOWN_ACTION"
     | "STALE_COMMAND"
+    | "HAZARD_ESCAPE_IN_PROGRESS"
     | "INTERNAL";
   errorMessage: string;
   retryable: boolean;

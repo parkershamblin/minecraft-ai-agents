@@ -29,6 +29,7 @@
         "BOT_DISCONNECTED",
         "UNKNOWN_ACTION",
         "STALE_COMMAND",
+        "HAZARD_ESCAPE_IN_PROGRESS",
         "INTERNAL"
       ],
       "description": "Machine-readable failure class; consumers branch on this, never on errorMessage."

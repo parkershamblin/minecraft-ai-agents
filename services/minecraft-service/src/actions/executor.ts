@@ -1,5 +1,6 @@
 import type { EventEnvelope, ActionRequestedPayload } from '@civ/events/ts'
 import type { Position } from '../world/position.ts'
+import type { BusyState } from '../bots/hazard.ts'
 import { logger } from '../logging.ts'
 import { commandsProcessed } from '../metrics.ts'
 
@@ -7,6 +8,9 @@ import { commandsProcessed } from '../metrics.ts'
 export interface SessionActions {
   active: boolean
   position: Position | null
+  /** body ownership: 'action' while a command runs, 'escape' while the hazard
+   *  reflex digs — the executor claims and releases the former here */
+  busy: BusyState
   moveTo(to: Position, range: number): Promise<{ finalPosition: Position; blocksTraveled: number }>
   chat(message: string): void
   gather(
@@ -86,6 +90,28 @@ export class CommandExecutor {
       return
     }
 
+    // The hazard reflex owns the body for bounded stretches (≤ its race
+    // deadline). Never queue behind it — the mind hears a retryable failure
+    // now instead of a silent stall (same fast-rejection shape as the stale
+    // guard above; a single-partition topic must never block on one body).
+    const session = this.deps.getSession(payload.villagerId)
+    if (session?.busy === 'escape') {
+      commandsProcessed.inc({ action: payload.action, outcome: 'hazard_escape' })
+      log.info('command rejected — the body is mid-escape from a hazard')
+      await this.deps.publishOutcome(command, 'ActionFailed', {
+        commandId: payload.commandId,
+        villagerId: payload.villagerId,
+        action: payload.action,
+        errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
+        errorMessage: 'the body is busy digging itself out of powder snow — retry shortly',
+        retryable: true,
+      })
+      return
+    }
+    if (session) {
+      session.busy = 'action' // claimed before any await — the reflex reads this between passes
+    }
+
     const startedAt = Date.now()
     let settled = false
     /** @return false when a prior outcome already settled this command */
@@ -156,6 +182,9 @@ export class CommandExecutor {
       await Promise.race([running, watchdogFired])
     } finally {
       clearTimeout(watchdog)
+      if (session) {
+        session.busy = null // even on timeout — the abandoned zombie no longer owns the body
+      }
     }
   }
 

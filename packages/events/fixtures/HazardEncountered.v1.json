@@ -1,0 +1,18 @@
+{
+  "eventId": "019f9d00-0001-7000-8000-00000000a11d",
+  "eventType": "HazardEncountered",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-11T14:03:27.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f9d00-0002-7000-8000-c0de00000002",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "hazardType": "powder_snow",
+    "phase": "escaped",
+    "position": { "x": 42, "y": 143, "z": -212 },
+    "detail": "dug free through 3 powder_snow blocks after ~40s trapped"
+  }
+}

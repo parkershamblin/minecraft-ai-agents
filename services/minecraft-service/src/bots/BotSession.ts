@@ -4,8 +4,16 @@ import mineflayerPathfinder from 'mineflayer-pathfinder'
 import type Redis from 'ioredis'
 import type { Config } from '../config.ts'
 import { logger } from '../logging.ts'
-import { botSessions, reconnects } from '../metrics.ts'
+import { botSessions, hazardEscapes, reconnects } from '../metrics.ts'
 import { buildEnvelope } from '../events/envelope.ts'
+import {
+  type BusyState,
+  type HazardBot,
+  type HazardPhase,
+  HazardWatcher,
+  hardenMovements,
+  hazardPayload,
+} from './hazard.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { MovementTracker } from '../world/movementTracker.ts'
 import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
@@ -57,6 +65,11 @@ interface SessionDeps {
 export class BotSession {
   bot: Bot | null = null
 
+  /** Cross-cutting busy seam: the executor claims 'action' for a command's
+   *  lifetime, the hazard reflex claims 'escape' for an attempt's. The reflex
+   *  only starts when null; commands arriving mid-escape fast-fail. */
+  busy: BusyState = null
+
   /** Set on every 'spawn' (connect AND death-respawn) — the inventory tracker
    *  re-baselines whenever it changes, so deltas never span a body swap. */
   private spawnGeneration = 0
@@ -66,6 +79,8 @@ export class BotSession {
   private reconnectTimer: NodeJS.Timeout | null = null
   private snapshotTimer: NodeJS.Timeout | null = null
   private resourceScanTimer: NodeJS.Timeout | null = null
+  private hazardTimer: NodeJS.Timeout | null = null
+  private hazardWatcher: HazardWatcher | null = null
   /** last survey result, merged into every snapshot until the next scan (null until one runs) */
   private nearbyResources: ResourceSighting[] | null = null
   private lastScan: { position: Position; at: number } | null = null
@@ -155,7 +170,10 @@ export class BotSession {
     this.reconnectDelayMs = 1_000
     botSessions.inc()
     if (this.bot) {
-      this.bot.pathfinder.setMovements(new Movements(this.bot))
+      const movements = new Movements(this.bot)
+      // Powder snow scores as walkable air to the planner — teach it otherwise.
+      hardenMovements(movements, this.bot.registry)
+      this.bot.pathfinder.setMovements(movements)
       // A* compute slices run synchronously on the shared event loop; the
       // default 40ms/tick budget stacks across 20 pathing bots and starves
       // everything else (Kafka heartbeats included). Smaller slices, longer
@@ -181,6 +199,7 @@ export class BotSession {
     this.nextSpawnReason = 'reconnect' // any future spawn that isn't a death is a reconnect
     this.startSnapshots()
     this.startResourceScan()
+    this.startHazardWatch()
 
     for (const waiter of this.spawnWaiters.splice(0)) {
       waiter(reason)
@@ -247,6 +266,14 @@ export class BotSession {
       clearInterval(this.resourceScanTimer)
       this.resourceScanTimer = null
     }
+    if (this.hazardTimer) {
+      clearInterval(this.hazardTimer)
+      this.hazardTimer = null
+    }
+    // A reconnect respawns somewhere else — forget the trap along with the
+    // survey. (An in-flight escape attempt still owns `busy` until its race
+    // settles; its own finally releases it.)
+    this.hazardWatcher = null
     // A reconnect respawns somewhere else — don't carry a stale survey there.
     this.nearbyResources = null
     this.lastScan = null
@@ -292,6 +319,78 @@ export class BotSession {
         this.log.warn({ err: (err as Error).message }, 'resource scan failed')
       }
     }, config.RESOURCE_SCAN_INTERVAL_MS)
+  }
+
+  /**
+   * The powder-snow watch — third sibling loop after snapshots and the
+   * resource scan. Each pass is two or three blockAt reads (O(1) by hard
+   * rule); the escape maneuver itself runs raced-with-timeout inside the
+   * watcher, never on this interval's stack.
+   */
+  private startHazardWatch(): void {
+    const { config } = this.deps
+    if (config.HAZARD_WATCH_INTERVAL_MS === 0) {
+      return // disabled
+    }
+    this.hazardWatcher = new HazardWatcher({
+      bot: () => this.hazardBot(),
+      emit: (phase, position, detail) => this.emitHazard(phase, position, detail),
+      stopMoving: () => this.stopMoving(),
+      getBusy: () => this.busy,
+      setBusy: (state) => {
+        this.busy = state
+      },
+      log: this.log,
+      config: {
+        escapeRetryMs: config.HAZARD_ESCAPE_RETRY_MS,
+        digBudget: config.HAZARD_DIG_BUDGET,
+        escapeTimeoutMs: config.HAZARD_ESCAPE_TIMEOUT_MS,
+      },
+    })
+    this.hazardTimer = setInterval(() => this.hazardWatcher?.check(), config.HAZARD_WATCH_INTERVAL_MS)
+  }
+
+  /** Adapt the live Bot to the reflex's narrow surface (fresh each pass —
+   *  the underlying bot is swapped on reconnect). */
+  private hazardBot(): HazardBot | null {
+    const bot = this.bot
+    if (!bot) {
+      return null
+    }
+    return {
+      get entity() {
+        return bot.entity ? { position: bot.entity.position } : undefined
+      },
+      // blockAt needs a real Vec3 (prismarine-world calls .floored() on it);
+      // mint one from the entity's own position rather than importing an
+      // undeclared transitive package. Exact for the integer cells we pass.
+      blockAt: (p) => {
+        const origin = bot.entity?.position
+        if (!origin) {
+          return null // no body, no world — reads as unloaded
+        }
+        const base = origin.floored()
+        return bot.blockAt(base.offset(p.x - base.x, p.y - base.y, p.z - base.z))
+      },
+      dig: (block) => bot.dig(block as unknown as Parameters<Bot['dig']>[0]),
+      look: (yaw, pitch, force) => bot.look(yaw, pitch, force),
+      setControlState: (control, state) => bot.setControlState(control, state),
+    }
+  }
+
+  private emitHazard(phase: HazardPhase, position: Position, detail: string | null): void {
+    if (phase !== 'trapped') {
+      hazardEscapes.inc({ outcome: phase })
+    }
+    const envelope = buildEnvelope({
+      eventType: 'HazardEncountered',
+      aggregateId: this.villagerId,
+      payload: hazardPayload(this.villagerId, phase, position, detail),
+    })
+    this.log.info({ phase, position, detail, eventId: envelope.eventId }, 'hazard encountered')
+    void this.deps.producer
+      .publish('world.events', envelope)
+      .catch((err: Error) => this.log.warn({ err: err.message }, 'hazard event publish failed'))
   }
 
   /**

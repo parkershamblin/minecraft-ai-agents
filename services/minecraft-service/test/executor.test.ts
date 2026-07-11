@@ -30,6 +30,7 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
   const session: SessionActions = {
     active: true,
     position: { x: 0, y: 64, z: 0 },
+    busy: null,
     moveTo: vi.fn(async () => ({ finalPosition: { x: 10, y: 64, z: 0 }, blocksTraveled: 10 })),
     chat: vi.fn(),
     gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
@@ -140,6 +141,7 @@ describe('CommandExecutor', () => {
     const target: SessionActions = {
       active: true,
       position: { x: 50, y: 64, z: 50 },
+      busy: null,
       moveTo: vi.fn(),
       chat: vi.fn(),
       gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
@@ -148,6 +150,7 @@ describe('CommandExecutor', () => {
     const mover: SessionActions = {
       active: true,
       position: { x: 0, y: 64, z: 0 },
+      busy: null,
       moveTo: vi.fn(async () => ({ finalPosition: { x: 49, y: 64, z: 50 }, blocksTraveled: 70 })),
       chat: vi.fn(),
       gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
@@ -196,6 +199,40 @@ describe('CommandExecutor', () => {
     expect(h.outcomes[0]!.extra.errorCode).toBe('RESOURCE_NOT_FOUND')
     expect(h.outcomes[0]!.extra.retryable).toBe(true)
     expect(h.outcomes[0]!.extra.errorMessage).toBe(prescriptive) // the villager reads this verbatim next tick
+  })
+
+  it('a command during an escape fast-fails HAZARD_ESCAPE_IN_PROGRESS without touching the bot', async () => {
+    const h = harness({}, { busy: 'escape' })
+    await h.executor.execute(command('chat', { message: 'anyone there?' }))
+    expect(h.session.chat).not.toHaveBeenCalled()
+    expect(h.outcomes).toHaveLength(1)
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('HAZARD_ESCAPE_IN_PROGRESS')
+    expect(h.outcomes[0]!.extra.retryable).toBe(true)
+    expect(h.session.busy).toBe('escape') // the reflex keeps its claim — we never stole it
+  })
+
+  it('claims busy=action for the command lifetime and releases it after', async () => {
+    const h = harness()
+    let observedBusy: SessionActions['busy'] = null
+    ;(h.session.moveTo as ReturnType<typeof vi.fn>).mockImplementation(async () => {
+      observedBusy = h.session.busy
+      return { finalPosition: { x: 10, y: 64, z: 0 }, blocksTraveled: 10 }
+    })
+    await h.executor.execute(command('move', { to: { x: 10, y: 64, z: 0 } }))
+    expect(observedBusy).toBe('action')
+    expect(h.session.busy).toBeNull()
+  })
+
+  it('releases busy even when the watchdog times the command out', async () => {
+    const h = harness(
+      {},
+      { moveTo: vi.fn(() => new Promise<never>(() => {})) }, // hangs forever
+    )
+    const run = h.executor.execute(command('move', { to: { x: 100, y: 64, z: 0 } }, 5_000))
+    await vi.advanceTimersByTimeAsync(5_001)
+    await run
+    expect(h.session.busy).toBeNull() // the zombie promise no longer owns the body
   })
 
   it('a dig that cannot drop (stone, empty hands) is TOOL_REQUIRED and NOT retryable', async () => {

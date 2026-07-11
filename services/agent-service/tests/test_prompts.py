@@ -201,6 +201,51 @@ def test_no_last_decision_section_by_default():
     assert "Your last decision" not in prompt
 
 
+# ------------------------------------------------------------------- hazards
+
+
+def _hazard(phase, detail=None):
+    return {
+        "type": "HazardEncountered",
+        "hazardType": "powder_snow",
+        "phase": phase,
+        "position": {"x": 42.3, "y": 143.0, "z": -212.6},
+        "detail": detail,
+    }
+
+
+def test_trapped_hazard_renders_urgent_with_rounded_position():
+    prompt = user_prompt(_snapshot(), [_hazard("trapped")], [])
+    assert "Since your last turn:" in prompt
+    assert "- you are SUNK in powder snow at (42, 143, -213), freezing and barely able to move" in prompt
+
+
+def test_escaped_hazard_renders_with_detail_woven_in():
+    prompt = user_prompt(
+        _snapshot(), [_hazard("escaped", detail="dug free through 3 blocks after ~40s trapped")], []
+    )
+    assert (
+        "- you dug free of the powder snow at (42, 143, -213) "
+        "— dug free through 3 blocks after ~40s trapped" in prompt
+    )
+
+
+def test_escape_failed_hazard_renders_still_trapped():
+    prompt = user_prompt(_snapshot(), [_hazard("escape_failed")], [])
+    assert "- you fought the powder snow at (42, 143, -213) and are still trapped" in prompt
+
+
+def test_survival_directive_renders_once_iff_hazard_present():
+    """One directive block per tick, modeled on the grudge directive — and
+    never when the queue holds no hazard."""
+    calm = user_prompt(_snapshot(), [{"type": "ActionCompleted", "action": "move", "detail": {}}], [])
+    assert "Weigh survival" not in calm
+
+    doubled = user_prompt(_snapshot(), [_hazard("escape_failed"), _hazard("escaped")], [])
+    assert doubled.count("Weigh survival in this decision") == 1
+    assert "do not linger where you sink" in doubled
+
+
 # ---------------------------------------------------------------- M2-8 civic
 
 from datetime import timedelta  # noqa: E402

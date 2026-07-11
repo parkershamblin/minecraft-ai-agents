@@ -135,6 +135,33 @@ async def test_percepts_reach_the_reflection():
     assert "my move completed" in memory.stored[0].content  # she remembers she arrived
 
 
+async def test_hazard_percepts_reach_the_reflection():
+    """The powder-snow episode must survive the tick as long-term memory —
+    rough coordinates included, so future retrieval can steer around the spot."""
+    position = {"x": 42.3, "y": 143.0, "z": -212.6}
+    world = FakeWorld(
+        SNAPSHOT,
+        percepts=[
+            {"type": "HazardEncountered", "hazardType": "powder_snow", "phase": "trapped",
+             "position": position, "detail": None, "occurredAt": "x"},
+            {"type": "HazardEncountered", "hazardType": "powder_snow", "phase": "escape_failed",
+             "position": position, "detail": "still sunk after digging", "occurredAt": "x"},
+            {"type": "HazardEncountered", "hazardType": "powder_snow", "phase": "escaped",
+             "position": position, "detail": "dug free through 3 blocks", "occurredAt": "x"},
+        ],
+    )
+    memory = FakeMemory()
+    graph = build_tick_graph(deps(world=world, memory=memory))
+
+    await run_tick(graph, ELARA)
+
+    content = memory.stored[0].content
+    assert memory.stored[0].memory_type == "action"
+    assert "(I was trapped in powder snow near (42, 143, -213).)" in content
+    assert "(I fought the powder snow near (42, 143, -213) and could not get free.)" in content
+    assert "(Earlier I dug myself out of powder snow near (42, 143, -213).)" in content
+
+
 async def test_no_snapshot_still_ticks():
     published = Collected()
     graph = build_tick_graph(deps(world=FakeWorld(snapshot=None), publish=published))

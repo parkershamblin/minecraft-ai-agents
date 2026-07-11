@@ -1,4 +1,4 @@
-# Session Handoff — M2 COMPLETE · materials kit + ops fixes MERGED (main=origin=`16f6f45`, PRs #2–#4) · Episode 2 filming = Parker's session
+# Session Handoff — M2 COMPLETE · materials kit + ops fixes MERGED (main=origin=`16f6f45`, PRs #2–#4) · powder-snow reflex LIVE-VERIFIED (PR #5 open) · Episode 2 filming = Parker's session
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
@@ -9,6 +9,54 @@
 > null-param fixes (PR #3, live-verified), and a top-collectors panel on the
 > overview (PR #4). DoD #6's episode segment is Parker's filming session
 > (`docs/demo-m2.md`). THE FLEET IS TICKING — see machine state below.**
+
+## Session 2026-07-11 — powder-snow escape reflex + hazard awareness (PR #5, branch `claude/villagers-snow-stuck-e20104`)
+
+Villagers were sinking into powder_snow on the frozen peaks and freezing
+forever (peaceful regen outpaces freeze damage; pathfinder can't model the
+block — `boundingBox: 'empty'` in minecraft-data, and `blocksToAvoid` is the
+only lever, previously unset). Fix = reflex in the body + awareness in the
+brain, built by **two parallel Claude instances in separate worktrees**
+against a shared contract commit, merged at `9819cd8`:
+
+- **Contract `ccb58a2`**: `HazardEncountered.v1` on world.events
+  (`phase: trapped|escaped|escape_failed`, hazardType, position, detail) +
+  `HAZARD_ESCAPE_IN_PROGRESS` added to the ActionFailed errorCode enum.
+- **Body `80c8f5a` (minecraft-service)**: `hardenMovements` puts powder_snow
+  in pathfinder blocksToAvoid; per-bot `HazardWatcher` (env
+  `HAZARD_WATCH_INTERVAL_MS=1500`, 0 disables; O(1) feet/head reads, 2-pass
+  debounce, single-flight) runs trap **episodes**: `trapped` emitted once,
+  escape = dig own head/feet → tunnel to a solid-floored neighbor →
+  raw control-walk (NEVER pathfinder mid-trap), Promise.race'd
+  (`HAZARD_ESCAPE_TIMEOUT_MS=25000`), `HAZARD_DIG_BUDGET=12`, 15s retry
+  backoff. New `busy` seam on SessionActions: executor claims
+  `busy='action'` around its watchdog race; commands arriving mid-escape
+  bounce fast with HAZARD_ESCAPE_IN_PROGRESS (retryable, never blocks
+  eachMessage). `civ_hazard_escapes_total{outcome}`.
+- **Brain `808db95` (agent-service)**: freshness-guarded percepts to the
+  victim only; `trapped` also fires the reactive-tick hook; prompt gets
+  phase lines + a grudge-style survival directive; reflect node folds the
+  episode with coords into the tick memory (else it'd never reach pgvector).
+- **Tests**: 306 green across all six suites (mc 117 incl. 15-test hazard
+  suite with ajv payload-vs-schema validation + wedge safety; agent 143).
+- **LIVE-VERIFIED** (deployed worktree images body-before-mind, `task seed`,
+  fleet 20/20, Parker in-world): Maren respawned naturally sunk at
+  (-30,133,44) → dug 1 block, free in <1s → next tick reasoned "a matter of
+  survival and safety", moved away, memory formed with coords. Quill ×2
+  natural rim traps closed via the incidental-freedom path ("came free
+  without digging"). Ledger: 6 HazardEncountered, 3 clean trapped→escaped
+  pairs, 0 dangling, 0 escape_failed. Vertical self-dig kept winning because
+  it IS optimal for those geometries; the lateral tunnel remains unit-proven
+  only — fine, escape_failed+retry converges regardless.
+- **Deployed state**: minecraft-service + agent-service containers currently
+  run THIS BRANCH's images (built from the worktree); other services on main
+  images. After merging, rebuild from main to converge provenance.
+- **Watch-fors**: falls/descents can still land a bot through powder snow
+  (avoidance only shapes walked paths) — the reflex is the designed backstop.
+  If filming shows tunnel walk-stalls, the `HAZARD_*` envs are the levers.
+  Test artifacts left in-world (biome-plausible, inert): ~26 powder-snow
+  blocks near (-21,147,20), ~8 near (-99,95,-72) — `fill … air replace
+  powder_snow` removes them if unwanted.
 
 ## Sessions 2026-07-09 night → 2026-07-11 — materials & inventory kit, rejoin/null-param fixes, three crash recoveries (PRs #2–#4)
 

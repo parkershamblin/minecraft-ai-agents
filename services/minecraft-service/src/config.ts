@@ -26,6 +26,17 @@ const schema = z.object({
   // …or when the survey is this stale (neighbors dig; one refresh per tick).
   RESOURCE_SCAN_MAX_AGE_MS: z.coerce.number().int().min(1000).default(60000),
   MOVE_THROTTLE_MS: z.coerce.number().int().min(500).default(5000),
+  // Powder-snow hazard watch (post-M2): per-bot O(1) probe — two blockAt
+  // reads, never a sweep. 0 disables the reflex entirely.
+  HAZARD_WATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(1500),
+  // Backoff between escape attempts while a trap episode stays open.
+  HAZARD_ESCAPE_RETRY_MS: z.coerce.number().int().min(1000).default(15000),
+  // Powder snow blocks one attempt may dig before giving up (drops nothing,
+  // instantly hand-diggable — the budget bounds effort, not resources).
+  HAZARD_DIG_BUDGET: z.coerce.number().int().min(1).default(12),
+  // The whole attempt races this deadline (corollary 3: never await a
+  // mineflayer promise un-raced) — a timed-out attempt is escape_failed.
+  HAZARD_ESCAPE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(25000),
   // Pathfinder budgets: tickTimeout is the SYNCHRONOUS per-physics-tick A*
   // slice on the shared event loop (default 40ms × 20 pathing bots pins it);
   // thinkTimeout is the total wall-clock path budget, raised to compensate.

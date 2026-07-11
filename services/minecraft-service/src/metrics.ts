@@ -31,6 +31,13 @@ export const reconnects = new Counter({
   registers: [registry],
 })
 
+export const hazardEscapes = new Counter({
+  name: 'civ_hazard_escapes_total',
+  help: 'Powder-snow trap episodes resolved, by outcome (escaped | escape_failed)',
+  labelNames: ['outcome'] as const,
+  registers: [registry],
+})
+
 // Per-player material tracking (post-M2). `player` is the in-game username —
 // the repo's first entity-level label, bounded by MAX_PLAYERS (30) × item
 // types actually touched. kind: villager (bot) | player (human via RCON).
