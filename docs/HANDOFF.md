@@ -1,4 +1,4 @@
-# Session Handoff — M2 COMPLETE · materials kit + ops fixes MERGED (main=origin=`16f6f45`, PRs #2–#4) · powder-snow reflex LIVE-VERIFIED (PR #5 open) · Episode 2 filming = Parker's session
+# Session Handoff — M2 COMPLETE · materials kit + ops fixes MERGED (PRs #2–#4) · powder-snow reflex LIVE-VERIFIED + MERGED (PR #5, main=origin=`f4e75cd`) · Episode 2 filming = Parker's session
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
@@ -48,9 +48,9 @@ against a shared contract commit, merged at `9819cd8`:
   pairs, 0 dangling, 0 escape_failed. Vertical self-dig kept winning because
   it IS optimal for those geometries; the lateral tunnel remains unit-proven
   only — fine, escape_failed+retry converges regardless.
-- **Deployed state**: minecraft-service + agent-service containers currently
-  run THIS BRANCH's images (built from the worktree); other services on main
-  images. After merging, rebuild from main to converge provenance.
+- **Deployed state**: MERGED as squash `f4e75cd` (branch-cited SHAs live on
+  in the PR page); minecraft-service + agent-service rebuilt from main
+  post-merge and the fleet re-seeded — deployed provenance = main.
 - **Watch-fors**: falls/descents can still land a bot through powder snow
   (avoidance only shapes walked paths) — the reflex is the designed backstop.
   If filming shows tunnel walk-stalls, the `HAZARD_*` envs are the levers.
