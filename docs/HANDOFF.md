@@ -1,15 +1,107 @@
-# Session Handoff — M2 COMPLETE + MERGED (main=origin=`3d5c166`) · post-M2 gather kit shipped · Episode 2 filming = Parker's session
+# Session Handoff — M2 COMPLETE · materials kit + ops fixes MERGED (main=origin=`16f6f45`, PRs #2–#4) · Episode 2 filming = Parker's session
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
-> (DoD 6/6, Episode 1 filmed). M2 is CODE-COMPLETE: all ten tickets shipped,
-> and the dress rehearsal ran the real thing — a fully organic election on
-> live llama deliberation: 20/20 candidacies, 20/20 votes, 100% turnout,
-> MAYOR BRAM seated (10 votes on his M1 bread-and-ledger reputation).
-> DoD #6's episode segment is Parker's filming session (`docs/demo-m2.md`
-> is the shot script). THE FLEET IS TICKING — see machine state.**
+> (DoD 6/6, Episode 1 filmed). M2 COMPLETE and merged: the dress rehearsal
+> ran a fully organic election on live llama deliberation — 20/20
+> candidacies, 20/20 votes, 100% turnout, MAYOR BRAM seated. Since then:
+> per-player materials/inventory observability (PR #2), the kafka-rejoin +
+> null-param fixes (PR #3, live-verified), and a top-collectors panel on the
+> overview (PR #4). DoD #6's episode segment is Parker's filming session
+> (`docs/demo-m2.md`). THE FLEET IS TICKING — see machine state below.**
 
-## Session 2026-07-09 evening — M2 merged+pushed; live gather watch → the gather kit
+## Sessions 2026-07-09 night → 2026-07-11 — materials & inventory kit, rejoin/null-param fixes, three crash recoveries (PRs #2–#4)
+
+One arc across several crash-separated sessions. All merged; `main =
+origin/main = 16f6f45`; CI green throughout.
+
+- **Materials & inventory kit (PR #2 → `0d46994`)**, built while Parker
+  played live: minecraft-service grew one process-wide `InventoryPoller`
+  (15s; `INVENTORY_POLL_INTERVAL_MS`, 0 disables) — bots are free in-memory
+  `bot.inventory.items()` reads; **human players are read over RCON**
+  (hand-rolled ~150-line Source-RCON client in `src/rcon/rcon.ts`, no new
+  dep; compose-internal `minecraft:25575`, password default `civ_rcon`, env
+  `RCON_HOST/PORT/PASSWORD` on minecraft-service; unreachable RCON degrades
+  to bots-only). New metrics: `civ_player_inventory_items{player,item,kind}`
+  (gauge, stale series removed), `civ_materials_collected_total` (counter =
+  positive deltas), `civ_players_tracked{kind}`, `civ_inventory_polls_total`.
+  **Honesty invariants in `InventoryTracker`** (the FakeProvider lesson,
+  applied to metrics): process-global per-SPAWN generation (bumps on
+  reconnect AND death-respawn — mineflayer re-emits 'spawn' on the same
+  connection; a persistent handler, not the once()) re-baselines, and the
+  first TWO observations of a generation never count (post-spawn inventory
+  sync would otherwise book the whole inventory as a haul). Two RCON
+  gotchas measured live and now in CLAUDE.md: `data get` output is
+  ELLIPSIZED server-side past ~150 chars (per-slot `Inventory[i].id/.count`
+  probes are the only reliable read), and the Inventory NBT is a DENSE list
+  that reindexes mid-scan → single passes tear → **scan twice, accept only
+  two identical passes** (`fetchHumanInventoryStable`; discarded cycles
+  lose nothing — deltas compare against the last ACCEPTED scan). Dashboards:
+  `civ-materials` ("Materials & Inventory": leaderboards, rates, live
+  per-player inventory tables, `player` template var) + a full-width
+  top-collectors bargauge on `civ-overview` (PR #4 → `16f6f45`). An
+  ultracode adversarial review (4 lenses × 2 skeptics) caught **3 real
+  majors pre-deploy**: torn-scan phantom hauls, the death-respawn
+  re-baseline bypass, an RCON socket leak on auth timeout. 27 new ts tests.
+  Accepted caveats: ≤2 polls blind per spawn; re-collected death drops
+  count again. Known undercount: none — but "collected" includes crafting
+  outputs and pickups, not just digs (by design; ResourceGathered still
+  ledgers gather hauls separately).
+- **`.env` pins `LLM_PROVIDER=ollama`** (was `openai` + empty key, silently
+  falling back): closes the footgun where dropping an OPENAI_API_KEY into
+  `.env` would activate the strict-mode-broken params path (M2-7 finding —
+  reshape before any OpenAI run remains an M3 gate).
+- **Kafka rejoins + llama null-params fixed (PR #3 → `f05a41d`)**: the 8×
+  "coordinator is not aware of this member" per session were pathfinder A*
+  slices (synchronous, 40ms/physics-tick default, ×20 bots) starving
+  kafkajs heartbeats. Consumer now runs `sessionTimeout: 60s` /
+  `rebalanceTimeout: 90s`, and pathfinder budgets are config
+  (`PATHFINDER_TICK_TIMEOUT_MS=10`, `PATHFINDER_THINK_TIMEOUT_MS=10000` —
+  same total compute, loop breathes). llama's `"maxDistance": null` (~7% of
+  ticks → idle fallbacks) is fixed at the tolerant-reader seam: null-valued
+  params are stripped pre-validation (required-nulls still fail, as
+  "required"); the gather affordance stops advertising maxDistance (the
+  recorded lever — executor defaults to 48). **Live-verified in a 15-min
+  window: 0 rejoins, 0 `params invalid for gather`**; collection pace
+  visibly up post-fix (Bram 62 items in ~35 min vs Petra's chart-topping 21
+  in 45 min the day before). Residual malformed (~5/window) is other llama
+  drift, safely idle-falling.
+- **Ops war stories (all documented, all recovered):**
+  - Docker engine restarted itself mid-demo-startup (fresh uptimes across
+    all containers) — silently disembodied the fleet (in-memory sessions);
+    `task seed` re-embodied. The replaced minecraft-service container had
+    quietly accumulated RestartCount=5 during the blip era.
+  - Parker's PC hard-crashed: `.git/config` truncated to 492 NUL bytes
+    (rebuilt by hand — core+origin+branch sections suffice; fsck clean) and
+    Docker Desktop needed the CLAUDE.md socket-rename ritual INCLUDING the
+    recorded zombie-recreation race (`docker-secrets-engine` reappeared
+    after the first rename; second kill-sweep + re-rename cleared it).
+  - **New machine gotcha:** a Claude session can hand background bash
+    scripts a raw un-converted Windows PATH (semicolons, `C:\...`) — curl/
+    docker/sleep all silently fail and the resulting monitor false-alarm
+    storm looks EXACTLY like a stack outage (burned ~20 min chasing ghost
+    anomalies while the stack was healthy). Every monitor script now starts
+    with `export PATH="/usr/bin:/mingw64/bin:/c/Program Files/Docker/Docker/resources/bin:$PATH"`.
+  - The Next.js dashboard (port 3000) is a HOST process, not a container —
+    it does not survive reboots and nobody notices until
+    ERR_CONNECTION_REFUSED. Restart: `npm run dev --workspace @civ/dashboard`
+    (or `.claude/launch.json` name `dashboard`). Local Grafana (3001) is
+    `admin`/`admin` — NOT Parker's grafana.com Google account (bit once,
+    now answered here).
+- **Story color for Episode 2 pulls:** Mayor Bram leads the current
+  woodpile drive from the front (62 items; 25 dark oak logs); Fen owns the
+  24h board (76, nearly all dark oak); the COMMUNITY_GOAL woodpile line is
+  visibly working (130+ dark oak logs across five villagers); Ansel and
+  Hollis have identical 48-clay-ball hauls — same riverbank, digging side
+  by side. Petra's day-one dirt dynasty (14 dirt) did not survive the era.
+- **Machine state (2026-07-11, session end): stack RUNNING** — 12/12
+  containers healthy, fleet 20/20 ticking on warmed llama3.1:8b
+  (`LLM_PROVIDER=ollama` now explicit), reflections on, election canon
+  verified intact after every restart (GET /elections still returns Mayor
+  Bram's full 20-candidate record), both Grafana dashboards live, Next.js
+  dashboard dev server running. Health watchdogs are session-bound Monitor
+  tasks — they DIE with the Claude session; re-arm on resume (PATH export
+  first, see gotcha above).
 
 - **The merge (morning-after housekeeping):** local ff-merge of the M2 branch
   met Parker's own GitHub-side PR #1 merge (`3d5c166`, tree bit-identical to
