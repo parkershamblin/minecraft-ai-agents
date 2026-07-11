@@ -156,6 +156,12 @@ export class BotSession {
     botSessions.inc()
     if (this.bot) {
       this.bot.pathfinder.setMovements(new Movements(this.bot))
+      // A* compute slices run synchronously on the shared event loop; the
+      // default 40ms/tick budget stacks across 20 pathing bots and starves
+      // everything else (Kafka heartbeats included). Smaller slices, longer
+      // total think budget: same compute, spread thin enough to breathe.
+      this.bot.pathfinder.tickTimeout = this.deps.config.PATHFINDER_TICK_TIMEOUT_MS
+      this.bot.pathfinder.thinkTimeout = this.deps.config.PATHFINDER_THINK_TIMEOUT_MS
     }
 
     void this.deps.producer.publish(

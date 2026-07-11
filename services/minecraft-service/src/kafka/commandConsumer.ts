@@ -18,7 +18,16 @@ export class CommandConsumer {
     private readonly executor: CommandExecutor,
   ) {
     const kafka = new Kafka({ clientId: 'minecraft-service', brokers, logLevel: logLevel.WARN })
-    this.consumer = kafka.consumer({ groupId: 'minecraft-service.command-executor' })
+    this.consumer = kafka.consumer({
+      groupId: 'minecraft-service.command-executor',
+      // Pathfinder A* runs synchronously on this same event loop, and a burst
+      // of hard path computations delays heartbeats past the 30s default —
+      // the coordinator then evicts a perfectly healthy member ("coordinator
+      // is not aware of this member" rejoin churn, measured 8/session). 60s
+      // of missed 3s heartbeats is a real death, not a busy loop.
+      sessionTimeout: 60_000,
+      rebalanceTimeout: 90_000,
+    })
   }
 
   async start(): Promise<void> {

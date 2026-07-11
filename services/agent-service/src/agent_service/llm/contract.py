@@ -121,6 +121,13 @@ def _normalize_params(action: str, params: dict[str, Any]) -> tuple[dict[str, An
     for junk in _DECISION_LEVEL_KEYS & normalized.keys():
         normalized.pop(junk)
         changed = True
+    # llama writes explicit nulls for params it means to OMIT ("maxDistance":
+    # null was ~7% of ticks) — the wire contract wants them absent, and the
+    # executor applies its own defaults. A required param sent as null still
+    # fails validation below, now as "required" instead of a type error.
+    for key in [key for key, value in normalized.items() if value is None]:
+        normalized.pop(key)
+        changed = True
     for wrong, right in _PARAM_ALIASES.get(action, {}).items():
         if wrong in normalized and right not in normalized:
             normalized[right] = normalized.pop(wrong)

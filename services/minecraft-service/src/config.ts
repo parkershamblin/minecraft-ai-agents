@@ -26,6 +26,11 @@ const schema = z.object({
   // …or when the survey is this stale (neighbors dig; one refresh per tick).
   RESOURCE_SCAN_MAX_AGE_MS: z.coerce.number().int().min(1000).default(60000),
   MOVE_THROTTLE_MS: z.coerce.number().int().min(500).default(5000),
+  // Pathfinder budgets: tickTimeout is the SYNCHRONOUS per-physics-tick A*
+  // slice on the shared event loop (default 40ms × 20 pathing bots pins it);
+  // thinkTimeout is the total wall-clock path budget, raised to compensate.
+  PATHFINDER_TICK_TIMEOUT_MS: z.coerce.number().int().min(1).default(10),
+  PATHFINDER_THINK_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
   // Village-scale earshot: vanilla spawn scatter alone is ~20 blocks, and a
   // village is ~64 across. 16 made villagers deaf to neighbors in practice.
   CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(48),

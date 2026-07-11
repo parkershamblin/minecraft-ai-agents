@@ -221,3 +221,18 @@ class TestToleranReaderNormalization:
     def test_genuinely_unknown_params_still_rejected(self):
         with pytest.raises(MalformedDecision):
             validate_decision(decision(params={"message": "hi", "flightSpeed": 9000}))
+
+    def test_null_optional_param_is_stripped_not_fatal(self):
+        # llama's signature drift: "maxDistance": null means "use the default".
+        parsed = validate_decision(decision(action="gather", params={"resource": "wood", "maxDistance": None}))
+        assert parsed.action == "gather"
+        assert parsed.params == {"resource": "wood"}
+
+    def test_all_null_params_normalize_to_empty(self):
+        parsed = validate_decision(decision(action="gather", params={"resource": None, "maxDistance": None}))
+        assert parsed.params == {}
+
+    def test_null_required_param_still_malformed(self):
+        # stripping turns a null message into a MISSING message — still caught.
+        with pytest.raises(MalformedDecision, match="params invalid for chat"):
+            validate_decision(decision(action="chat", params={"message": None}))
