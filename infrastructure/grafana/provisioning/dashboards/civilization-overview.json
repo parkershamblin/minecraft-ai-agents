@@ -152,6 +152,25 @@
           "legendFormat": "{{outcome}}"
         }
       ]
+    },
+    {
+      "id": 13,
+      "type": "bargauge",
+      "title": "Top collectors — items gained (range; details on Materials & Inventory)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "targets": [
+        {
+          "expr": "topk(15, sum by (player) (increase(civ_materials_collected_total{run_mode=\"compose\"}[$__range])))",
+          "legendFormat": "{{player}}",
+          "instant": true
+        }
+      ]
     }
   ]
 }
