@@ -1,13 +1,17 @@
-# Session Handoff — SURVIVAL CLUSTER PLANNED (09-survival-plan.md, Milestone "Survival" + 21 issues, pvp spike NO-GO) · M2 COMPLETE · Episode 2 filming = Parker's session, BEFORE any Survival deploy
+# Session Handoff — SURVIVAL CLUSTER APPROVED (plan merged `7a1c657`, Milestone "Survival" + issues #7–#27, pvp spike NO-GO) · next code session = SV-1 · Episode 2 filming BEFORE any Survival deploy
 
 > A fresh session should be able to continue from this file +
-> `docs/architecture/09-survival-plan.md` (the next cluster) or
+> `docs/architecture/09-survival-plan.md` (the approved cluster) or
 > `docs/architecture/08-m2-plan.md` (history) without asking questions.
 > **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
 > Survival cluster (peaceful→easy: eat/craft/hunt/cook, fight-or-flee, death
-> awareness, staged wheel removal, on-camera ceremony) is PLANNED and awaiting
-> Parker's go — no implementation yet. Episode 2 filming must happen BEFORE
-> the first Survival deploy.**
+> awareness, staged wheel removal, on-camera ceremony) is PLANNED, APPROVED
+> by Parker (2026-07-12), and merged to main — implementation starts at SV-1
+> (contract commit A, Sprint 9). SV-1 is deploy-free; the filming constraint
+> gates DEPLOYS, not commits: Episode 2 filming must happen BEFORE the first
+> Survival deploy (docs/demo-m2.md; remove the live COMMUNITY_GOAL line +
+> restart agent-service; the filmed election is a re-election unless a nuke
+> precedes it).**
 
 ## Session 2026-07-11 (later) — Survival cluster planning (ultracode): plan doc, Milestone + issues, pvp spike NO-GO
 
