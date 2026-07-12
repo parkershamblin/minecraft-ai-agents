@@ -187,13 +187,19 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   (prometheus.yml, postgres-init) resolve relative to the compose file each
   container was STARTED from — a worktree-side config edit reaches a running
   container only after merge + that container's restart.
-  Second trap (SV-2, bit twice in one session): the Claude-harness can PRUNE
-  its own session worktree MID-SESSION — once the whole dir was emptied and
-  deregistered (fix: `git worktree add` again; branches survive), once only
-  `.git\worktrees\<name>` was deleted with every working file intact (fix:
-  recreate `HEAD`/`commondir`/`gitdir` in that dir by hand, then `git reset`
-  rebuilds the missing index). Working files are the only unrecoverable
-  part — in worktree sessions, commit and push at every green boundary.
+  Second trap (SV-2, bit twice in one session — root cause found same day):
+  a session's worktree can vanish MID-SESSION. It was NOT the harness: a
+  SECOND concurrent Claude session doing branch cleanup removed the
+  worktree (its dirs looked stale), stole the branch checkout, and
+  re-implemented the same ticket before discovering the first session's PR.
+  Recovery when it happens: whole dir emptied+deregistered → `git worktree
+  add` again (branches survive); only `.git\worktrees\<name>` metadata
+  deleted with files intact → recreate `HEAD`/`commondir`/`gitdir` by hand,
+  then `git reset` rebuilds the index. Working files are the only
+  unrecoverable part — commit and push at every green boundary. Prevention,
+  BOTH directions: a file-locked `.claude/worktrees/*` dir means a LIVE
+  session — check `gh pr list` and the branch's recent commits before
+  removing worktrees or checking out a branch that's checked out elsewhere.
 - Paper persists difficulty per-world in `level.dat`, which overrides
   `server.properties` on boot for existing worlds. An RCON `difficulty` change
   is in-memory until a world save — run `save-all` after it, or the container's
