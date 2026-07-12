@@ -187,6 +187,13 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   (prometheus.yml, postgres-init) resolve relative to the compose file each
   container was STARTED from — a worktree-side config edit reaches a running
   container only after merge + that container's restart.
+  Second trap (SV-2, bit twice in one session): the Claude-harness can PRUNE
+  its own session worktree MID-SESSION — once the whole dir was emptied and
+  deregistered (fix: `git worktree add` again; branches survive), once only
+  `.git\worktrees\<name>` was deleted with every working file intact (fix:
+  recreate `HEAD`/`commondir`/`gitdir` in that dir by hand, then `git reset`
+  rebuilds the missing index). Working files are the only unrecoverable
+  part — in worktree sessions, commit and push at every green boundary.
 - Paper persists difficulty per-world in `level.dat`, which overrides
   `server.properties` on boot for existing worlds. An RCON `difficulty` change
   is in-memory until a world save — run `save-all` after it, or the container's

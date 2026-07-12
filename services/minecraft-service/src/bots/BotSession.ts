@@ -22,16 +22,21 @@ import {
   type ResourceSighting,
   allTargetsBlacklistedMessage,
   blockNamesFor,
-  gatherAnnouncement,
   gatherFailureMessage,
   gatherStartAnnouncement,
+  haulAnnouncement,
   pickGatherTarget,
   planHarvest,
   scanNearbyResources,
   shouldRescan,
   targetKey,
 } from '../world/resources.ts'
+import { type GatherSessionResult, runGatherSession } from '../world/gatherSession.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
+
+/** What a gather command reports back to the mind: the session totals plus
+ *  what was asked for — the prompt renders this JSON verbatim. */
+export type GatherResult = GatherSessionResult & { resource: string; requested: number }
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
 
@@ -428,17 +433,16 @@ export class BotSession {
   }
 
   /**
-   * Harvest the nearest block of a resource family — the composite verb:
-   * find, plan the tool, pathfind adjacent, equip, dig, step onto the spot
-   * to collect the drop, report the inventory delta. Emits ResourceGathered
-   * (a world fact); the command outcome carries the same result back to the
+   * Harvest up to `count` blocks of a resource family in one sustained
+   * session (SV-2) — per block: find, plan the tool, pathfind adjacent,
+   * equip, dig, step onto the spot to collect the drop, report the inventory
+   * delta. Emits one ResourceGathered per attempted block (world facts
+   * survive a mid-session timeout); speaks ONE departure line and ONE haul
+   * line per trip. The command outcome carries the session total back to the
    * requesting mind. Failures are prescriptive — the message is the next
    * tick's percept, so it must teach, not just report.
    */
-  async gather(
-    resource: string,
-    maxDistance: number,
-  ): Promise<{ resource: string; blockType: string; position: Position; collected: number }> {
+  async gather(resource: string, maxDistance: number, count: number): Promise<GatherResult> {
     const bot = this.bot
     if (!bot?.entity) {
       throw new Error('bot has no entity — not spawned')
@@ -447,6 +451,46 @@ export class BotSession {
     if (!names) {
       throw new Error(`unknown resource family '${resource}'`)
     }
+    const session = await runGatherSession(count, {
+      harvestOne: (announceStart) => this.harvestOneBlock(bot, resource, names, maxDistance, count, announceStart),
+      // The executor claims busy='action' for the command's lifetime and
+      // clears it when the watchdog abandons the race — the seam doubles as
+      // the session's cancellation signal, no new machinery.
+      bodyStillOurs: () => this.busy === 'action',
+      emitBlock: ({ blockType, position, collected }) => {
+        void this.deps.producer.publish(
+          'world.events',
+          buildEnvelope({
+            eventType: 'ResourceGathered',
+            aggregateId: this.villagerId,
+            payload: { villagerId: this.villagerId, resourceType: blockType, quantity: collected, position },
+          }),
+        )
+      },
+      announceHaul: (byType) => {
+        const announcement = haulAnnouncement(byType)
+        if (announcement) {
+          bot.chat(announcement)
+        }
+      },
+    })
+    return { resource, requested: count, ...session }
+  }
+
+  /**
+   * One block of a gather session: the M2-1 composite verb, minus the
+   * per-trip announcements the session owns. A fresh findBlocks per block is
+   * inherent (each dig changes the world), and is command-work the mind paid
+   * for — the M2-2 skip gate governs the background survey, not this.
+   */
+  private async harvestOneBlock(
+    bot: Bot,
+    resource: string,
+    names: readonly string[],
+    maxDistance: number,
+    count: number,
+    announceStart: boolean,
+  ): Promise<{ blockType: string; position: Position; collected: number }> {
     const now = Date.now()
     for (const [key, until] of this.gatherBlacklist) {
       if (until <= now) {
@@ -497,11 +541,13 @@ export class BotSession {
         .reduce((sum, item) => sum + item.count, 0)
     const before = countYield()
 
-    // Mark before the attempt, clear on completion (the dedupe pattern): if
+    // Mark before the attempt, clear on collection (the dedupe pattern): if
     // the walk/dig never settles — the watchdog abandons this promise — the
-    // mark survives and the next gather picks a different block.
+    // mark survives and the next pick (this session or the next) moves on.
     this.gatherBlacklist.set(targetKey(target), now + GATHER_TARGET_BLACKLIST_MS)
-    bot.chat(gatherStartAnnouncement(resource, block.name, target))
+    if (announceStart) {
+      bot.chat(gatherStartAnnouncement(resource, block.name, target, count))
+    }
     await bot.pathfinder.goto(new goals.GoalGetToBlock(block.position.x, block.position.y, block.position.z))
     // Choose the tool AT THE DIG SITE, from the current inventory — the
     // pathfinder digs its own way through obstacles and re-equips as it
@@ -544,20 +590,7 @@ export class BotSession {
       // to every future scan.
       this.gatherBlacklist.delete(targetKey(target))
     }
-    const position = { x: block.position.x, y: block.position.y, z: block.position.z }
-    void this.deps.producer.publish(
-      'world.events',
-      buildEnvelope({
-        eventType: 'ResourceGathered',
-        aggregateId: this.villagerId,
-        payload: { villagerId: this.villagerId, resourceType: blockType, quantity: collected, position },
-      }),
-    )
-    const announcement = gatherAnnouncement(blockType, collected)
-    if (announcement) {
-      bot.chat(announcement)
-    }
-    return { resource, blockType, position, collected }
+    return { blockType, position: { x: block.position.x, y: block.position.y, z: block.position.z }, collected }
   }
 
   stopMoving(): void {

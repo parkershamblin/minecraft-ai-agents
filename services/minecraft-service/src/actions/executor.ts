@@ -1,6 +1,7 @@
 import type { EventEnvelope, ActionRequestedPayload } from '@civ/events/ts'
 import type { Position } from '../world/position.ts'
 import type { BusyState } from '../bots/hazard.ts'
+import type { GatherResult } from '../bots/BotSession.ts'
 import { logger } from '../logging.ts'
 import { commandsProcessed } from '../metrics.ts'
 
@@ -13,10 +14,7 @@ export interface SessionActions {
   busy: BusyState
   moveTo(to: Position, range: number): Promise<{ finalPosition: Position; blocksTraveled: number }>
   chat(message: string): void
-  gather(
-    resource: string,
-    maxDistance: number,
-  ): Promise<{ resource: string; blockType: string; position: Position; collected: number }>
+  gather(resource: string, maxDistance: number, count: number): Promise<GatherResult>
   stopMoving(): void
 }
 
@@ -42,6 +40,26 @@ class ActionError extends Error {
     readonly retryable: boolean,
   ) {
     super(message)
+  }
+}
+
+/**
+ * Prescriptive TIMEOUT prose (SV-2). This string is the villager's next
+ * percept — the M2-1 lesson applies: the diagnosis must carry the fix. The
+ * bare "no outcome within Nms" taught nothing; counted gather sessions make
+ * timeouts a normal part of ambition, so the message has to say what a
+ * smaller ask looks like.
+ */
+export function timeoutMessage(action: string, timeoutMs: number): string {
+  const budget = `${Math.round(timeoutMs / 1_000)}s`
+  switch (action) {
+    case 'gather':
+      return `the gathering trip ran past its ${budget} limit and was called off mid-session — blocks already dug are in your pack even if unannounced; ask for fewer blocks (count) or a nearer target (smaller maxDistance), or move toward the resource first`
+    case 'move':
+    case 'follow':
+      return `you did not arrive within ${budget} and stopped where you stood — the destination may be unreachable from here; pick a nearer or different spot and try again`
+    default:
+      return `'${action}' ran past its ${budget} limit and was abandoned — try again with a smaller version of the same intent`
   }
 }
 
@@ -140,7 +158,7 @@ export class CommandExecutor {
         log.warn({ timeoutMs: payload.timeoutMs }, 'command timed out — watchdog emitted the outcome')
         void outcome('ActionFailed', {
           errorCode: 'TIMEOUT',
-          errorMessage: `no outcome within ${payload.timeoutMs}ms`,
+          errorMessage: timeoutMessage(payload.action, payload.timeoutMs),
           retryable: true,
         }).finally(resolve)
       }, payload.timeoutMs)
@@ -237,10 +255,23 @@ export class CommandExecutor {
       }
       case 'gather': {
         const session = this.requireSession(payload.villagerId)
-        const { resource, maxDistance } = payload.params as { resource?: string; maxDistance?: number }
+        const { resource, maxDistance, count } = payload.params as {
+          resource?: string
+          maxDistance?: number
+          count?: number
+        }
         try {
-          // 48 mirrors the contract default (GatherParams); clamp 4..64 unchanged
-          return await session.gather(resource ?? 'wood', Math.min(Math.max(maxDistance ?? 48, 4), 64))
+          // Defaults mirror the contract (GatherParams): maxDistance 48
+          // clamped 4..64, count 1 clamped 1..8 — the count cap is
+          // load-bearing (a full session must fit inside the per-verb
+          // timeout ceiling, TIMEOUT_TABLE_MAX_MS = 60s).
+          return {
+            ...(await session.gather(
+              resource ?? 'wood',
+              Math.min(Math.max(maxDistance ?? 48, 4), 64),
+              Math.min(Math.max(Math.trunc(count ?? 1), 1), 8),
+            )),
+          }
         } catch (err) {
           const code = (err as Error & { code?: string }).code
           if (code === 'RESOURCE_NOT_FOUND') {

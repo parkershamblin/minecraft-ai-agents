@@ -1,4 +1,4 @@
-# Session Handoff — SV-1 SHIPPED (Survival contract commit A, PR #28) · next code session = SV-2 (sustained gather, body) · Episode 2 filming BEFORE any Survival deploy
+# Session Handoff — SV-2 SHIPPED (sustained gather sessions, PR #29) · next code session = SV-3 (craft verb, body) · Episode 2 filming BEFORE any Survival deploy
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/09-survival-plan.md` (the approved cluster) or
@@ -6,13 +6,77 @@
 > **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
 > Survival cluster (peaceful→easy: eat/craft/hunt/cook, fight-or-flee, death
 > awareness, staged wheel removal, on-camera ceremony) is APPROVED and in
-> flight: SV-1 (contract commit A — craft verb + GatherParams.count) shipped
-> as PR #28; Sprint 9 continues at SV-2 (sustained gather, body lane single:
-> SV-2 → SV-3 → SV-4). Nothing Survival has DEPLOYED — the filming
-> constraint gates DEPLOYS, not commits: Episode 2 filming must happen
-> BEFORE the first Survival deploy (docs/demo-m2.md; remove the live
-> COMMUNITY_GOAL line + restart agent-service; the filmed election is a
-> re-election unless a nuke precedes it).**
+> flight: SV-1 (contract commit A) MERGED to main (`1915e6d`); SV-2
+> (sustained gather sessions, body) shipped as PR #29 (awaiting merge);
+> Sprint 9's single body lane continues at SV-3 (craft verb, body) → SV-4
+> (crafting brain + the per-verb timeout table). Nothing Survival has
+> DEPLOYED — the filming constraint gates DEPLOYS, not commits: Episode 2
+> filming must happen BEFORE the first Survival deploy (docs/demo-m2.md;
+> remove the live COMMUNITY_GOAL line + restart agent-service; the filmed
+> election is a re-election unless a nuke precedes it).**
+
+## Session 2026-07-12 (later) — PR #28 merged · SV-2 shipped (sustained gather sessions, PR #29)
+
+Second Survival code session, continuing straight from the SV-1 handoff.
+**Deploy-free again** — the live stack was untouched all session; the
+filming gate holds.
+
+- **PR #28 merged first** (squash `1915e6d`, CI green, branch deleted
+  remote-side; the local branch lives on in the powder-snow worktree and
+  refused deletion — harmless). The SV-1 session's HANDOFF + CLAUDE.md
+  edits rode that squash, so main's docs were already current.
+- **What shipped** (`SV-2: sustained gather sessions (body)`, branch
+  `claude/sv-2-sustained-gather`, commit `864c155`, PR #29, closes #8), all
+  minecraft-service:
+  - **`runGatherSession` (new `world/gatherSession.ts`)** — the count loop
+    as pure orchestration (every world touch injected, so partial hauls /
+    first-block failure / watchdog abandonment are unit-tested botless):
+    pick→dig→collect per block up to GatherParams.count (executor clamps
+    1..8 mirroring the contract; the cap is ruling 2's load-bearing
+    ceiling). A FIRST-block failure fails the command with the coded
+    prescriptive error exactly as before; a LATER failure ends the trip as
+    an honest partial-haul completion with `stoppedEarly` carrying the why
+    ("I brought back 3 of 5" is a completion, not an error). **One
+    ResourceGathered per attempted block** — mid-session timeout loses no
+    ledger facts; zero-collect ghost blocks stay in the record.
+  - **Wedge-safety with zero new machinery**: the executor's busy seam
+    doubles as the session's cancellation signal — when the watchdog clears
+    `busy='action'`, the abandoned zombie loop stops at the next block
+    boundary and goes SILENT (no post-TIMEOUT haul announcements — the mind
+    already heard the failure). Zombie exposure stays ≤ the in-flight
+    block, identical to the single-block gather.
+  - **One announcement per haul**: departure line once per trip ("…first of
+    up to 5."), `haulAnnouncement` aggregates by block type ("Gathered 3
+    spruce logs and 1 oak log!") and replaces the per-dig
+    `gatherAnnouncement`. Per-block blacklist semantics unchanged
+    (mark-before-attempt, clear only on that block's own collected>0).
+  - **Prescriptive TIMEOUT prose** (`timeoutMessage` in executor.ts): the
+    bare `no outcome within Nms` is gone — gather timeouts name the
+    count/maxDistance levers, move/follow teach nearer destinations, every
+    verb gets teaching prose. The gather result now reports
+    `{collected, blocksDug, attempts, byType, stoppedEarly, requested, …}`
+    (prompts render the JSON verbatim — no agent-service change needed).
+  - **Deploy-safe by construction**: nothing advertises `count>1` to the
+    LLM until SV-4's brain commit; default 1 reproduces today's behavior.
+  - Tests **117→134** (9-test session-loop suite incl. zombie-abandonment;
+    announcement + executor coverage extended), typecheck clean, **all six
+    suites green** (`task test`, jacoco gates passing).
+- **War story (machine, new gotcha in CLAUDE.md): the Claude-harness pruned
+  this session's own worktree TWICE mid-session.** First right after a
+  branch checkout — working dir emptied AND deregistered (recovered:
+  `git worktree add` again; the branch survived). Second time only
+  `.git\worktrees\<name>` (the metadata dir) was deleted while every
+  working file survived (recovered: recreate `HEAD`/`commondir`/`gitdir` by
+  hand, then `git reset` to rebuild the missing index — status showed
+  exactly the expected 7 files). Commit + push PROMPTLY in worktree
+  sessions; the working files are the only unrecoverable part.
+- **NEXT: SV-3 — craft verb (body)**, the sprint's L ticket:
+  recipesFor/craft flow, crafting-table acquire/place, prescriptive failure
+  prose (missing ingredients name the gap), ajv payload tripwire, tests;
+  pre-committed valve = stone tier slips to Sprint 10. Then SV-4 (crafting
+  brain + per-verb timeout table with TIMEOUT_TABLE_MAX_MS=60s + FakeProvider
+  co-update + llama go/no-go smoke). Episode 2 filming still precedes the
+  first Survival DEPLOY.
 
 ## Session 2026-07-12 — SV-1 shipped (Survival contract commit A, PR #28) + reboot recovery
 

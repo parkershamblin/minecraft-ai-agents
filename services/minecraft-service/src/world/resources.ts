@@ -230,24 +230,33 @@ export function allTargetsBlacklistedMessage(resource: string): string {
  * attempted. Names the block and its coordinates: a watcher who sees it can
  * `/tp` to the speaker and spectate the attempt as it happens.
  */
-export function gatherStartAnnouncement(resource: string, blockType: string, target: Position): string {
+export function gatherStartAnnouncement(resource: string, blockType: string, target: Position, count = 1): string {
   const material = blockType.replace(/_/g, ' ')
-  return `Heading to gather ${resource} — ${material} at (${Math.round(target.x)}, ${Math.round(target.y)}, ${Math.round(target.z)}).`
+  const where = `(${Math.round(target.x)}, ${Math.round(target.y)}, ${Math.round(target.z)})`
+  if (count > 1) {
+    // A sustained session (SV-2) announces the whole trip once, not per block.
+    return `Heading to gather ${resource} — ${material} at ${where}, first of up to ${count}.`
+  }
+  return `Heading to gather ${resource} — ${material} at ${where}.`
 }
 
 /**
- * The in-world line a villager speaks after a successful harvest. Spoken
- * chat is world-visible: nearby villagers hear it (ChatObserved → percepts),
- * so a haul becomes social information — and a human watcher can't miss it.
+ * The in-world line a villager speaks after a harvest session — ONE line per
+ * haul (SV-2), however many blocks the trip covered. Spoken chat is
+ * world-visible: nearby villagers hear it (ChatObserved → percepts), so a
+ * haul becomes social information — and a human watcher can't miss it.
  * Null when nothing was collected: announcing a zero would be a lie the
  * whole village hears.
  */
-export function gatherAnnouncement(blockType: string, collected: number): string | null {
-  if (collected <= 0) {
+export function haulAnnouncement(byType: Record<string, number>): string | null {
+  const parts = Object.entries(byType)
+    .filter(([, count]) => count > 0)
+    .map(([blockType, count]) => `${count} ${blockType.replace(/_/g, ' ')}${count === 1 ? '' : 's'}`)
+  if (parts.length === 0) {
     return null
   }
-  const material = blockType.replace(/_/g, ' ')
-  return `Gathered ${collected} ${material}${collected === 1 ? '' : 's'}!`
+  const listed = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return `Gathered ${listed}!`
 }
 
 /**

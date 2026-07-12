@@ -4,9 +4,9 @@ import {
   RESOURCE_YIELD,
   blockNamesFor,
   allTargetsBlacklistedMessage,
-  gatherAnnouncement,
   gatherFailureMessage,
   gatherStartAnnouncement,
+  haulAnnouncement,
   pickGatherTarget,
   planHarvest,
   targetKey,
@@ -68,19 +68,42 @@ describe('gatherStartAnnouncement', () => {
       'Heading to gather stone — stone at (2, 64, 0).',
     )
   })
+
+  it('announces the whole trip once when the session covers several blocks', () => {
+    expect(gatherStartAnnouncement('wood', 'spruce_log', { x: -16, y: 145, z: -16 }, 5)).toBe(
+      'Heading to gather wood — spruce log at (-16, 145, -16), first of up to 5.',
+    )
+  })
+
+  it('a count of 1 keeps the classic single-block line', () => {
+    expect(gatherStartAnnouncement('wood', 'oak_log', { x: 0, y: 64, z: 0 }, 1)).toBe(
+      'Heading to gather wood — oak log at (0, 64, 0).',
+    )
+  })
 })
 
-describe('gatherAnnouncement', () => {
+describe('haulAnnouncement', () => {
   it('speaks a plural haul in plain words', () => {
-    expect(gatherAnnouncement('spruce_log', 2)).toBe('Gathered 2 spruce logs!')
+    expect(haulAnnouncement({ spruce_log: 2 })).toBe('Gathered 2 spruce logs!')
   })
 
   it('speaks a single item without the plural s', () => {
-    expect(gatherAnnouncement('stone', 1)).toBe('Gathered 1 stone!')
+    expect(haulAnnouncement({ stone: 1 })).toBe('Gathered 1 stone!')
+  })
+
+  it('joins a mixed haul with and — one line per trip, never per block', () => {
+    expect(haulAnnouncement({ spruce_log: 3, oak_log: 1 })).toBe('Gathered 3 spruce logs and 1 oak log!')
+  })
+
+  it('lists three types with commas before the and', () => {
+    expect(haulAnnouncement({ spruce_log: 2, oak_log: 1, birch_log: 4 })).toBe(
+      'Gathered 2 spruce logs, 1 oak log and 4 birch logs!',
+    )
   })
 
   it('stays silent on an empty haul — announcing a zero would be a lie', () => {
-    expect(gatherAnnouncement('spruce_log', 0)).toBeNull()
+    expect(haulAnnouncement({})).toBeNull()
+    expect(haulAnnouncement({ spruce_log: 0 })).toBeNull()
   })
 })
 

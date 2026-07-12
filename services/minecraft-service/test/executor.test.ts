@@ -1,6 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EventEnvelope } from '@civ/events/ts'
-import { CommandExecutor, type ExecutorDeps, type SessionActions } from '../src/actions/executor.ts'
+import { CommandExecutor, timeoutMessage, type ExecutorDeps, type SessionActions } from '../src/actions/executor.ts'
+
+/** A completed single-block session in the SV-2 result shape. */
+function gatherResult(blockType = 'oak_log', collected = 1) {
+  return {
+    resource: 'wood',
+    requested: 1,
+    collected,
+    blocksDug: collected > 0 ? 1 : 0,
+    attempts: 1,
+    byType: collected > 0 ? { [blockType]: collected } : {},
+    blockType,
+    position: { x: 0, y: 64, z: 0 },
+    stoppedEarly: null,
+  }
+}
 
 function command(action: string, params: Record<string, unknown> = {}, timeoutMs = 5_000): EventEnvelope {
   return {
@@ -33,7 +48,7 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
     busy: null,
     moveTo: vi.fn(async () => ({ finalPosition: { x: 10, y: 64, z: 0 }, blocksTraveled: 10 })),
     chat: vi.fn(),
-    gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
+    gather: vi.fn(async () => gatherResult()),
     stopMoving: vi.fn(),
     ...sessionOverrides,
   }
@@ -89,6 +104,9 @@ describe('CommandExecutor', () => {
     expect(h.outcomes).toHaveLength(1)
     expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
     expect(h.outcomes[0]!.extra.errorCode).toBe('TIMEOUT')
+    // Prescriptive prose (SV-2), not the bare "no outcome within Nms" — the
+    // villager reads this verbatim next tick and it must teach the fix.
+    expect(h.outcomes[0]!.extra.errorMessage).toBe(timeoutMessage('move', 5_000))
     expect(h.session.stopMoving).toHaveBeenCalled()
     // THE WEDGE REGRESSION (2026-07-07, twice): execute() must RESOLVE once
     // the watchdog settles the command — a never-settling action promise
@@ -144,7 +162,7 @@ describe('CommandExecutor', () => {
       busy: null,
       moveTo: vi.fn(),
       chat: vi.fn(),
-      gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
+      gather: vi.fn(async () => gatherResult()),
       stopMoving: vi.fn(),
     }
     const mover: SessionActions = {
@@ -153,7 +171,7 @@ describe('CommandExecutor', () => {
       busy: null,
       moveTo: vi.fn(async () => ({ finalPosition: { x: 49, y: 64, z: 50 }, blocksTraveled: 70 })),
       chat: vi.fn(),
-      gather: vi.fn(async () => ({ resource: 'wood', blockType: 'oak_log', position: { x: 0, y: 64, z: 0 }, collected: 1 })),
+      gather: vi.fn(async () => gatherResult()),
       stopMoving: vi.fn(),
     }
     const h = harness({ getSession: (id) => (id === 'bram-id' ? target : mover) })
@@ -168,19 +186,27 @@ describe('CommandExecutor', () => {
     expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
   })
 
-  it('gather defaults to wood within 48 blocks (the M2-1 contract default) and completes with the yield', async () => {
+  it('gather defaults to wood within 48 blocks, count 1 (the contract defaults) and completes with the yield', async () => {
     const h = harness()
     await h.executor.execute(command('gather'))
-    expect(h.session.gather).toHaveBeenCalledWith('wood', 48)
+    expect(h.session.gather).toHaveBeenCalledWith('wood', 48, 1)
     expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
     const result = h.outcomes[0]!.extra.result as { blockType: string; collected: number }
     expect(result.blockType).toBe('oak_log')
   })
 
-  it('gather clamps maxDistance to the contract bounds', async () => {
+  it('gather clamps maxDistance and count to the contract bounds', async () => {
     const h = harness()
-    await h.executor.execute(command('gather', { resource: 'stone', maxDistance: 999 }))
-    expect(h.session.gather).toHaveBeenCalledWith('stone', 64)
+    await h.executor.execute(command('gather', { resource: 'stone', maxDistance: 999, count: 99 }))
+    // The count cap (8) is load-bearing: a full session must fit inside the
+    // per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s, ruling 2).
+    expect(h.session.gather).toHaveBeenCalledWith('stone', 64, 8)
+  })
+
+  it('gather passes a sustained-session count through to the body', async () => {
+    const h = harness()
+    await h.executor.execute(command('gather', { resource: 'wood', count: 5 }))
+    expect(h.session.gather).toHaveBeenCalledWith('wood', 48, 5)
   })
 
   it('an empty world is an honest RESOURCE_NOT_FOUND, retryable, with the prescriptive text passed through', async () => {
@@ -235,6 +261,21 @@ describe('CommandExecutor', () => {
     expect(h.session.busy).toBeNull() // the zombie promise no longer owns the body
   })
 
+  it('a timed-out gather reads as prescriptive prose that names the levers', async () => {
+    const h = harness(
+      {},
+      { gather: vi.fn(() => new Promise<never>(() => {})) }, // a session that never settles
+    )
+    const run = h.executor.execute(command('gather', { resource: 'wood', count: 8 }, 5_000))
+    await vi.advanceTimersByTimeAsync(5_001)
+    await run
+    expect(h.outcomes[0]!.extra.errorCode).toBe('TIMEOUT')
+    const message = h.outcomes[0]!.extra.errorMessage as string
+    expect(message).toContain('count') // the ask-for-less lever
+    expect(message).toContain('maxDistance') // the nearer-target lever
+    expect(message).not.toContain('no outcome within') // the bare M1 line is gone
+  })
+
   it('a dig that cannot drop (stone, empty hands) is TOOL_REQUIRED and NOT retryable', async () => {
     const h = harness(
       {},
@@ -250,5 +291,18 @@ describe('CommandExecutor', () => {
     expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
     expect(h.outcomes[0]!.extra.errorCode).toBe('TOOL_REQUIRED')
     expect(h.outcomes[0]!.extra.retryable).toBe(false)
+  })
+})
+
+describe('timeoutMessage', () => {
+  it('speaks the budget in seconds, not milliseconds', () => {
+    expect(timeoutMessage('move', 30_000)).toContain('30s')
+  })
+
+  it('an unknown verb still gets teaching prose, never the bare deadline', () => {
+    const message = timeoutMessage('spawn', 30_000)
+    expect(message).toContain("'spawn'")
+    expect(message).toContain('smaller')
+    expect(message).not.toContain('no outcome within 30000ms')
   })
 })
