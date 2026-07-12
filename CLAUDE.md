@@ -81,7 +81,12 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   (3) verify both paths are actually GONE; (4) relaunch. Any socket under
   those dirs can be the victim (`engine.sock`, `run\dockerInference` — the
   error names whichever bind failed first). Failed-launch forensics: tail
-  `%LOCALAPPDATA%\Docker\log\host\com.docker.backend.exe.log`.
+  `%LOCALAPPDATA%\Docker\log\host\com.docker.backend.exe.log`. Variant
+  (2026-07-12, after a machine reboot): the wedge can present with NO
+  socket-bind error in that log — the tells are the `docker-desktop` WSL
+  distro stuck `Stopped` (`wsl -l -v`), a `com.docker.diagnose` process, and
+  the GUI polling `ErrorReportAPI /diagnostics/status` in a loop. Same
+  ritual fixes it (that day: first try, no zombie race).
 - Bare `python` on this box is a stale 3.8 — always `uv run` / `uvx` / `py`.
 - New `gradlew` files need `git update-index --chmod=+x` (Windows can't store
   the exec bit; Linux CI fails without it).

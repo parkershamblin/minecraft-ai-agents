@@ -18,6 +18,7 @@ class Action(StrEnum):
     chat = 'chat'
     follow = 'follow'
     idle = 'idle'
+    craft = 'craft'
 
 
 class ActionRequestedPayload(BaseModel):
@@ -31,11 +32,11 @@ class ActionRequestedPayload(BaseModel):
     villagerId: UUID
     action: Action = Field(
         ...,
-        description='spawn/despawn manage the bot session itself; the rest act in-world.',
+        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job).",
     )
     params: dict[str, Any] = Field(
         ...,
-        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams; despawn/idle take {}).',
+        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams; despawn/idle take {}).',
     )
     priority: conint(ge=1, le=10) | None = 5
     timeoutMs: conint(ge=1000) = Field(
@@ -105,4 +106,31 @@ class GatherParams(BaseModel):
     maxDistance: confloat(ge=4.0, le=64.0) | None = Field(
         48,
         description='Search radius in blocks. M1 shipped default 32; M2-1 raised it to 48 — the plaza sits ~40 blocks from the treeline and every M1 gather starved at small radii.',
+    )
+    count: conint(ge=1, le=8) | None = Field(
+        1,
+        description='Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument.',
+    )
+
+
+class Item(StrEnum):
+    planks = 'planks'
+    sticks = 'sticks'
+    crafting_table = 'crafting_table'
+    wooden_axe = 'wooden_axe'
+    wooden_pickaxe = 'wooden_pickaxe'
+    wooden_sword = 'wooden_sword'
+    stone_axe = 'stone_axe'
+    stone_pickaxe = 'stone_pickaxe'
+    stone_sword = 'stone_sword'
+    furnace = 'furnace'
+
+
+class CraftParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    item: Item = Field(
+        ...,
+        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). Tools cap at stone and there is no iron/mining tier by design; leather armor joins the enum with contract commit C (SV-11).",
     )

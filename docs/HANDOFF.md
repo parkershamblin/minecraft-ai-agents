@@ -1,17 +1,96 @@
-# Session Handoff — SURVIVAL CLUSTER APPROVED (plan merged `7a1c657`, Milestone "Survival" + issues #7–#27, pvp spike NO-GO) · next code session = SV-1 · Episode 2 filming BEFORE any Survival deploy
+# Session Handoff — SV-1 SHIPPED (Survival contract commit A, PR #28) · next code session = SV-2 (sustained gather, body) · Episode 2 filming BEFORE any Survival deploy
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/09-survival-plan.md` (the approved cluster) or
 > `docs/architecture/08-m2-plan.md` (history) without asking questions.
 > **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
 > Survival cluster (peaceful→easy: eat/craft/hunt/cook, fight-or-flee, death
-> awareness, staged wheel removal, on-camera ceremony) is PLANNED, APPROVED
-> by Parker (2026-07-12), and merged to main — implementation starts at SV-1
-> (contract commit A, Sprint 9). SV-1 is deploy-free; the filming constraint
-> gates DEPLOYS, not commits: Episode 2 filming must happen BEFORE the first
-> Survival deploy (docs/demo-m2.md; remove the live COMMUNITY_GOAL line +
-> restart agent-service; the filmed election is a re-election unless a nuke
-> precedes it).**
+> awareness, staged wheel removal, on-camera ceremony) is APPROVED and in
+> flight: SV-1 (contract commit A — craft verb + GatherParams.count) shipped
+> as PR #28; Sprint 9 continues at SV-2 (sustained gather, body lane single:
+> SV-2 → SV-3 → SV-4). Nothing Survival has DEPLOYED — the filming
+> constraint gates DEPLOYS, not commits: Episode 2 filming must happen
+> BEFORE the first Survival deploy (docs/demo-m2.md; remove the live
+> COMMUNITY_GOAL line + restart agent-service; the filmed election is a
+> re-election unless a nuke precedes it).**
+
+## Session 2026-07-12 — SV-1 shipped (Survival contract commit A, PR #28) + reboot recovery
+
+First Survival code session. **Deploy-free by design** — nothing new runs in
+the fleet; the filming gate is untouched.
+
+- **What shipped** (`SV-1: contract commit A — craft verb + sustained-gather
+  count`, branch `claude/sv-1-contract-commit-a`, commit `907873c`, PR #28,
+  closes #7):
+  - **ActionRequested.v1 (all additive)**: action enum += `craft` (the enum
+    description now records the NO-eat-verb ruling in the contract itself);
+    new flat `$defs.CraftParams` (ruling 5 strict-mode shape) — `item` enum
+    planks|sticks|crafting_table|wooden_axe|wooden_pickaxe|wooden_sword|
+    stone_axe|stone_pickaxe|stone_sword|furnace, required,
+    additionalProperties:false. planks/sticks are wood-type-abstract families
+    (the GatherParams resource-family precedent); the stone tier rides the
+    contract NOW even if SV-3's valve slips its body implementation; leather
+    armor joins the enum with commit C (SV-11). **GatherParams.count**
+    (integer 1..8, default 1) — SV-2's sustained-session lever; its
+    description carries the load-bearing cap rationale (a full session must
+    fit inside TIMEOUT_TABLE_MAX_MS = 60s, ruling 2).
+  - **Fixtures thread the Sprint 9 filmable beat** on Elara's story
+    correlation: gather{wood, count:3} → craft{crafting_table}, with fresh
+    unfixtured DecisionMade causation ids (a decision never double-books two
+    world actions — the governance fixture's a002 reuse is legit only
+    because a civic rider shares its tick). Invalid fixture =
+    craft{item:"diamond_sword"} (the deferred iron+ tier, pointedly).
+  - **validate.mjs now validates command fixtures' params against the
+    canonical per-action $defs.** Wire params stay free-form by design (the
+    seam validates pre-publish) — this harness check is what makes a
+    params-level invalid fixture possible at all. Maps mirror agent-service's
+    `_PARAMS_DEF_BY_ACTION`/`_GOVERNANCE_DEF_BY_ACTION`; despawn/idle enforce
+    `{}`; and a valid-enum action MISSING from the map fails LOUD — contract
+    commits B/C/D cannot forget to wire hunt/cook/set_stance shapes in.
+    Bonus: the pre-existing move + vote fixtures are now provably
+    $defs-conformant (they were unchecked before).
+  - `task gen` output committed (TS union += craft; py models += CraftParams/
+    Item + count; the CRLF-only churn datamodel-codegen writes on Windows
+    normalizes away at git add — only real diffs staged). 03-catalog
+    ActionRequested row updated. Executor pre-verified safe: run()'s default
+    case answers a premature craft with honest UNKNOWN_ACTION; nothing
+    advertises craft until SV-4.
+  - **Tests: all six suites green** — contracts 26 fixtures (3 new), mc 117
+    + typecheck clean, agent 143, memory 46, event + government gradle
+    (jacoco gate passing).
+- **The machine had REBOOTED between sessions** (all 12 containers Exited
+  (255) simultaneously — the recorded engine-death fingerprint; 2026-07-11's
+  "stack RUNNING" didn't survive the night). Docker Desktop then wedged on
+  relaunch — **new variant, added to CLAUDE.md**: NO socket-bind error in
+  the backend log this time; the tells were the docker-desktop WSL distro
+  stuck Stopped, a com.docker.diagnose process, and the GUI polling
+  ErrorReportAPI /diagnostics/status in a loop. The standard ritual (kill
+  sweep → rename BOTH dirs → verify gone → relaunch) recovered it first try,
+  no zombie race; engine 29.6.1 up ~90s later.
+- **Stack recovered to the recorded steady state, body-before-mind, from the
+  MAIN repo** (a worktree compose attaches to the same project — recovery
+  must not deploy worktree code; plain `up -d` reuses the main-built images,
+  so deployed provenance stays main): `task up` (infra healthy, topic map
+  converged) → Paper `--profile minecraft up -d --wait` (world volume
+  intact; connection-throttle −1 held — **20/20 bots back in <1 min** after
+  `node scripts/spawn-fleet.mjs`) → app minus agent-service → minds last.
+  **Verified: 12/12 containers healthy, fleet 20/20, ticks landing on warmed
+  Ollama (Maren chat tick 3.2s, memories 201-Created), election canon
+  intact (GET /elections returns the decided mayoralty), MSPT avg ~18 ms
+  minutes after world-load (max 150 = the boot spike; read the avg).**
+  Ollama itself survived the reboot (Windows autostart).
+- **Still down (deliberately)**: the Next.js dashboard host process (port
+  3000) — dies with every reboot; restart is
+  `npm run dev --workspace @civ/dashboard` (or launch.json `dashboard`).
+  The 2026-07-11 mayor-line amnesia note stands (in-memory civic cache
+  empty until the next ElectionDecided; government_db canon intact).
+- **NEXT: SV-2 — sustained gather sessions (body)**: count loop
+  (pick→dig→collect per block), per-block blacklist marks, one announcement
+  per haul, prescriptive TIMEOUT prose, wedge-safe within the existing
+  watchdog. Then SV-3 (craft body, valve: stone tier → Sprint 10) → SV-4
+  (crafting brain + the per-verb timeout table with TIMEOUT_TABLE_MAX_MS).
+  Sprint 9's body lane is SINGLE — SV-2 and SV-3 run sequentially. Episode 2
+  filming still precedes the first Survival DEPLOY.
 
 ## Session 2026-07-11 (later) — Survival cluster planning (ultracode): plan doc, Milestone + issues, pvp spike NO-GO
 

@@ -14,11 +14,11 @@ export interface ActionRequestedPayload {
   commandId: string;
   villagerId: string;
   /**
-   * spawn/despawn manage the bot session itself; the rest act in-world.
+   * spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job).
    */
-  action: "spawn" | "despawn" | "move" | "gather" | "chat" | "follow" | "idle";
+  action: "spawn" | "despawn" | "move" | "gather" | "chat" | "follow" | "idle" | "craft";
   /**
-   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams; despawn/idle take {}).
+   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams; despawn/idle take {}).
    */
   params: {
     [k: string]: unknown;
