@@ -1,14 +1,76 @@
-# Session Handoff — M2 COMPLETE · materials kit + ops fixes MERGED (PRs #2–#4) · powder-snow reflex LIVE-VERIFIED + MERGED (PR #5, main=origin=`f4e75cd`) · Episode 2 filming = Parker's session
+# Session Handoff — SURVIVAL CLUSTER PLANNED (09-survival-plan.md, Milestone "Survival" + 21 issues, pvp spike NO-GO) · M2 COMPLETE · Episode 2 filming = Parker's session, BEFORE any Survival deploy
 
 > A fresh session should be able to continue from this file +
-> `docs/architecture/08-m2-plan.md` without asking questions. **M1 complete
-> (DoD 6/6, Episode 1 filmed). M2 COMPLETE and merged: the dress rehearsal
-> ran a fully organic election on live llama deliberation — 20/20
-> candidacies, 20/20 votes, 100% turnout, MAYOR BRAM seated. Since then:
-> per-player materials/inventory observability (PR #2), the kafka-rejoin +
-> null-param fixes (PR #3, live-verified), and a top-collectors panel on the
-> overview (PR #4). DoD #6's episode segment is Parker's filming session
-> (`docs/demo-m2.md`). THE FLEET IS TICKING — see machine state below.**
+> `docs/architecture/09-survival-plan.md` (the next cluster) or
+> `docs/architecture/08-m2-plan.md` (history) without asking questions.
+> **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
+> Survival cluster (peaceful→easy: eat/craft/hunt/cook, fight-or-flee, death
+> awareness, staged wheel removal, on-camera ceremony) is PLANNED and awaiting
+> Parker's go — no implementation yet. Episode 2 filming must happen BEFORE
+> the first Survival deploy.**
+
+## Session 2026-07-11 (later) — Survival cluster planning (ultracode): plan doc, Milestone + issues, pvp spike NO-GO
+
+Planning-only session (per Parker's brief; pre-recorded decisions honored, not
+re-litigated). Docs on branch `claude/survival-plan-architecture-975240`;
+spike artifacts on `spike/mineflayer-pvp` (throwaway, never merged).
+
+- **The plan: `docs/architecture/09-survival-plan.md`** — 4 sprints (9–12) + a
+  named stretch ticket (SV-9 cook), 21 tickets SV-1…SV-18 (incl. SV-5b ops
+  gate, SV-11.5 skeleton commit, SV-12a/b two-module body split), honest
+  arithmetic + pre-committed valves per sprint, rollout staging with
+  closed-loop difficulty/gamerule procedures, cluster DoD (ceremony = full
+  night/day cycle, wheels off, zero deaths, filmed), risk register. Built
+  ultracode-style: 5-lane recon → 4 design judge panels (3 lenses each) on the
+  genuinely open questions (eat thresholds/priority, threat-watcher
+  architecture, flee heuristics, hunt targeting) → adversarial review vs the
+  actual code: **57 findings → 52 confirmed and integrated.** Biggest: the
+  "restart-reverts-difficulty" failsafe was UNSOUND (autosave persists it);
+  DoD 2 was unprovable as first written (per-tick correlationIds; reflex eats
+  are deliberately ledger-silent); FakeProvider must be co-updated with any
+  new required DECISION_SCHEMA key (the governanceAction precedent); baby
+  exclusion by entity.height can never fire (mineflayer never rescales it).
+- **Panel headlines** (full briefs in the plan doc): eat is REFLEX-ONLY (no
+  eat verb — a tick buys one world action; acquisition is the mind's job);
+  the starvation crisis reuses HazardEncountered{hazardType:'starvation'} so
+  trapped-wake/directive/memory-fold plumbing is free; BusyState grows to
+  'action'|'escape'|'combat'|'eat', priority escape > combat > eat > commands,
+  BUSY_BOUNCE table (new errorCodes BODY_BUSY, SELF_DEFENSE_IN_PROGRESS,
+  TARGET_ESCAPED); ThreatEncountered.v1 (spotted|engaged|killed|escaped|
+  overwhelmed, victim-only, wakes on spotted+overwhelmed only); fight/flee =
+  pure decision table + LLM-settable survivalStance (brave|cautious,
+  required-nullable rider, change-gated + flip-hysteresis); fleet fight cap 4
+  (0 = flee-only rollout stage); hunt = one animal per action, ResourceGathered
+  reused, herd depletion = accepted narrative with diegetic brakes only.
+- **mineflayer-pvp spike: NO-GO** (ephemeral Paper 1.21.6 container, 20 bots,
+  tickTimeout=10; full table in plan §spike): hand-rolled kill loop ≈ **101%**
+  of pvp's TTK (criterion 5 alone decides); the nested duplicate
+  mineflayer@2.41.0 is NOT cleanly prunable (override leaves it `invalid`, or
+  on a fresh lockfile drops mineflayer-utils and pvp fails at require);
+  stopMoving() alone leaves pvp swinging (3 swings/2s — the watchdog cancel
+  lever can't reach it). Keeper numbers regardless of implementation: pursuit
+  event-loop p99 38.8ms @5 concurrent but **141.8ms @20** →
+  THREAT_MAX_CONCURRENT_FIGHTS=4 validated. armor-manager works on 1.21.6 but
+  loses to ~15 hand-rolled lines (non-adopted known-good fallback).
+- **Spike rides (future tickets de-risked):** an RCON difficulty change
+  PERSISTED across a graceful restart after one autosave interval, no
+  save-all — bounded windows close ONLY by explicit revert + save-all +
+  verify; entity tracking reaches ≥64 blocks (hunt maxDistance 32 = chase
+  budget, not sight); baby flag = metadataKeys index 16 on 1.21.6 (calf and
+  adult heights identical at 1.4); summoned zombie reads kind='Hostile mobs'.
+- **GitHub:** Milestone **"Survival"** (#1) created; `pre-survival` tag pushed
+  at `812ee6e`; 21 issues SV-1…SV-18 created under the milestone (condensed
+  ACs + pointer to the plan doc).
+- **Machine state:** the live stack was untouched all session (12 containers
+  healthy, fleet ticking; the spike ran against a separate `civ-spike-paper`
+  container + `civ-spike-mc-data` volume — both removed at session end).
+  Worktree node_modules were installed for the spike; the plan branch carries
+  ONLY docs (package.json/lockfile spike changes live on the spike branch).
+- **NEXT: Parker approves the plan**, then implementation begins at SV-1
+  (contract commit A). Before ANY Survival deploy: **film Episode 2**
+  (docs/demo-m2.md; remove the live COMMUNITY_GOAL line from .env + restart
+  agent-service; the filmed election is a re-election unless a nuke — with the
+  re-apply checklist — precedes it).
 
 ## Session 2026-07-11 — powder-snow escape reflex + hazard awareness (PR #5, branch `claude/villagers-snow-stuck-e20104`)
 
