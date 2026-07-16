@@ -15,6 +15,17 @@
 > remove the live COMMUNITY_GOAL line + restart agent-service; the filmed
 > election is a re-election unless a nuke precedes it).**
 
+## Session 2026-07-16 — docs-only: README refresh (PR #31 merged)
+
+Docs housekeeping, no code or deploy. The root README had drifted to the
+Sprint 1 walking-skeleton checklist; refreshed it to reality — M1 complete,
+M2 governance merged (Mayor Bram seated), Survival cluster in flight
+(SV-1/SV-2 merged, SV-3/SV-4 next, filming gate noted). Layout now lists the
+five real services; added the government-service CI badge (verified the
+workflow exists); pointer to this file for live state. Merged as PR #31
+(squash `a1e7002` on main). Survival status is unchanged — next code session
+is still SV-3 (craft verb, body).
+
 ## Session 2026-07-12 (later) — PR #28 merged · SV-2 shipped (sustained gather sessions, PR #29)
 
 Second Survival code session, continuing straight from the SV-1 handoff.
