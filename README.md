@@ -4,6 +4,7 @@
 [![event-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/event-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/event-service.yml)
 [![minecraft-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/minecraft-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/minecraft-service.yml)
 [![agent-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/agent-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/agent-service.yml)
+[![government-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml)
 [![dashboard](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml)
 
 Twenty autonomous LLM-driven villagers live inside Minecraft. They have
@@ -40,25 +41,39 @@ Consoles once `task up` is green: Redpanda console `:8085`, Grafana `:3001`
 ## Layout
 
 ```
-apps/dashboard/        Next.js dashboard (CIV-9)
-services/              the seven services (see docs/architecture/00-system-overview.md)
-packages/events/       JSON Schema event contracts — single source of truth (CIV-2)
+apps/dashboard/        Next.js dashboard + live SSE feed
+services/              the microservices (see docs/architecture/00-system-overview.md):
+                         agent-service        Python/FastAPI — villager tick loop (LangGraph)
+                         memory-service       Python/FastAPI — pgvector memory stream
+                         minecraft-service    Node/TS — the single world executor (mineflayer)
+                         event-service        Java/Spring — append-only event ledger + SSE
+                         government-service   Java/Spring — elections & governments
+packages/events/       JSON Schema event contracts — single source of truth
 infrastructure/        docker compose, prometheus/grafana config
 experiments/           archived PoCs — the empirically-proven mineflayer version pin
-docs/architecture/     the full design package
-scripts/               repo-level utilities (smoke canary)
+docs/architecture/     the full design package (00–09)
+scripts/               repo-level utilities (smoke canary, fleet spawn/despawn)
 ```
 
-## Status — Sprint 1 (walking skeleton)
+## Status
 
-- [x] CIV-0 environment bring-up
-- [x] CIV-1 monorepo scaffold + Compose infra
-- [x] CIV-2 event contracts + TS/Py codegen
-- [x] CIV-3 event store ingest + read API + SSE (event-service)
-- [x] CIV-4 bot host + world bridge (minecraft-service)
-- [x] CIV-5 command executor
-- [x] CIV-6 memory module (pgvector, in agent-service)
-- [x] CIV-7 LLM provider chain + decision contract
-- [x] CIV-8 LangGraph tick loop + seed + percept feedback
-- [x] CIV-9 minimal dashboard (Next.js + live SSE feed)
-- [x] CIV-10 observability + scale to 3 — **Sprint 1 complete** ([demo script](docs/demo-sprint-1.md))
+**Milestone 1 (walking skeleton) — complete.** Event contracts + codegen,
+event-service ledger with read API and SSE, minecraft-service bot host and
+command executor, pgvector memory, the LLM provider chain, the LangGraph tick
+loop, and the Next.js dashboard — a full perceive→deliberate→act→reflect loop
+with observability ([demo](docs/demo-sprint-1.md), [M1 demo](docs/demo-m1.md)).
+
+**Milestone 2 (governance) — complete and merged.** government-service owns the
+clock-driven election state machine and idempotent ballot box; villagers
+nominate, campaign, and vote through the ledger. Mayor Bram is seated and the
+fleet is ticking ([M2 plan](docs/architecture/08-m2-plan.md),
+[M2 demo](docs/demo-m2.md)).
+
+**Survival cluster — in flight (not yet deployed).** Peaceful→easy survival:
+eat/craft/hunt/cook, fight-or-flee, death awareness, staged training-wheel
+removal. SV-1 (contract commit) and SV-2 (sustained gather sessions) are
+merged; SV-3/SV-4 (the craft verb + crafting brain) are next. The filming
+gate holds: Episode 2 must be filmed before the first Survival deploy
+([survival plan](docs/architecture/09-survival-plan.md)).
+
+See [docs/HANDOFF.md](docs/HANDOFF.md) for live session-to-session state.
