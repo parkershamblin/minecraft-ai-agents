@@ -170,7 +170,18 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   thread that executes every bot's commands. Measured M2-2: ungated 5s
   resource scans × 20 bots pinned a full core (~175 ms/bot-scan). Any
   recurring sweep must pass a skip gate (see `shouldRescan`: movement ≥8
-  blocks or survey ≥60s old). Related: bot sessions are in-memory — a
+  blocks or survey ≥60s old, 15s hard floor between sweeps, skipped while
+  the body is busy). Corollary (2026-07-17, profiled — the ~100%-core
+  mystery): the pathfinder burns the loop while bots merely WALK —
+  monitorMovement re-decides sprint/jump EVERY tick with up-to-340-tick
+  player simulations (~40% of a core at 20 bots), each sim tick re-reading
+  the same ~12 blocks as freshly constructed prismarine Blocks.
+  `physicsSimCache.ts` (turn-scoped cache over `bot.physics.simulatePlayer`;
+  safe because world mutations only land in packet turns) makes it cheap —
+  keep it installed, profile with `scripts/profile/` before touching any of
+  it, and NEVER cache at the `bot.blockAt` layer: pathfinder's
+  `movements.getBlock` mutates returned blocks with query-relative fields,
+  so aliasing corrupts A*. Related: bot sessions are in-memory — a
   minecraft-service container recreate silently drops the whole fleet;
   re-publish spawn commands (or `task seed`) after recreating it.
 - Paper's `bukkit.yml` `connection-throttle: 4000` (per-IP) chokes the bot

@@ -24,6 +24,7 @@ import {
   type TrackedHostile,
 } from './threat.ts'
 import { type CombatBot, FightDriver, type FightSlots } from './combat.ts'
+import { type SimCapableBot, installSimBlockCache } from './physicsSimCache.ts'
 import {
   HUNT_BLACKLIST_MS,
   HUNT_FAMILIES,
@@ -128,6 +129,10 @@ export class BotSession {
   private eatWatcher: EatWatcher | null = null
   private threatTimer: NodeJS.Timeout | null = null
   private threatWatcher: ThreatWatcher | null = null
+  /** Action planner (digs) and reflex planner (canDig=false) — rebuilt per
+   *  bot instance in onSpawn; maneuvers swap in reflex, clearGoal restores. */
+  private defaultMovements: InstanceType<typeof Movements> | null = null
+  private reflexMovements: InstanceType<typeof Movements> | null = null
   /** hunt targets that recently escaped this bot: entity id → expiry ms */
   private readonly huntBlacklist = new Map<number, number>()
   /** the in-flight hunt's abandonment flag — stopMoving() (the watchdog's
@@ -225,6 +230,16 @@ export class BotSession {
       const movements = new Movements(this.bot)
       // Powder snow scores as walkable air to the planner — teach it otherwise.
       hardenMovements(movements, this.bot.registry)
+      // Reflex paths (flee/fight/chase) never stop to mine: canDig=false
+      // skips the per-neighbor break pricing (digTime + bestHarvestTool
+      // looping the whole inventory per candidate block — ~8% of the pinned
+      // core during the night siege) and shrinks the A* frontier. Actions
+      // keep the digging planner; every maneuver clearGoal restores it.
+      const reflex = new Movements(this.bot)
+      hardenMovements(reflex, this.bot.registry)
+      reflex.canDig = false
+      this.defaultMovements = movements
+      this.reflexMovements = reflex
       this.bot.pathfinder.setMovements(movements)
       // A* compute slices run synchronously on the shared event loop; the
       // default 40ms/tick budget stacks across 20 pathing bots and starves
@@ -232,6 +247,15 @@ export class BotSession {
       // total think budget: same compute, spread thin enough to breathe.
       this.bot.pathfinder.tickTimeout = this.deps.config.PATHFINDER_TICK_TIMEOUT_MS
       this.bot.pathfinder.thinkTimeout = this.deps.config.PATHFINDER_THINK_TIMEOUT_MS
+      // Bound the frontier so an unreachable goal concedes without touring
+      // the loaded world (same best-effort partial path out, sooner).
+      // (Runtime knob since pathfinder 2.x — index.js:41 — absent from its d.ts.)
+      ;(this.bot.pathfinder as unknown as { searchRadius: number }).searchRadius =
+        this.deps.config.PATHFINDER_SEARCH_RADIUS
+      if (this.deps.config.PHYSICS_SIM_BLOCK_CACHE === 1) {
+        // bot.physics's runtime engine isn't on mineflayer's Bot type.
+        installSimBlockCache(this.bot as unknown as SimCapableBot)
+      }
     }
 
     void this.deps.producer.publish(
@@ -367,12 +391,20 @@ export class BotSession {
       if (!bot?.entity || !position) {
         return
       }
+      // A busy body (command, escape, combat, eating) isn't deliberating, and
+      // the survey exists FOR deliberation — refresh on the next calm pass
+      // instead of sweeping mid-maneuver (14% of the pinned core at night was
+      // fleeing bots re-surveying ground they were running across).
+      if (this.busy !== null || this.threatWatcher?.episodeOpen || this.hazardWatcher?.trapped) {
+        return
+      }
       // The interval is only the CHECK cadence; the gate decides whether the
       // (expensive) sweep runs. Idle bots settle at one sweep per max-age.
       if (
         !shouldRescan(this.lastScan, position, Date.now(), {
           moveBlocks: config.RESOURCE_SCAN_MOVE_BLOCKS,
           maxAgeMs: config.RESOURCE_SCAN_MAX_AGE_MS,
+          minSweepMs: config.RESOURCE_SCAN_MIN_SWEEP_MS,
         })
       ) {
         return
@@ -629,11 +661,18 @@ export class BotSession {
       setGoalFollow: (targetId, range) => {
         const entity = bot.entities[targetId]
         if (entity) {
+          this.engageReflexMovements()
           bot.pathfinder.setGoal(new goals.GoalFollow(entity, range), true)
         }
       },
-      setGoalXZ: (x, z) => bot.pathfinder.setGoal(new goals.GoalXZ(x, z)),
-      clearGoal: () => bot.pathfinder.setGoal(null),
+      setGoalXZ: (x, z) => {
+        this.engageReflexMovements()
+        bot.pathfinder.setGoal(new goals.GoalXZ(x, z))
+      },
+      clearGoal: () => {
+        bot.pathfinder.setGoal(null)
+        this.restoreDefaultMovements()
+      },
       lookAt: (p) => {
         void bot.lookAt(this.vecAt(p), true).catch(() => {})
       },
@@ -666,10 +705,15 @@ export class BotSession {
       setGoalFollow: (targetId, range) => {
         const entity = bot.entities[targetId]
         if (entity) {
+          // The chase is a reflex-grade pursuit: never stop to mine.
+          this.engageReflexMovements()
           bot.pathfinder.setGoal(new goals.GoalFollow(entity, range), true)
         }
       },
-      clearGoal: () => bot.pathfinder.setGoal(null),
+      clearGoal: () => {
+        bot.pathfinder.setGoal(null)
+        this.restoreDefaultMovements()
+      },
       lookAt: (p) => {
         void bot.lookAt(this.vecAt(p), true).catch(() => {})
       },
@@ -1242,6 +1286,25 @@ export class BotSession {
       this.huntAbandon.abandoned = true // the kill loop goes silent within one poll
     }
     this.bot?.pathfinder.setGoal(null)
+    // Whatever interrupted the body, the next path must plan with the action
+    // (digging) planner — an abandoned maneuver must not leave reflex rules on.
+    this.restoreDefaultMovements()
+  }
+
+  /** Maneuver paths plan with the reflex movements (canDig=false); idempotent
+   *  so per-poll callers don't churn resetPath. */
+  private engageReflexMovements(): void {
+    const bot = this.bot
+    if (bot && this.reflexMovements && bot.pathfinder.movements !== this.reflexMovements) {
+      bot.pathfinder.setMovements(this.reflexMovements)
+    }
+  }
+
+  private restoreDefaultMovements(): void {
+    const bot = this.bot
+    if (bot && this.defaultMovements && bot.pathfinder.movements !== this.defaultMovements) {
+      bot.pathfinder.setMovements(this.defaultMovements)
+    }
   }
 
   /** Intentional teardown — wins over auto-reconnect. */

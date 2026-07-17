@@ -25,6 +25,11 @@ const schema = z.object({
   RESOURCE_SCAN_MOVE_BLOCKS: z.coerce.number().min(1).default(8),
   // …or when the survey is this stale (neighbors dig; one refresh per tick).
   RESOURCE_SCAN_MAX_AGE_MS: z.coerce.number().int().min(1000).default(60000),
+  // Hard spacing floor between sweeps, whatever the gates say: a bot mid-trip
+  // re-trips the movement gate on EVERY 5s check and swept continuously
+  // (profiled 2026-07-17: 14% of the pinned core at night). The survey feeds
+  // deliberation (30s+ cadence), not reflexes — 15s staleness is free.
+  RESOURCE_SCAN_MIN_SWEEP_MS: z.coerce.number().int().min(0).default(15000),
   MOVE_THROTTLE_MS: z.coerce.number().int().min(500).default(5000),
   // Powder-snow hazard watch (post-M2): per-bot O(1) probe — two blockAt
   // reads, never a sweep. 0 disables the reflex entirely.
@@ -78,6 +83,19 @@ const schema = z.object({
   // thinkTimeout is the total wall-clock path budget, raised to compensate.
   PATHFINDER_TICK_TIMEOUT_MS: z.coerce.number().int().min(1).default(10),
   PATHFINDER_THINK_TIMEOUT_MS: z.coerce.number().int().min(1000).default(10000),
+  // A* frontier bound: path cost allowed beyond the straight-line estimate.
+  // The library default (-1, unlimited) lets an UNREACHABLE goal — a cornered
+  // flee hop, a target across a ravine — explore the whole loaded world for
+  // the full think budget before conceding (profiled 2026-07-17: A* was 44%
+  // of the pinned core during the night siege, much of it exactly these).
+  // 80 clears every legitimate trip (gather caps at 64) and an out-of-budget
+  // goal still yields the same best-effort partial path, just sooner.
+  PATHFINDER_SEARCH_RADIUS: z.coerce.number().int().min(16).default(80),
+  // Turn-scoped block cache under physics SIMULATIONS (physicsSimCache.ts):
+  // the pathfinder's per-tick sprint/jump gating re-simulates over the same
+  // handful of blocks hundreds of times per gate chain — ~40% of the daytime
+  // core before the cache. 0 disables the wrap (the one-tick rollback lever).
+  PHYSICS_SIM_BLOCK_CACHE: z.coerce.number().int().min(0).max(1).default(1),
   // Village-scale earshot: vanilla spawn scatter alone is ~20 blocks, and a
   // village is ~64 across. 16 made villagers deaf to neighbors in practice.
   CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(48),

@@ -305,4 +305,14 @@ describe('shouldRescan (the CPU gate — sweeps are ~175ms each at 20 bots)', ()
   it('rescans a stale survey even without movement (neighbors dig)', () => {
     expect(shouldRescan({ position: at(0), at: 0 }, at(0), 60_000, GATE)).toBe(true)
   })
+
+  it('the spacing floor beats the movement gate — a walking bot stops sweeping every check', () => {
+    const gate = { ...GATE, minSweepMs: 15_000 }
+    expect(shouldRescan({ position: at(0), at: 0 }, at(20), 5_000, gate)).toBe(false)
+    expect(shouldRescan({ position: at(0), at: 0 }, at(20), 15_000, gate)).toBe(true)
+  })
+
+  it('the first survey ignores the floor (nothing to space against)', () => {
+    expect(shouldRescan(null, at(0), 0, { ...GATE, minSweepMs: 15_000 })).toBe(true)
+  })
 })

@@ -1,16 +1,88 @@
-# Session Handoff — SURVIVAL REFLEXES LIVE (eat/threat/hunt + craft, PR #33 awaiting Parker's merge click) · WORLD ON EASY, wheels on · fleet survives autonomously
+# Session Handoff — SURVIVAL LIVE + CPU FOLLOW-UP CLOSED (PR #33 merged; perf PR #34 awaiting Parker's click) · WORLD ON EASY, wheels on · fleet survives autonomously
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/09-survival-plan.md` (the approved cluster) or
 > `docs/architecture/08-m2-plan.md` (history) without asking questions.
 > **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
-> Survival cluster is in flight: SV-1 (`1915e6d`) and SV-2 (`38bc223`)
-> merged; SV-3 (craft verb, body) shipped as PR #33 and IS DEPLOYED to the
-> live fleet (branch-built image; rebuild from main post-merge). The
-> Episode 2 filming gate was WAIVED by Parker on 2026-07-17 — Survival
-> deploys no longer wait on filming (recorded in 09-survival-plan rollout
-> §5). Sprint 9's single body lane continues at SV-4 (crafting brain + the
-> per-verb timeout table with TIMEOUT_TABLE_MAX_MS=60s).**
+> Survival cluster is in flight: SV-1 (`1915e6d`), SV-2 (`38bc223`) and
+> SV-3 + survival reflexes (PR #33, squash `d9d16bd`) merged. The LIVE
+> minecraft-service runs the perf branch's image (PR #34 — the CPU
+> follow-up; rebuild from main post-merge). The Episode 2 filming gate was
+> WAIVED by Parker on 2026-07-17 — Survival deploys no longer wait on
+> filming (recorded in 09-survival-plan rollout §5). Sprint 9's single
+> body lane continues at SV-4 (crafting brain + the per-verb timeout table
+> with TIMEOUT_TABLE_MAX_MS=60s).**
+
+## Session 2026-07-17 (third) — the CPU follow-up, closed: profiled first, then three measured fixes (perf PR #34)
+
+**The tracked follow-up from the survival session, done exactly as handed
+off: profile before tuning.** Attached the V8 sampling profiler to the live
+pinned process (SIGUSR1 → inspector on :9229 — no restart, fleet untouched),
+captured 75s night and day profiles, fixed the three measured burners,
+redeployed (worktree build), re-profiled the same in-game phase for the A/B.
+Health stayed green throughout; zero deaths; PATHFINDER_TICK_TIMEOUT_MS
+untouched at 10ms.
+
+- **What the profile actually showed** (shares of the sampled core):
+  - The 10ms-A*-slice duty-cycle theory was half the story. Night: A* 44%
+    inclusive — but per-NODE cost was the killer, not node count: every
+    neighbor is priced for digging (digTime + bestHarvestTool looping the
+    whole inventory per candidate ≈ 8% self) and every block read builds a
+    fresh prismarine Block (fromStateId 15% self on its own).
+  - **The daytime mystery was monitorMovement's sprint gating**: while ANY
+    bot walks a path, mineflayer-pathfinder re-decides sprint/walk/jump
+    EVERY physics tick with full player simulations — canStraightLine
+    budgets 200 simulated ticks toward the next node, the jump fallbacks
+    add up to 7×20 more, and every simulated tick re-reads the same ~12
+    blocks through full Block construction. **~40% of the daytime core,
+    ~21% at night.** Day pinned bursty: 100–107% while a few bots walked
+    trips, ~45% in lulls.
+  - The "gated" resource scan still burned 14% (night) / 6% (day): a
+    WALKING bot re-trips the 8-block movement gate on every 5s check —
+    fleeing bots kept re-surveying ground they were running across.
+  - Innocent: our own code (0.7% self), bot physics (~6%), packet parsing
+    (~7%), kafka (~0.1%). Event-loop lag p99 sat at ~0.5µs the whole time —
+    the saturation was millions of micro-tasks, not long slices, which is
+    why heartbeats and watchdogs never starved.
+- **The three fixes** (all minecraft-service, all env-tunable):
+  1. **`bots/physicsSimCache.ts`** — turn-scoped block cache patched over
+     `bot.physics.simulatePlayer`, the public seam BOTH the real 20Hz tick
+     and every pathfinder gate simulation route through. World mutations
+     only arrive in packet turns, so within one synchronous turn the cache
+     is semantically invisible; setImmediate clears it before the next
+     timer phase can simulate. Deliberately NOT applied to bot.blockAt:
+     pathfinder's movements.getBlock mutates returned blocks with
+     query-relative fields — aliasing would corrupt A*.
+     `PHYSICS_SIM_BLOCK_CACHE=0` is the one-env rollback lever.
+  2. **Reflex movements (canDig=false)** for flee/fight/hunt-chase paths —
+     a villager running for its life no longer prices mining through walls,
+     and the A* frontier shrinks with it. Actions keep the digging planner;
+     every maneuver clearGoal (and stopMoving) restores it.
+  3. **Frontier bound + scan spacing**: `PATHFINDER_SEARCH_RADIUS=80` — an
+     unreachable goal (cornered flee hop, target across a ravine) now
+     concedes with the SAME best-effort partial path instead of touring the
+     loaded world for the full 10s think budget; `RESOURCE_SCAN_MIN_SWEEP_MS
+     =15000` hard floor between sweeps, plus no sweeps while the body is
+     busy / threatened / trapped (the survey exists for deliberation).
+- **Measured A/B (same 20-bot fleet, same in-game phases, 75s captures)**:
+  day idle 24.9% → **57.5%**; tickPhysics-inclusive 61% → 28%;
+  prismarine-block self 23% → 8%; day CPU sustained 100–107% →
+  **~67% mean** (brief bursts subside). Deep-night (same mid-night phase
+  as the baseline capture): idle 0.7% → **62.1%**; prismarine-block self
+  30% → 6.6%; pathfinder self 16% → 4.6%; CPU **~55% mean / ~52 median**
+  (one 105% blip) vs 100.8% pinned. Night mob pressure varies run to run
+  — but the flee outcome distribution was IDENTICAL both nights
+  (cornered:escaped 2.7:1, 361 maneuvers logged post-fix), so the reflexes
+  did the same work for roughly half the core.
+- **mc tests 255** (turn-cache suite + shouldRescan floor cases), typecheck
+  clean. **Profiling tooling committed**: `scripts/profile/capture.cjs` +
+  `analyze.cjs` (attach → sample → aggregate against the live container;
+  full usage in capture.cjs's header — future perf sessions start there).
+- **Residual, known and accepted**: day A* ~20% inclusive is REAL work
+  (gather trips); PlayerState re-resolves minecraft-data Version per tick
+  (~3%, dep-internal); packet framing ~5%. Next levers if ever needed:
+  upstream-grade patch caching monitorMovement's gate DECISION per path
+  node, or shrink RESOURCE_SCAN_DISTANCE.
 
 ## Session 2026-07-17 (later) — SURVIVAL REFLEXES: eat + threat + hunt shipped and DEPLOYED (rides PR #33)
 

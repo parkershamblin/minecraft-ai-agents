@@ -129,10 +129,15 @@ export function shouldRescan(
   last: { position: Position; at: number } | null,
   position: Position,
   now: number,
-  opts: { moveBlocks: number; maxAgeMs: number },
+  opts: { moveBlocks: number; maxAgeMs: number; minSweepMs?: number },
 ): boolean {
   if (!last) {
     return true
+  }
+  if (now - last.at < (opts.minSweepMs ?? 0)) {
+    // Spacing floor: a bot mid-trip re-trips the movement gate on every
+    // check — without this, walking bots sweep at full check cadence.
+    return false
   }
   return distance(position, last.position) >= opts.moveBlocks || now - last.at >= opts.maxAgeMs
 }
