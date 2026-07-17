@@ -6,6 +6,7 @@ from typing import Any
 
 from agent_service.brain.awareness import LastDecision
 from agent_service.brain.civics import CivicView
+from agent_service.brain.race import MILESTONES, RaceView
 from agent_service.memory_client import RetrievedMemory
 from agent_service.villagers.relationships import GRUDGE_AFFINITY_THRESHOLD
 
@@ -20,8 +21,8 @@ Available actions and their params:
 - move: {{"to": {{"x": number, "y": number, "z": number}}, "range": number}} — walk somewhere
 - chat: {{"message": "what you say out loud (max 256 chars)"}} — speak to those nearby
 - follow: {{"targetVillagerId": "uuid"}} — walk to another villager
-- gather: {{"resource": "wood"|"stone"|"dirt", "count": 1-8}} — chop or mine up to count blocks of that resource in one trip (both optional; wood and 1 are the defaults; reach is handled for you)
-- craft: {{"item": "planks"|"sticks"|"crafting_table"|"wooden_axe"|"wooden_pickaxe"|"wooden_sword"|"stone_axe"|"stone_pickaxe"|"stone_sword"|"furnace"}} — craft ONE step of a recipe chain. The chain: planks come from logs; sticks from planks; a crafting_table takes 4 planks; tools take planks/cobblestone + sticks and need a table (your body finds or places one if you carry it). One step per turn — a sword is a project, not a wish.
+- gather: {{"resource": "wood"|"stone"|"dirt"|"coal"|"iron_ore", "count": 1-8}} — chop or mine up to count blocks of that resource in one trip (both optional; wood and 1 are the defaults; reach is handled for you). Ores need a good enough pickaxe in your pack: any pickaxe for coal, a stone pickaxe or better for iron ore.
+- craft: {{"item": "planks"|"sticks"|"crafting_table"|"wooden_axe"|"wooden_pickaxe"|"wooden_sword"|"stone_axe"|"stone_pickaxe"|"stone_sword"|"furnace"|"iron_pickaxe"}} — craft ONE step of a recipe chain. The chain: planks come from logs; sticks from planks; a crafting_table takes 4 planks; tools take planks/cobblestone + sticks and need a table (your body finds or places one if you carry it); an iron_pickaxe takes iron — carry raw iron (mined from iron ore) plus fuel (logs/planks/coal) and your body smelts at a furnace as part of the craft. One step per turn — a tool is a project, not a wish.
 - hunt: {{"animal": "cow"|"pig"|"sheep"|"chicken"|"any"}} — chase and kill one animal for meat (param optional; nearest game is the default). Hunt when food runs low, not for sport: the herds are slow to return.
 - idle: {{}} — deliberately do nothing this turn
 
@@ -175,6 +176,65 @@ def _resources_section(snapshot: dict[str, Any]) -> str | None:
     return "Resources in sight (gather can reach these):\n" + lines
 
 
+_MILESTONE_PROSE = {
+    "first_coal": "coal mined",
+    "first_iron_ore": "iron ore mined",
+    "furnace_placed": "a furnace placed",
+    "first_ingot": "iron smelted",
+    "iron_pickaxe": "an IRON PICKAXE crafted",
+}
+
+# The tier checklist (RB-2): the next unmet rung, taught as a concrete action
+# THIS villager can take this tick. The chain below iron is deliberately
+# spelled out — llama reads these hints literally, and the wood→stone
+# bootstrap is where races stall.
+_RACE_NEXT_HINT = {
+    "first_coal": (
+        "get a pickaxe and mine coal (gather coal). No pickaxe? Bootstrap: gather wood → craft planks → "
+        "sticks → crafting_table → wooden_pickaxe; then gather stone and craft a stone_pickaxe"
+    ),
+    "first_iron_ore": (
+        "mine iron ore (gather iron_ore) — it only drops to a stone pickaxe or better; "
+        "no stone_pickaxe yet? gather stone and craft one at a table"
+    ),
+    "furnace_placed": "craft a furnace (8 cobblestone at a table) and carry it — your body sets it up during the pickaxe craft",
+    "first_ingot": "carry raw iron plus fuel (coal, planks, or logs) and craft iron_pickaxe — your body smelts at the furnace as part of that one craft",
+    "iron_pickaxe": "craft iron_pickaxe NOW — 3 iron ingots (or raw iron + fuel to smelt) and 2 sticks at a table WINS THE RACE",
+}
+
+
+def _race_section(race: RaceView) -> str:
+    """The standing race section: percepts decay off the queue, but a race
+    must not — same rule as elections. Checklist truth comes from the
+    ledger-fed cache, the next step from the tier table."""
+    ladder = " · ".join(
+        f"[{'✓' if m in race.your_milestones else ' '}] {_MILESTONE_PROSE[m]}" for m in MILESTONES
+    )
+    rivals = (
+        "; ".join(f"team {team_id} has crossed {len(crossed)}/{len(MILESTONES)}" for team_id, crossed in race.rivals)
+        or "no rival team"
+    )
+    next_unmet = next((m for m in MILESTONES if m not in race.your_milestones), None)
+    with_line = f"you and {', '.join(race.teammates)}" if race.teammates else "you alone"
+    lines = [
+        f"THE RACE — your team ({race.your_team}: {with_line}) races to the FIRST CRAFTED IRON PICKAXE. "
+        f"Rival standing: {rivals}.",
+        f"Your team's ladder: {ladder}",
+    ]
+    if next_unmet:
+        lines.append(f"Your next step: {_RACE_NEXT_HINT[next_unmet]}.")
+    # Directive pressure (attempt-1 lesson: 107 chats to 1 gather — the
+    # friendly "split the work out loud" line licensed a debate club).
+    # Races are won by hands, and the directive must outrank sociability.
+    lines.append(
+        "RACE DISCIPLINE: act, don't discuss. Choose gather or craft this turn unless you are "
+        "physically unable; move only toward resources; chat ONLY to report a handoff a teammate "
+        "needs (one short line, at most once in a while). Every turn spent talking is a turn the "
+        "rival team spent mining."
+    )
+    return "\n".join(lines)
+
+
 def _candidate_lines(view: CivicView) -> str:
     if not view.campaign or not view.campaign.candidates:
         return "- no one has stepped forward yet"
@@ -257,6 +317,7 @@ def user_prompt(
     feelings: dict[str, Any] | None = None,
     last_decision: LastDecision | None = None,
     civic: CivicView | None = None,
+    race: RaceView | None = None,
 ) -> str:
     sections: list[str] = []
 
@@ -318,6 +379,10 @@ def user_prompt(
         section = _civic_section(civic)
         if section:
             sections.append(section)
+
+    # The standing race section (RB-2): same decay rule as elections.
+    if race is not None:
+        sections.append(_race_section(race))
 
     # Type-dispatch: unknown percept types are skipped, never a KeyError —
     # the queue outlives any single deploy's vocabulary.
@@ -413,6 +478,24 @@ def user_prompt(
             news_lines.append(
                 f"- your {percept.get('action', 'request')} was refused: {percept.get('message', 'no reason given')}"
             )
+        elif kind == "AttemptStarted":
+            news_lines.append(
+                "- THE RACE HAS BEGUN — first team to CRAFT an iron pickaxe wins; the ladder starts with wood and a pickaxe"
+            )
+        elif kind == "ProgressionMilestone":
+            what = _MILESTONE_PROSE.get(str(percept.get("milestone")), str(percept.get("milestone")))
+            if percept.get("yourTeam"):
+                news_lines.append(f"- RACE: YOUR TEAM crossed a rung — {what} ({percept.get('by', 'a teammate')})")
+            else:
+                news_lines.append(
+                    f"- RACE: team {percept.get('teamId', '?')} crossed a rung — {what}. They are moving; are you?"
+                )
+        elif kind == "AttemptEnded":
+            if percept.get("outcome") == "won":
+                who = "YOUR TEAM" if percept.get("yourTeam") else f"team {percept.get('winningTeamId', '?')}"
+                news_lines.append(f"- THE RACE IS OVER — {who} crafted the iron pickaxe first.")
+            else:
+                news_lines.append("- the race was called off")
     if "powder_snow" in hazard_types_this_tick:
         # The survival directive (powder-snow fix): without it, models file
         # "I am freezing" under smalltalk and carry on with the grand plan.

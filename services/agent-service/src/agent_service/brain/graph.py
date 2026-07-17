@@ -49,7 +49,9 @@ _TIMEOUT_MS_BY_ACTION = {
     "chat": 10_000,  # instant verb — a stuck chat is a stuck connection
     "idle": 10_000,
     "gather": 60_000,  # a full count-8 session must fit (ruling 2)
-    "craft": 30_000,  # SV-3 measured worst case ~1s + a 16-block table walk
+    "craft": 60_000,  # RB-1 chain-resolution: 3 raw iron smelt ~30s of furnace
+    # time + the walk/place — sits AT the ceiling, never past it. (SV-3's
+    # table-only worst case was ~1s + a 16-block walk.)
     "hunt": 30_000,  # HUNT_CHASE_TIMEOUT_MS (20s) + collection reserve
 }
 _TIMEOUT_DEFAULT_MS = 30_000
@@ -69,6 +71,7 @@ class TickDeps:
     relationships: Any = None  # RelationshipRepo-shaped: apply_updates() (None: feature off, e.g. old tests)
     awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
     civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
+    race: Any = None  # RaceState-shaped: snapshot(villager_id) (None: feature off) — RB-2
     community_goal: str | None = None  # D2 filming lever: one system-prompt line
     percepts_max: int = 10
     memories_k: int = 6
@@ -131,6 +134,7 @@ def build_tick_graph(deps: TickDeps):
                 feelings,
                 last_decision=deps.awareness.recall(villager.id) if deps.awareness else None,
                 civic=deps.civics.snapshot(str(villager.id)) if deps.civics else None,
+                race=deps.race.snapshot(str(villager.id)) if deps.race else None,
             ),
         )
         return {"outcome": outcome}

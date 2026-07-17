@@ -276,8 +276,12 @@ services:
     # Entered compose with its first real feature (M2-6: election state
     # machine); M2-7 made it the single governance executor — consumes
     # commands.government, emits facts/rejections on government.events.
+    # MOTHBALLED for the Red-vs-Blue arc (ADR-10, RB-1): civic life is off
+    # the critical path, so the service left the default app profile — start
+    # it explicitly with --profile gov when the social arc resumes. Contracts,
+    # code, and government_db stay intact (debt register entry 1).
     build: ../../services/government-service
-    profiles: [app]
+    profiles: [gov]
     ports: ["8082:8082"]
     environment:
       POSTGRES_HOST: postgres

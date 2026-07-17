@@ -19,6 +19,12 @@ export const RESOURCE_BLOCKS: Record<string, readonly string[]> = {
   ],
   stone: ['stone', 'cobblestone', 'andesite', 'diorite', 'granite'],
   dirt: ['dirt', 'grass_block'],
+  // The T1 mining families (RB-1). Ore blocks only drop to a sufficient
+  // pickaxe tier — planHarvest's canHarvest gate already enforces that (its
+  // 'blocked' arm names the tool), so under-tiered attempts fail with the
+  // tier taught, never a silent zero-yield dig.
+  coal: ['coal_ore', 'deepslate_coal_ore'],
+  iron_ore: ['iron_ore', 'deepslate_iron_ore'],
 } as const
 
 export function blockNamesFor(resource: string): readonly string[] | undefined {
@@ -30,6 +36,8 @@ export const RESOURCE_YIELD: Record<string, readonly string[]> = {
   wood: RESOURCE_BLOCKS.wood as readonly string[],
   stone: ['cobblestone', 'stone'],
   dirt: ['dirt'],
+  coal: ['coal'],
+  iron_ore: ['raw_iron'],
 } as const
 
 /** The slice of prismarine-block the harvest planner reads — structural, so tests fake it. */
@@ -74,6 +82,36 @@ export function planHarvest<T extends { type: number; name: string }>(
     return best && bestTime < block.digTime(null, false, false, false) ? { kind: 'equip', item: best } : { kind: 'dig' }
   }
   return best ? { kind: 'equip', item: best } : { kind: 'blocked', toolHint: toolHint(block, itemName) }
+}
+
+/** The ore families' tier truth (RB-1), taught on a blocked dig. The tier
+ *  gate itself is planHarvest's canHarvest arm — this table only owns the
+ *  prose, so the message can name the CRAFT that unblocks the mine instead
+ *  of the generic "you carry no pickaxe" (which reads as a lie to a villager
+ *  holding a wooden one at an iron seam). */
+export const ORE_TIER: Record<string, { tier: string; makeIt: string }> = {
+  coal: { tier: 'any pickaxe', makeIt: 'craft a wooden_pickaxe (3 planks + 2 sticks at a crafting table)' },
+  iron_ore: { tier: 'a stone pickaxe or better', makeIt: 'craft a stone_pickaxe (3 cobblestone + 2 sticks at a crafting table)' },
+}
+
+/** Coded prose for planHarvest's 'blocked' arm: ore families teach the tier
+ *  ladder (TOOL_TIER_REQUIRED); everything else keeps the SV-2 tool prose. */
+export function blockedDigError(
+  resource: string,
+  blockName: string,
+  toolHint: string,
+): { code: 'TOOL_REQUIRED' | 'TOOL_TIER_REQUIRED'; message: string } {
+  const ore = ORE_TIER[resource]
+  if (ore) {
+    return {
+      code: 'TOOL_TIER_REQUIRED',
+      message: `${blockName.replace(/_/g, ' ')} only drops to ${ore.tier} and nothing you carry qualifies — ${ore.makeIt}, then mine again`,
+    }
+  }
+  return {
+    code: 'TOOL_REQUIRED',
+    message: `digging ${blockName} bare-handed drops nothing — it needs ${toolHint} and you carry none; gather wood or dirt instead`,
+  }
 }
 
 /** "a pickaxe" when every qualifying tool is one; otherwise list them out. */

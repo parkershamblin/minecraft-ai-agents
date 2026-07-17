@@ -1,0 +1,34 @@
+{
+  "eventId": "019fb100-0001-7000-8000-00000000c001",
+  "eventType": "AttemptStarted",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T18:00:00.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Attempt",
+  "aggregateId": "019fb100-0000-7000-8000-00000000c000",
+  "correlationId": "019fb100-0002-7000-8000-c0de00000010",
+  "causationId": null,
+  "payload": {
+    "attemptId": "019fb100-0000-7000-8000-00000000c000",
+    "label": "normal-soak-1",
+    "difficulty": "normal",
+    "teams": [
+      {
+        "teamId": "red",
+        "villagerIds": [
+          "019f8e2a-0000-7000-8000-0000000d0001",
+          "019f8e2a-0000-7000-8000-0000000d0002",
+          "019f8e2a-0000-7000-8000-0000000d0003"
+        ]
+      },
+      {
+        "teamId": "blue",
+        "villagerIds": [
+          "019f8e2a-0000-7000-8000-0000000d0004",
+          "019f8e2a-0000-7000-8000-0000000d0005",
+          "019f8e2a-0000-7000-8000-0000000d0006"
+        ]
+      }
+    ]
+  }
+}

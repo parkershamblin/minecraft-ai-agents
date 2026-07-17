@@ -92,6 +92,26 @@ class FakeProvider:
             "relationshipUpdates": None,
             "governanceAction": None,
         },
+        # RB-1 rows: the fake script exercises the T1 enums (contract-commit
+        # house rule) so CI walks the new surface through the brain seam.
+        {
+            "action": "gather",
+            "params": {"resource": "iron_ore", "count": 2},
+            "reasoning": "The seam by the ridge showed iron; the pick in my pack is stone.",
+            "importance": 3.0,
+            "sentiment": 0.3,
+            "relationshipUpdates": None,
+            "governanceAction": None,
+        },
+        {
+            "action": "craft",
+            "params": {"item": "iron_pickaxe"},
+            "reasoning": "Raw iron in the pack and a furnace's worth of patience.",
+            "importance": 4.0,
+            "sentiment": 0.4,
+            "relationshipUpdates": None,
+            "governanceAction": None,
+        },
     ]
 
     def __init__(self) -> None:

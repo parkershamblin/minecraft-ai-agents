@@ -1,0 +1,18 @@
+{
+  "eventId": "019fb100-0010-7000-8000-00000000c010",
+  "eventType": "ProgressionMilestone",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T18:22:41.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Attempt",
+  "aggregateId": "019fb100-0000-7000-8000-00000000c000",
+  "correlationId": "019fb100-0011-7000-8000-c0de00000011",
+  "causationId": "019fb100-000f-7000-8000-00000000c00f",
+  "payload": {
+    "attemptId": "019fb100-0000-7000-8000-00000000c000",
+    "teamId": "red",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0002",
+    "milestone": "first_iron_ore",
+    "detail": "Wren mined 2 raw iron at (-140, 52, 31)"
+  }
+}

@@ -17,6 +17,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from agent_service.brain.awareness import ActionAwareness
 from agent_service.brain.civics import CivicState
+from agent_service.brain.race import RaceState
 from agent_service.brain.graph import TickDeps, VillagerBrief, build_tick_graph
 from agent_service.brain.scheduler import TickScheduler
 from agent_service.db import make_engine, make_session_factory
@@ -64,8 +65,10 @@ async def lifespan(app: FastAPI):
     publisher = EventPublisher(settings.kafka_brokers)
     await publisher.start()
     civics = CivicState()
+    race = RaceState()
     percepts = PerceptConsumer(settings.kafka_brokers, redis)
     percepts.civics = civics  # institutions -> working memory (M2-8)
+    percepts.race = race  # the attempt scoreboard -> working memory (RB-2)
     await percepts.start()
 
     graph = build_tick_graph(
@@ -78,6 +81,7 @@ async def lifespan(app: FastAPI):
             relationships=relationships,
             awareness=ActionAwareness(),
             civics=civics,
+            race=race,
             community_goal=settings.community_goal or None,
             percepts_max=settings.percepts_max_per_tick,
             memories_k=settings.memories_per_tick,

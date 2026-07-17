@@ -42,6 +42,7 @@ _CIVIC_TYPES = {
     "ElectionDecided",
     "GovernanceRejected",
 }
+_RACE_TYPES = {"AttemptStarted", "ProgressionMilestone", "AttemptEnded"}
 _QUEUE_CAP = 20
 _QUEUE_TTL_SECONDS = 600
 # Committed group offsets survive restarts, so a redeploy drains the backlog —
@@ -79,6 +80,9 @@ class PerceptConsumer:
         # list and the name resolver for candidate/mayor percepts.
         self.civics = None  # CivicState-shaped: election_started(payload), ...
         self.roster: dict[str, str] = {}
+        # RB-2: the race cache — RaceState-shaped (attempt_started, milestone,
+        # attempt_ended, team_of, participant_ids).
+        self.race = None
 
     async def start(self) -> None:
         await self._consumer.start()
@@ -112,6 +116,23 @@ class PerceptConsumer:
             if _is_stale(envelope.get("occurredAt")):
                 return
             await self._fanout_civic(event_type, envelope, payload)
+            return
+
+        if event_type in _RACE_TYPES:
+            # Same split as civics: the cache ingests even stale deliveries
+            # (an attempt is live until its AttemptEnded arrives); percepts
+            # stay delivery-fresh. AttemptEnded fans out BEFORE ingestion —
+            # ingesting first would clear the roster the fanout personalizes
+            # against (found in review, not production, thankfully).
+            stale = _is_stale(envelope.get("occurredAt"))
+            if event_type == "AttemptEnded":
+                if not stale:
+                    await self._fanout_race(event_type, envelope, payload)
+                self._ingest_race(event_type, payload)
+                return
+            self._ingest_race(event_type, payload)
+            if not stale:
+                await self._fanout_race(event_type, envelope, payload)
             return
 
         if _is_stale(envelope.get("occurredAt")):
@@ -280,6 +301,65 @@ class PerceptConsumer:
             }
             for villager_id in self.roster:
                 await self._push(villager_id, {**base, "you": villager_id == winner_id})
+
+    # ------------------------------------------------------------ RB-2 race
+
+    def _ingest_race(self, event_type: str, payload: dict) -> None:
+        if self.race is None:
+            return
+        if event_type == "AttemptStarted":
+            self.race.attempt_started(payload, self._name)
+        elif event_type == "ProgressionMilestone":
+            self.race.milestone(payload)
+        elif event_type == "AttemptEnded":
+            self.race.attempt_ended(payload)
+
+    async def _fanout_race(self, event_type: str, envelope: dict, payload: dict) -> None:
+        """Race news goes to every ticked PARTICIPANT — both teams see the
+        scoreboard (that's the pressure that makes a race), spectators see
+        nothing. Personalized at fanout (the CandidateNominated precedent):
+        prompts have no self-team to compare against. No reactive wakes —
+        the cadence carries the news within a tick (GPU-stampede rule)."""
+        if self.race is None:
+            return
+        hearers = [v for v in self.race.participant_ids() if v in self.roster]
+        thread = {
+            "sourceEventId": envelope.get("eventId"),
+            "correlationId": envelope.get("correlationId"),
+            "occurredAt": envelope.get("occurredAt"),
+        }
+
+        if event_type == "AttemptStarted":
+            for hearer in hearers:
+                await self._push(hearer, {"type": "AttemptStarted", **thread})
+
+        elif event_type == "ProgressionMilestone":
+            team_id = str(payload.get("teamId"))
+            base = {
+                "type": "ProgressionMilestone",
+                "milestone": payload.get("milestone"),
+                "teamId": team_id,
+                "by": self._name(payload.get("villagerId")),
+                **thread,
+            }
+            for hearer in hearers:
+                await self._push(hearer, {**base, "yourTeam": self.race.team_of(hearer) == team_id})
+
+        elif event_type == "AttemptEnded":
+            # Runs BEFORE ingestion clears the cache (handle() ordering), so
+            # team_of still answers for the personalization.
+            winning_team = payload.get("winningTeamId")
+            base = {
+                "type": "AttemptEnded",
+                "outcome": payload.get("outcome"),
+                "winningTeamId": winning_team,
+                **thread,
+            }
+            for hearer in hearers:
+                await self._push(
+                    hearer,
+                    {**base, "yourTeam": winning_team is not None and self.race.team_of(hearer) == str(winning_team)},
+                )
 
     async def _push(self, villager_id: str, percept: dict) -> None:
         key = f"percepts:{villager_id}"

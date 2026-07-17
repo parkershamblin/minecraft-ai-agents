@@ -25,6 +25,9 @@ function craftResult(itemName = 'oak_planks', crafted = 4) {
     crafted,
     tableUsed: false,
     tablePlaced: false,
+    smelted: 0,
+    furnaceUsed: false,
+    furnacePlaced: false,
     position: { x: 0, y: 64, z: 0 },
   }
 }

@@ -23,6 +23,8 @@ class ErrorCode(StrEnum):
     BODY_BUSY = 'BODY_BUSY'
     SELF_DEFENSE_IN_PROGRESS = 'SELF_DEFENSE_IN_PROGRESS'
     TARGET_ESCAPED = 'TARGET_ESCAPED'
+    TOOL_TIER_REQUIRED = 'TOOL_TIER_REQUIRED'
+    SMELT_FAILED = 'SMELT_FAILED'
     INTERNAL = 'INTERNAL'
 
 
@@ -38,7 +40,7 @@ class ActionFailedPayload(BaseModel):
     action: str
     errorCode: ErrorCode = Field(
         ...,
-        description="Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it).",
+        description="Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it). RB-1 additions (additive): TOOL_TIER_REQUIRED = the ore only drops to a higher tool tier than anything carried (the message names the tier — craft it first); SMELT_FAILED = the craft chain's furnace flow broke (no furnace placeable, no fuel, or the smelt yielded nothing — the message teaches the missing link).",
     )
     errorMessage: str
     retryable: bool

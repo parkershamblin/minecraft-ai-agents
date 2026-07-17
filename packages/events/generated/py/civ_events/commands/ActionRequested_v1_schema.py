@@ -94,6 +94,8 @@ class Resource(StrEnum):
     wood = 'wood'
     stone = 'stone'
     dirt = 'dirt'
+    coal = 'coal'
+    iron_ore = 'iron_ore'
 
 
 class GatherParams(BaseModel):
@@ -102,7 +104,7 @@ class GatherParams(BaseModel):
     )
     resource: Resource | None = Field(
         'wood',
-        description='Resource family; the executor maps it to concrete block types.',
+        description="Resource family; the executor maps it to concrete block types. coal/iron_ore (RB-1) are the T1 mining families — ore blocks only drop to a sufficient pickaxe tier (wooden for coal, stone for iron), enforced by the executor's harvest planner: an under-tiered attempt fails TOOL_TIER_REQUIRED with the tier named.",
     )
     maxDistance: confloat(ge=4.0, le=64.0) | None = Field(
         48,
@@ -147,6 +149,7 @@ class Item(StrEnum):
     stone_pickaxe = 'stone_pickaxe'
     stone_sword = 'stone_sword'
     furnace = 'furnace'
+    iron_pickaxe = 'iron_pickaxe'
 
 
 class CraftParams(BaseModel):
@@ -155,5 +158,5 @@ class CraftParams(BaseModel):
     )
     item: Item = Field(
         ...,
-        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). Tools cap at stone and there is no iron/mining tier by design; leather armor joins the enum with contract commit C (SV-11).",
+        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). Leather armor joins the enum with contract commit C (SV-11).",
     )

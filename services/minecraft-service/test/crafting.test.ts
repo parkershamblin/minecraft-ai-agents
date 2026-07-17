@@ -9,10 +9,14 @@ import {
   cheapestGaps,
   craftAnnouncement,
   missingIngredientsMessage,
+  noFurnaceMessage,
   noPlacementMessage,
+  pickFuel,
   pickTableSpot,
+  planSmeltStep,
   resolveCraftTarget,
   runCraftFlow,
+  smeltShortYieldMessage,
   tablePlacedAnnouncement,
   tableRequiredMessage,
 } from '../src/world/crafting.ts'
@@ -244,6 +248,9 @@ describe('runCraftFlow', () => {
         walked.push(p)
       },
       placeTable: async () => ({ x: 1, y: 64, z: 0 }),
+      findFurnace: () => null,
+      placeFurnace: async () => ({ x: 2, y: 64, z: 0 }),
+      smelt: async () => 0,
       craft: async (name, table) => {
         crafts.push({ name, table })
         count += 4
@@ -266,6 +273,9 @@ describe('runCraftFlow', () => {
       crafted: 4,
       tableUsed: false,
       tablePlaced: false,
+      smelted: 0,
+      furnaceUsed: false,
+      furnacePlaced: false,
       position: { x: 0, y: 64, z: 0 },
     })
     expect(h.crafts).toEqual([{ name: 'oak_planks', table: null }])
@@ -398,5 +408,247 @@ describe('runCraftFlow', () => {
       code: 'PATH_NOT_FOUND',
       retryable: true,
     })
+  })
+})
+
+describe('pickFuel (the chain-resolution fuel ranking)', () => {
+  it('prefers coal over wood products and sizes the burn to the ask', () => {
+    const carried = [
+      { name: 'oak_planks', count: 20 },
+      { name: 'coal', count: 3 },
+    ]
+    expect(pickFuel(carried, 3)).toEqual({ name: 'coal', count: 1 }) // 8 smelts per coal
+    expect(pickFuel(carried, 9)).toEqual({ name: 'coal', count: 2 })
+  })
+
+  it('falls back to planks then logs when no coal is carried', () => {
+    expect(pickFuel([{ name: 'spruce_planks', count: 4 }], 3)).toEqual({ name: 'spruce_planks', count: 2 })
+    expect(pickFuel([{ name: 'oak_log', count: 5 }], 3)).toEqual({ name: 'oak_log', count: 2 })
+  })
+
+  it('never burns sticks and returns null when nothing carried covers the ask', () => {
+    expect(pickFuel([{ name: 'stick', count: 64 }], 1)).toBeNull()
+    expect(pickFuel([{ name: 'oak_planks', count: 1 }], 3)).toBeNull() // 1 plank = 1.5 smelts < 3
+    expect(pickFuel([], 1)).toBeNull()
+  })
+})
+
+describe('planSmeltStep (when the craft chain smelts before crafting)', () => {
+  const IRON_GAPS: IngredientGap[] = [
+    { name: 'iron_ingot', required: 3, have: 0 },
+    { name: 'stick', required: 2, have: 2 },
+  ]
+
+  it('plans the smelt when the only unmet gap is smeltable and the raw input is carried', () => {
+    const step = planSmeltStep(IRON_GAPS, [
+      { name: 'raw_iron', count: 5 },
+      { name: 'coal', count: 2 },
+      { name: 'stick', count: 2 },
+    ])
+    expect(step).toEqual({ input: 'raw_iron', output: 'iron_ingot', count: 3, fuel: { name: 'coal', count: 1 } })
+  })
+
+  it('a partial ingot stock smelts only the shortfall', () => {
+    const step = planSmeltStep(
+      [
+        { name: 'iron_ingot', required: 3, have: 2 },
+        { name: 'stick', required: 2, have: 2 },
+      ],
+      [
+        { name: 'raw_iron', count: 5 },
+        { name: 'coal', count: 2 },
+      ],
+    )
+    expect(step?.count).toBe(1)
+  })
+
+  it('returns null when a NON-smeltable gap is also unmet — sticks first, no wasted furnace time', () => {
+    const step = planSmeltStep(
+      [
+        { name: 'iron_ingot', required: 3, have: 0 },
+        { name: 'stick', required: 2, have: 0 },
+      ],
+      [
+        { name: 'raw_iron', count: 5 },
+        { name: 'coal', count: 2 },
+      ],
+    )
+    expect(step).toBeNull()
+  })
+
+  it('returns null when the raw input is short — that is a mining problem, taught by the gap prose', () => {
+    expect(planSmeltStep(IRON_GAPS, [{ name: 'raw_iron', count: 2 }, { name: 'coal', count: 2 }])).toBeNull()
+  })
+
+  it('returns null when nothing in the gaps is smeltable', () => {
+    expect(
+      planSmeltStep(
+        [{ name: 'oak_planks', required: 3, have: 0 }],
+        [{ name: 'raw_iron', count: 5 }],
+      ),
+    ).toBeNull()
+  })
+
+  it('raw iron with no fuel is SMELT_FAILED with the fuel teaching', () => {
+    try {
+      planSmeltStep(IRON_GAPS, [{ name: 'raw_iron', count: 5 }])
+      expect.unreachable('should have thrown')
+    } catch (err) {
+      expect(coded(err).code).toBe('SMELT_FAILED')
+      expect(coded(err).retryable).toBe(false)
+      expect(coded(err).message).toContain('coal, planks, or logs')
+    }
+  })
+})
+
+describe('runCraftFlow chain-resolution (mine→smelt→craft inside one action)', () => {
+  interface ChainHarness {
+    deps: CraftFlowDeps
+    announced: string[]
+    walked: Position[]
+    crafts: Array<{ name: string; table: Position | null }>
+    smelts: Array<{ input: string; count: number; fuel: { name: string; count: number } }>
+  }
+
+  /** iron_pickaxe pack: raw iron + coal + sticks + a table and furnace in the
+   *  pack; craftableNow flips true once the smelt lands (ingots exist). */
+  function chainHarness(overrides: Partial<CraftFlowDeps> = {}): ChainHarness {
+    const announced: string[] = []
+    const walked: Position[] = []
+    const crafts: Array<{ name: string; table: Position | null }> = []
+    const smelts: ChainHarness['smelts'] = []
+    let ingots = 0
+    let pickaxes = 0
+    const deps: CraftFlowDeps = {
+      carried: () => [
+        { name: 'raw_iron', count: 3 },
+        { name: 'coal', count: 2 },
+        { name: 'stick', count: 2 },
+        { name: 'crafting_table', count: 1 },
+        { name: 'furnace', count: 1 },
+      ],
+      craftableNow: (_name, allowTable) => allowTable && ingots >= 3,
+      ingredientGaps: () => [
+        { name: 'iron_ingot', required: 3, have: ingots },
+        { name: 'stick', required: 2, have: 2 },
+      ],
+      findTable: () => null,
+      walkTo: async (p) => {
+        walked.push(p)
+      },
+      placeTable: async () => ({ x: 1, y: 64, z: 0 }),
+      findFurnace: () => null,
+      placeFurnace: async () => ({ x: 2, y: 64, z: 0 }),
+      smelt: async (step) => {
+        smelts.push({ input: step.input, count: step.count, fuel: step.fuel })
+        ingots += step.count
+        return step.count
+      },
+      craft: async (name, table) => {
+        crafts.push({ name, table })
+        pickaxes += 1
+      },
+      countItem: () => pickaxes,
+      bodyStillOurs: () => true,
+      announce: (line) => announced.push(line),
+      position: () => ({ x: 0, y: 64, z: 0 }),
+      ...overrides,
+    }
+    return { deps, announced, walked, crafts, smelts }
+  }
+
+  it('the full chain: place furnace → smelt → place table → craft, every beat announced', async () => {
+    const h = chainHarness()
+    const result = await runCraftFlow('iron_pickaxe', h.deps)
+    expect(h.smelts).toEqual([{ input: 'raw_iron', count: 3, fuel: { name: 'coal', count: 1 } }])
+    expect(h.crafts).toEqual([{ name: 'iron_pickaxe', table: { x: 1, y: 64, z: 0 } }])
+    expect(result).toMatchObject({
+      crafted: 1,
+      smelted: 3,
+      furnaceUsed: true,
+      furnacePlaced: true,
+      tableUsed: true,
+      tablePlaced: true,
+    })
+    expect(h.announced).toEqual([
+      'Set up a furnace at (2, 64, 0).',
+      'Smelted 3 iron ingots!',
+      'Set up a crafting table at (1, 64, 0).',
+      'Crafted a iron pickaxe!', // craftAnnouncement's article is uniform — cosmetic, not worth a grammar engine
+    ])
+  })
+
+  it('a standing furnace is walked to, not re-placed', async () => {
+    const furnace = { x: 9, y: 64, z: 9 }
+    const h = chainHarness({ findFurnace: () => furnace })
+    const result = await runCraftFlow('iron_pickaxe', h.deps)
+    expect(h.walked).toContainEqual(furnace)
+    expect(result.furnacePlaced).toBe(false)
+    expect(result.furnaceUsed).toBe(true)
+  })
+
+  it('no furnace standing or carried is SMELT_FAILED with the 8-cobblestone teaching', async () => {
+    const h = chainHarness({
+      carried: () => [
+        { name: 'raw_iron', count: 3 },
+        { name: 'coal', count: 2 },
+        { name: 'stick', count: 2 },
+      ],
+    })
+    await expect(runCraftFlow('iron_pickaxe', h.deps)).rejects.toMatchObject({
+      code: 'SMELT_FAILED',
+      retryable: false,
+      message: noFurnaceMessage(),
+    })
+    expect(h.smelts).toEqual([])
+  })
+
+  it('a short smelt (fuel died) is SMELT_FAILED but retryable — the partial yield is in the pack', async () => {
+    const h = chainHarness({
+      smelt: async (step) => {
+        h.smelts.push({ input: step.input, count: step.count, fuel: step.fuel })
+        return 1 // the fire died after one ingot
+      },
+    })
+    await expect(runCraftFlow('iron_pickaxe', h.deps)).rejects.toMatchObject({
+      code: 'SMELT_FAILED',
+      retryable: true,
+      message: smeltShortYieldMessage({ input: 'raw_iron', output: 'iron_ingot', count: 3, fuel: { name: 'coal', count: 1 } }, 1),
+    })
+    expect(h.crafts).toEqual([])
+  })
+
+  it('missing raw iron falls through to the gap prose with the mining hint, never the furnace', async () => {
+    let furnaceLookups = 0
+    const h = chainHarness({
+      carried: () => [
+        { name: 'coal', count: 2 },
+        { name: 'stick', count: 2 },
+        { name: 'furnace', count: 1 },
+      ],
+      findFurnace: () => {
+        furnaceLookups++
+        return null
+      },
+    })
+    await expect(runCraftFlow('iron_pickaxe', h.deps)).rejects.toMatchObject({
+      code: 'RESOURCE_NOT_FOUND',
+      message: expect.stringContaining('smelted from raw iron'),
+    })
+    expect(furnaceLookups).toBe(0)
+  })
+
+  it('a watchdog abandonment between furnace and smelt goes silent', async () => {
+    let ours = true
+    const h = chainHarness({
+      findFurnace: () => ({ x: 9, y: 64, z: 9 }),
+      walkTo: async () => {
+        ours = false // the watchdog fires during the walk
+      },
+      bodyStillOurs: () => ours,
+    })
+    await expect(runCraftFlow('iron_pickaxe', h.deps)).rejects.toThrow('abandoned by the watchdog')
+    expect(h.smelts).toEqual([])
+    expect(h.announced).toEqual([])
   })
 })

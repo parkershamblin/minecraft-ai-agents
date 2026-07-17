@@ -50,6 +50,7 @@ import {
   type ResourceSighting,
   allTargetsBlacklistedMessage,
   blockNamesFor,
+  blockedDigError,
   gatherFailureMessage,
   gatherStartAnnouncement,
   haulAnnouncement,
@@ -63,6 +64,7 @@ import { type GatherSessionResult, runGatherSession } from '../world/gatherSessi
 import {
   CRAFT_TABLE_SEARCH_DISTANCE,
   type CraftResult,
+  type SmeltStep,
   cheapestGaps,
   craftError,
   noPlacementMessage,
@@ -966,10 +968,9 @@ export class BotSession {
     const itemNameById = (id: number) => bot.registry.items[id]?.name
     const doomed = planHarvest(block, bot.inventory.items(), itemNameById)
     if (doomed.kind === 'blocked') {
-      const err = new Error(
-        `digging ${block.name} bare-handed drops nothing — it needs ${doomed.toolHint} and you carry none; gather wood or dirt instead`,
-      )
-      ;(err as Error & { code?: string }).code = 'TOOL_REQUIRED'
+      const blocked = blockedDigError(resource, block.name, doomed.toolHint)
+      const err = new Error(blocked.message)
+      ;(err as Error & { code?: string }).code = blocked.code
       throw err
     }
 
@@ -1054,6 +1055,58 @@ export class BotSession {
       const base = bot.entity.position.floored()
       return base.offset(p.x - base.x, p.y - base.y, p.z - base.z)
     }
+    // Shared by the table and furnace flows — placing a carried block beside
+    // the bot is one skill; only the block differs. Interactive blocks are
+    // OFF the ground list: right-clicking a crafting table to place against
+    // it opens the table instead (no sneak in placeBlock) — the RB-1 drill
+    // watched a furnace try to stack onto the just-placed table and fail
+    // with "the spot reads air" three times.
+    const INTERACTIVE_GROUND = new Set(['crafting_table', 'furnace', 'blast_furnace', 'smoker', 'chest', 'barrel', 'anvil'])
+    const placeCarried = async (blockName: string): Promise<Position> => {
+      const spot = pickTableSpot(this.position as Position, (p) => {
+        const block = bot.blockAt(vecAt(p))
+        return block
+          ? {
+              air: block.name === 'air' || block.name === 'cave_air',
+              solid: block.boundingBox === 'block' && !INTERACTIVE_GROUND.has(block.name),
+            }
+          : null
+      })
+      if (!spot) {
+        throw craftError('PATH_NOT_FOUND', noPlacementMessage(), true)
+      }
+      const stack = bot.inventory.items().find((s) => s.name === blockName)
+      if (!stack) {
+        throw new Error(`${blockName} vanished from the pack before placement`)
+      }
+      await bot.equip(stack, 'hand')
+      const ground = bot.blockAt(vecAt(spot.ground))
+      if (!ground) {
+        throw craftError('PATH_NOT_FOUND', noPlacementMessage(), true)
+      }
+      try {
+        await bot.placeBlock(ground, ground.position.offset(0, 1, 0).minus(ground.position))
+      } catch (err) {
+        // placeBlock's blockUpdate wait is flaky on Paper, and a stale
+        // client cell can make the reference block a phantom (RB-1 drill:
+        // "blockUpdate did not fire within 5000ms" while the block HAD
+        // placed). Don't trust the throw either way — give the update a
+        // beat, then let the world verdict below decide.
+        this.log.info({ err: err instanceof Error ? err.message : String(err), blockName }, 'placeBlock threw — verifying the world')
+        await new Promise((resolve) => setTimeout(resolve, 1_000))
+      }
+      const placed = bot.blockAt(vecAt(spot.spot))
+      if (placed?.name !== blockName) {
+        // The server can silently reject a placement (the ghost-dig lesson
+        // in reverse) — never work against a block that isn't really there.
+        throw craftError(
+          'PATH_NOT_FOUND',
+          `the ${blockName.replace(/_/g, ' ')} would not set here (the spot reads ${placed?.name ?? 'unloaded'}) — move to open ground and try again`,
+          true,
+        )
+      }
+      return spot.spot
+    }
     return await runCraftFlow(item, {
       carried: () => bot.inventory.items().map((stack) => ({ name: stack.name, count: stack.count })),
       craftableNow: (name, allowTable) => {
@@ -1093,33 +1146,62 @@ export class BotSession {
         // activateBlock; the executor's watchdog owns the deadline.
         await bot.pathfinder.goto(new goals.GoalNear(p.x, p.y, p.z, 2))
       },
-      placeTable: async () => {
-        const spot = pickTableSpot(this.position as Position, (p) => {
-          const block = bot.blockAt(vecAt(p))
-          return block
-            ? { air: block.name === 'air' || block.name === 'cave_air', solid: block.boundingBox === 'block' }
-            : null
+      placeTable: () => placeCarried('crafting_table'),
+      findFurnace: () => {
+        const found = bot.findBlock({
+          matching: (candidate) => candidate.name === 'furnace',
+          maxDistance: CRAFT_TABLE_SEARCH_DISTANCE,
         })
-        if (!spot) {
-          throw craftError('PATH_NOT_FOUND', noPlacementMessage(), true)
+        return found ? { x: found.position.x, y: found.position.y, z: found.position.z } : null
+      },
+      placeFurnace: () => placeCarried('furnace'),
+      smelt: async (step: SmeltStep, furnaceAt: Position) => {
+        const furnaceBlock = bot.blockAt(vecAt(furnaceAt))
+        if (!furnaceBlock) {
+          throw new Error('the furnace is out of loaded range')
         }
-        const tableStack = bot.inventory.items().find((stack) => stack.name === 'crafting_table')
-        if (!tableStack) {
-          throw new Error('crafting table vanished from the pack before placement')
+        const idOf = (name: string) => {
+          const id = bot.registry.itemsByName[name]?.id
+          if (id === undefined) {
+            throw new Error(`unknown item '${name}' in this world's registry`)
+          }
+          return id
         }
-        await bot.equip(tableStack, 'hand')
-        const ground = bot.blockAt(vecAt(spot.ground))
-        if (!ground) {
-          throw craftError('PATH_NOT_FOUND', noPlacementMessage(), true)
+        const furnace = await bot.openFurnace(furnaceBlock)
+        try {
+          // Fuel first: a fed furnace lights the moment input lands, so the
+          // batch starts burning during the second put.
+          await furnace.putFuel(idOf(step.fuel.name), null, step.fuel.count)
+          await furnace.putInput(idOf(step.input), null, step.count)
+          // ~10s per smelt; the deadline is a local guard — the command
+          // watchdog still owns the real budget, and the busy seam doubles
+          // as the abandonment signal (a zombie smelt must stop polling).
+          const deadline = Date.now() + step.count * 10_500 + 5_000
+          while (Date.now() < deadline && this.busy === 'action') {
+            const out = furnace.outputItem()
+            if (out && out.count >= step.count) {
+              break
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1_000))
+          }
+          const out = furnace.outputItem()
+          let took = 0
+          if (out) {
+            took = out.count
+            await furnace.takeOutput()
+          }
+          // Reclaim leftovers — an interrupted batch strands nothing in the
+          // furnace for the next villager to mystery-loot.
+          if (furnace.inputItem()) {
+            await furnace.takeInput()
+          }
+          if (furnace.fuelItem()) {
+            await furnace.takeFuel()
+          }
+          return took
+        } finally {
+          furnace.close()
         }
-        await bot.placeBlock(ground, ground.position.offset(0, 1, 0).minus(ground.position))
-        const placed = bot.blockAt(vecAt(spot.spot))
-        if (placed?.name !== 'crafting_table') {
-          // The server can silently reject a placement (the ghost-dig lesson
-          // in reverse) — never craft against a table that isn't really there.
-          throw new Error(`table placement did not take (the spot reads ${placed?.name ?? 'unloaded'})`)
-        }
-        return spot.spot
       },
       craft: async (name, tableAt) => {
         const id = itemId(name)

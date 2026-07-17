@@ -1,0 +1,23 @@
+{
+  "eventId": "019fb100-0020-7000-8000-00000000c020",
+  "eventType": "AttemptEnded",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T18:41:12.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Attempt",
+  "aggregateId": "019fb100-0000-7000-8000-00000000c000",
+  "correlationId": "019fb100-0021-7000-8000-c0de00000012",
+  "causationId": "019fb100-001f-7000-8000-00000000c01f",
+  "payload": {
+    "attemptId": "019fb100-0000-7000-8000-00000000c000",
+    "outcome": "won",
+    "winningTeamId": "red",
+    "winningVillagerId": "019f8e2a-0000-7000-8000-0000000d0002",
+    "winningEventId": "019fb100-001f-7000-8000-00000000c01f",
+    "durationSeconds": 2472,
+    "honestRace": {
+      "budgetTrippedDelta": 0,
+      "fakeProviderDelta": 0
+    }
+  }
+}

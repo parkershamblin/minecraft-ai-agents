@@ -25,6 +25,7 @@ export const CRAFTABLE_ITEMS = [
   'stone_pickaxe',
   'stone_sword',
   'furnace',
+  'iron_pickaxe',
 ] as const
 
 /** log → plank family map, derived from the gather families so the two verbs
@@ -42,7 +43,7 @@ export const CRAFT_TABLE_SEARCH_DISTANCE = 16
  *  through to ActionFailed verbatim; the message is the villager's next
  *  percept, so it must teach the next step, not just report the gap. */
 export function craftError(
-  code: 'INVALID_PARAMS' | 'RESOURCE_NOT_FOUND' | 'TOOL_REQUIRED' | 'PATH_NOT_FOUND',
+  code: 'INVALID_PARAMS' | 'RESOURCE_NOT_FOUND' | 'TOOL_REQUIRED' | 'PATH_NOT_FOUND' | 'SMELT_FAILED',
   message: string,
   retryable: boolean,
 ): Error {
@@ -101,6 +102,106 @@ export interface IngredientGap {
   name: string
   required: number
   have: number
+}
+
+/** What the furnace turns a carried item into, keyed by the MISSING
+ *  ingredient (RB-1, absorbs SV-9). Growing this map is how future smelts
+ *  (gold, cooked food as a craft input) join the chain-resolution. */
+export const SMELTABLES: Record<string, string> = {
+  iron_ingot: 'raw_iron',
+}
+
+/** Fuel ranking: smelts one item covers (vanilla burn time / 10s per smelt).
+ *  Coal first — dense and purpose-built; wood products are the bootstrap
+ *  fallback. Sticks deliberately excluded: half a smelt each means a chain
+ *  could quietly burn a pack of tool handles. */
+const FUEL_RANKING: ReadonlyArray<{ matches: (name: string) => boolean; smeltsPerItem: number }> = [
+  { matches: (n) => n === 'coal' || n === 'charcoal', smeltsPerItem: 8 },
+  { matches: (n) => n.endsWith('_planks'), smeltsPerItem: 1.5 },
+  { matches: (n) => n.endsWith('_log'), smeltsPerItem: 1.5 },
+]
+
+/** Choose ONE carried stack to burn (a furnace fuel slot holds one item
+ *  type): best-ranked class first, and within a class the deepest stack.
+ *  Null when nothing carried covers the ask. */
+export function pickFuel(carried: readonly CarriedStack[], smeltsNeeded: number): { name: string; count: number } | null {
+  for (const rank of FUEL_RANKING) {
+    const best = carried
+      .filter((stack) => rank.matches(stack.name) && stack.count > 0)
+      .sort((a, b) => b.count - a.count)[0]
+    if (!best) {
+      continue
+    }
+    const count = Math.ceil(smeltsNeeded / rank.smeltsPerItem)
+    if (best.count >= count) {
+      return { name: best.name, count }
+    }
+  }
+  return null
+}
+
+export interface SmeltStep {
+  /** concrete item fed into the furnace (raw_iron) */
+  input: string
+  /** what comes out (iron_ingot) */
+  output: string
+  /** items to smelt = the recipe's unmet count */
+  count: number
+  fuel: { name: string; count: number }
+}
+
+/**
+ * Decide whether the chain-resolution should smelt before crafting: the ONLY
+ * unmet gap is a smeltable ingredient AND the pack carries enough of its raw
+ * input. Any other shortfall returns null so the missing-ingredients prose
+ * teaches the earlier link instead (smelting first would waste furnace time
+ * on a craft that still fails on sticks). Carrying the raw input but no fuel
+ * IS a smelt problem — coded SMELT_FAILED, with the fix named.
+ */
+export function planSmeltStep(gaps: readonly IngredientGap[], carried: readonly CarriedStack[]): SmeltStep | null {
+  const unmet = gaps.filter((gap) => gap.have < gap.required)
+  const smeltable = unmet.find((gap) => SMELTABLES[gap.name])
+  if (!smeltable || unmet.length !== 1) {
+    return null
+  }
+  const input = SMELTABLES[smeltable.name]!
+  const count = smeltable.required - smeltable.have
+  const rawCarried = carried.filter((stack) => stack.name === input).reduce((sum, stack) => sum + stack.count, 0)
+  if (rawCarried < count) {
+    return null // a mining problem, not a smelting one — the gap prose teaches it
+  }
+  const fuel = pickFuel(carried, count)
+  if (!fuel) {
+    throw craftError(
+      'SMELT_FAILED',
+      `smelting ${count} ${display(smeltable.name)} needs fuel and nothing you carry burns — coal, planks, or logs all serve; gather wood or mine coal first`,
+      false,
+    )
+  }
+  return { input, output: smeltable.name, count, fuel }
+}
+
+export function noFurnaceMessage(): string {
+  return (
+    `smelting needs a furnace — none stands within ${CRAFT_TABLE_SEARCH_DISTANCE} blocks and you carry none; ` +
+    `craft a furnace first (8 cobblestone at a crafting table)`
+  )
+}
+
+export function smeltShortYieldMessage(step: SmeltStep, got: number): string {
+  return (
+    `the furnace gave ${got} of ${step.count} ${display(step.output)} before the fire died — ` +
+    `carry more fuel (coal burns longest) and craft again; what was smelted is in your pack`
+  )
+}
+
+export function smeltAnnouncement(output: string, count: number): string {
+  return `Smelted ${count} ${display(output)}${count === 1 ? '' : 's'}!`
+}
+
+/** A placed furnace is village infrastructure, same as SV-3's table. */
+export function furnacePlacedAnnouncement(position: Position): string {
+  return `Set up a furnace at (${Math.round(position.x)}, ${Math.round(position.y)}, ${Math.round(position.z)}).`
 }
 
 /** Progression materials the affordance prose teaches — preferred when
@@ -180,6 +281,9 @@ function chainHint(missingName: string): string {
   }
   if (missingName.endsWith('_log')) {
     return 'gather wood first'
+  }
+  if (missingName === 'iron_ingot' || missingName === 'raw_iron') {
+    return 'iron ingots are smelted from raw iron — gather iron_ore (a stone pickaxe or better makes it drop), and keep fuel; your body works the furnace when you craft'
   }
   return 'gather or craft the missing materials first'
 }
@@ -285,6 +389,14 @@ export interface CraftFlowDeps {
   /** place a carried table beside the bot; throws coded PATH_NOT_FOUND when
    *  no clear ground is in reach */
   placeTable(): Promise<Position>
+  /** the furnace flow's world touches (RB-1 chain-resolution) — same shape
+   *  as the table trio */
+  findFurnace(): Position | null
+  placeFurnace(): Promise<Position>
+  /** run one smelt batch at a placed furnace; returns items actually taken
+   *  from the output slot (the honest count — short on fuel starve or
+   *  watchdog abandonment) */
+  smelt(step: SmeltStep, furnaceAt: Position): Promise<number>
   craft(itemName: string, tableAt: Position | null): Promise<void>
   countItem(itemName: string): number
   /** The executor's busy seam (the SV-2 cancellation signal): false means
@@ -304,22 +416,74 @@ export interface CraftResult {
   crafted: number
   tableUsed: boolean
   tablePlaced: boolean
+  /** ingots produced by the chain-resolution's furnace errand; 0 = no smelt */
+  smelted: number
+  furnaceUsed: boolean
+  furnacePlaced: boolean
   position: Position
 }
 
 /**
  * One craft = one recipe application (a tick buys one world action — the
  * log→planks→table→tool chain is the MIND's multi-tick project, which is
- * the point of the whole arc). Failures are coded and prescriptive; the
- * result reports the honest inventory delta.
+ * the point of the whole arc). RB-1's one exception (ADR-10): when the only
+ * unmet ingredient is smeltable from the pack, the furnace errand happens
+ * INSIDE this action — smelting is the body's job, not a verb. Failures are
+ * coded and prescriptive; the result reports the honest inventory delta.
  */
 export async function runCraftFlow(item: string, deps: CraftFlowDeps): Promise<CraftResult> {
   const itemName = resolveCraftTarget(item, deps.carried())
+  let smelted = 0
+  let furnaceUsed = false
+  let furnacePlaced = false
 
   if (!deps.craftableNow(itemName, true)) {
-    // Ingredients are the deeper gap — teach them before any table talk
-    // (with an empty pack the right next action is gathering, not carpentry).
-    throw craftError('RESOURCE_NOT_FOUND', missingIngredientsMessage(itemName, deps.ingredientGaps(itemName)), false)
+    const gaps = deps.ingredientGaps(itemName)
+    const step = planSmeltStep(gaps, deps.carried())
+    if (!step) {
+      // Ingredients are the deeper gap — teach them before any table talk
+      // (with an empty pack the right next action is gathering, not carpentry).
+      throw craftError('RESOURCE_NOT_FOUND', missingIngredientsMessage(itemName, gaps), false)
+    }
+
+    // Chain-resolution (absorbs SV-9): acquire a furnace the way SV-3
+    // acquires a table — walk to a standing one, else place a carried one.
+    let furnaceAt = deps.findFurnace()
+    if (furnaceAt) {
+      await deps.walkTo(furnaceAt)
+    } else if (deps.carried().some((stack) => stack.name === 'furnace' && stack.count > 0)) {
+      furnaceAt = await deps.placeFurnace()
+      furnacePlaced = true
+      if (deps.bodyStillOurs()) {
+        deps.announce(furnacePlacedAnnouncement(furnaceAt))
+      }
+    } else {
+      throw craftError('SMELT_FAILED', noFurnaceMessage(), false)
+    }
+
+    if (!deps.bodyStillOurs()) {
+      throw new Error('craft abandoned by the watchdog')
+    }
+    furnaceUsed = true
+    smelted = await deps.smelt(step, furnaceAt)
+    if (smelted < step.count) {
+      // Retryable, unlike most craft failures: what did smelt is in the pack
+      // and a re-run picks up where the fire died.
+      throw craftError('SMELT_FAILED', smeltShortYieldMessage(step, smelted), true)
+    }
+    if (deps.bodyStillOurs()) {
+      deps.announce(smeltAnnouncement(step.output, smelted))
+    }
+    if (!deps.craftableNow(itemName, true)) {
+      // The smelt landed but the recipe still doesn't close — teach the
+      // remaining gap honestly (planSmeltStep guards against reaching here,
+      // but the world can shift mid-errand).
+      throw craftError(
+        'RESOURCE_NOT_FOUND',
+        missingIngredientsMessage(itemName, deps.ingredientGaps(itemName)),
+        false,
+      )
+    }
   }
 
   let tableAt: Position | null = null
@@ -354,5 +518,15 @@ export async function runCraftFlow(item: string, deps: CraftFlowDeps): Promise<C
   if (crafted > 0 && deps.bodyStillOurs()) {
     deps.announce(craftAnnouncement(itemName, crafted))
   }
-  return { item, itemName, crafted, tableUsed: tableAt !== null, tablePlaced, position: deps.position() }
+  return {
+    item,
+    itemName,
+    crafted,
+    tableUsed: tableAt !== null,
+    tablePlaced,
+    smelted,
+    furnaceUsed,
+    furnacePlaced,
+    position: deps.position(),
+  }
 }

@@ -1,0 +1,72 @@
+{
+  "key": "relationship_batch",
+  "title": "Batched relationship upserts (agent-service #7)",
+  "report_ref": "bottleneck-report \u00a77 / relationships.py:132 (one session per tick's batch)",
+  "primary_metric": "transactions",
+  "lower_is_better": true,
+  "iters": 50,
+  "warmup": 10,
+  "primary_delta_pct_p50": -83.33333333333334,
+  "correctness_passed": true,
+  "correctness_detail": "4000 random update sequences: batched == sequential (bounds + grudge damping preserved)",
+  "arms": {
+    "baseline": {
+      "db_round_trips": {
+        "n": 50,
+        "mean": 12.0,
+        "p50": 12.0,
+        "p95": 12.0,
+        "p99": 12.0,
+        "minimum": 12.0,
+        "maximum": 12.0
+      },
+      "modeled_tick_ms": {
+        "n": 50,
+        "mean": 18.0,
+        "p50": 18.0,
+        "p95": 18.0,
+        "p99": 18.0,
+        "minimum": 18.0,
+        "maximum": 18.0
+      },
+      "transactions": {
+        "n": 50,
+        "mean": 6.0,
+        "p50": 6.0,
+        "p95": 6.0,
+        "p99": 6.0,
+        "minimum": 6.0,
+        "maximum": 6.0
+      }
+    },
+    "treatment": {
+      "db_round_trips": {
+        "n": 50,
+        "mean": 3.0,
+        "p50": 3.0,
+        "p95": 3.0,
+        "p99": 3.0,
+        "minimum": 3.0,
+        "maximum": 3.0
+      },
+      "modeled_tick_ms": {
+        "n": 50,
+        "mean": 4.5,
+        "p50": 4.5,
+        "p95": 4.5,
+        "p99": 4.5,
+        "minimum": 4.5,
+        "maximum": 4.5
+      },
+      "transactions": {
+        "n": 50,
+        "mean": 1.0,
+        "p50": 1.0,
+        "p95": 1.0,
+        "p99": 1.0,
+        "minimum": 1.0,
+        "maximum": 1.0
+      }
+    }
+  }
+}

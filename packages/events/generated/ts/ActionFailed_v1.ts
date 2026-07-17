@@ -15,7 +15,7 @@ export interface ActionFailedPayload {
   villagerId: string;
   action: string;
   /**
-   * Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it).
+   * Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it). RB-1 additions (additive): TOOL_TIER_REQUIRED = the ore only drops to a higher tool tier than anything carried (the message names the tier — craft it first); SMELT_FAILED = the craft chain's furnace flow broke (no furnace placeable, no fuel, or the smelt yielded nothing — the message teaches the missing link).
    */
   errorCode:
     | "TIMEOUT"
@@ -31,6 +31,8 @@ export interface ActionFailedPayload {
     | "BODY_BUSY"
     | "SELF_DEFENSE_IN_PROGRESS"
     | "TARGET_ESCAPED"
+    | "TOOL_TIER_REQUIRED"
+    | "SMELT_FAILED"
     | "INTERNAL";
   errorMessage: string;
   retryable: boolean;

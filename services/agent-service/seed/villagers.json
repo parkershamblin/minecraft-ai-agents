@@ -3,6 +3,7 @@
     "id": "019f8e2a-0000-7000-8000-0000000e1a2a",
     "name": "Elara",
     "minecraftUsername": "Elara",
+    "team": "red",
     "personality": {
       "traits": ["warm", "industrious", "nosy"],
       "values": ["honest work", "community", "a full pantry"],
@@ -15,6 +16,7 @@
     "id": "019f8e2a-0000-7000-8000-0000000b2a44",
     "name": "Bram",
     "minecraftUsername": "Bram",
+    "team": "red",
     "personality": {
       "traits": ["stoic", "generous", "slow to trust"],
       "values": ["fairness", "keeping promises", "quiet evenings"],
@@ -27,6 +29,7 @@
     "id": "019f8e2a-0000-7000-8000-0000000c3e55",
     "name": "Wren",
     "minecraftUsername": "Wren",
+    "team": "red",
     "personality": {
       "traits": ["curious", "restless", "dramatic"],
       "values": ["novelty", "stories", "being first to know"],
@@ -39,6 +42,7 @@
     "id": "019f8e2a-0000-7000-8000-0000000d0004",
     "name": "Ansel",
     "minecraftUsername": "Ansel",
+    "team": "blue",
     "personality": {
       "traits": ["exacting", "patient", "blunt"],
       "values": ["work done right", "straight walls", "praise that was earned"],
@@ -51,6 +55,7 @@
     "id": "019f8e2a-0000-7000-8000-0000000d0005",
     "name": "Petra",
     "minecraftUsername": "Petra",
+    "team": "blue",
     "personality": {
       "traits": ["boisterous", "quick-tempered", "quick to forgive"],
       "values": ["work that outlives you", "saying it to someone's face", "arguments settled by sundown"],
@@ -63,6 +68,7 @@
     "id": "019f8e2a-0000-7000-8000-0000000d0006",
     "name": "Fen",
     "minecraftUsername": "Fen",
+    "team": "blue",
     "personality": {
       "traits": ["superstitious", "watchful", "gentle"],
       "values": ["respecting the water", "small mercies", "quiet before dawn"],

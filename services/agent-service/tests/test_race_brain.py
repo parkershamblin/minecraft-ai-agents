@@ -1,0 +1,218 @@
+"""RB-2: race state, the tier-checklist prompt section, and the
+team-progress percept fanout."""
+
+import json
+from datetime import UTC, datetime
+
+from agent_service.brain.race import MILESTONES, RaceState
+from agent_service.brain.prompts import _race_section, user_prompt
+from agent_service.kafka.percepts import PerceptConsumer
+
+RED_1, RED_2, RED_3 = "red-1", "red-2", "red-3"
+BLUE_1, BLUE_2, BLUE_3 = "blue-1", "blue-2", "blue-3"
+ATTEMPT = "019fb100-0000-7000-8000-00000000c000"
+
+NAMES = {RED_1: "Elara", RED_2: "Bram", RED_3: "Wren", BLUE_1: "Ansel", BLUE_2: "Petra", BLUE_3: "Fen"}
+
+STARTED = {
+    "attemptId": ATTEMPT,
+    "label": "test",
+    "difficulty": "normal",
+    "teams": [
+        {"teamId": "red", "villagerIds": [RED_1, RED_2, RED_3]},
+        {"teamId": "blue", "villagerIds": [BLUE_1, BLUE_2, BLUE_3]},
+    ],
+}
+
+
+def _state() -> RaceState:
+    state = RaceState()
+    state.attempt_started(STARTED, lambda v: NAMES.get(v, v))
+    return state
+
+
+def _milestone(team, milestone, villager=None):
+    return {"attemptId": ATTEMPT, "teamId": team, "villagerId": villager or RED_1, "milestone": milestone, "detail": None}
+
+
+# ------------------------------------------------------------------ RaceState
+
+
+def test_snapshot_is_personalized_and_spectators_get_none():
+    state = _state()
+    state.milestone(_milestone("red", "first_coal"))
+    view = state.snapshot(RED_2)
+    assert view.your_team == "red"
+    assert view.teammates == ("Elara", "Wren")
+    assert view.your_milestones == frozenset({"first_coal"})
+    assert view.rivals == (("blue", frozenset()),)
+    assert state.snapshot("a-spectator") is None
+
+
+def test_wrong_attempt_and_unknown_milestones_are_ignored():
+    state = _state()
+    state.milestone({**_milestone("red", "first_coal"), "attemptId": "someone-elses-race"})
+    state.milestone(_milestone("red", "first_diamond"))
+    assert state.snapshot(RED_1).your_milestones == frozenset()
+
+
+def test_attempt_ended_clears_everything():
+    state = _state()
+    state.attempt_ended({"attemptId": ATTEMPT})
+    assert state.snapshot(RED_1) is None
+    assert state.participant_ids() == ()
+
+
+def test_malformed_start_is_swallowed():
+    state = RaceState()
+    state.attempt_started({"attemptId": "x"}, lambda v: v)  # no teams
+    assert state.snapshot(RED_1) is None
+
+
+# -------------------------------------------------------------- prompt section
+
+
+def test_race_section_renders_checklist_rivals_and_next_step():
+    state = _state()
+    state.milestone(_milestone("red", "first_coal"))
+    state.milestone(_milestone("blue", "first_coal", BLUE_1))
+    state.milestone(_milestone("blue", "first_iron_ore", BLUE_1))
+    section = _race_section(state.snapshot(RED_1))
+    assert "your team (red: you and Bram, Wren)" in section
+    assert "[✓] coal mined" in section
+    assert "[ ] iron ore mined" in section
+    assert "team blue has crossed 2/5" in section
+    # the next unmet rung for red is iron ore — the hint teaches the tier gate
+    assert "stone pickaxe or better" in section
+    assert "chat" in section
+
+
+def test_race_section_win_rung_is_the_last_hint():
+    state = _state()
+    for milestone in MILESTONES[:-1]:
+        state.milestone(_milestone("red", milestone))
+    section = _race_section(state.snapshot(RED_1))
+    assert "WINS THE RACE" in section
+
+
+def test_user_prompt_carries_the_standing_race_section_and_news_lines():
+    state = _state()
+    prompt = user_prompt(
+        None,
+        [
+            {"type": "AttemptStarted"},
+            {"type": "ProgressionMilestone", "milestone": "first_iron_ore", "teamId": "blue", "by": "Fen", "yourTeam": False},
+            {"type": "ProgressionMilestone", "milestone": "first_coal", "teamId": "red", "by": "Bram", "yourTeam": True},
+        ],
+        [],
+        race=state.snapshot(RED_1),
+    )
+    assert "THE RACE — your team" in prompt
+    assert "THE RACE HAS BEGUN" in prompt
+    assert "team blue crossed a rung — iron ore mined" in prompt
+    assert "YOUR TEAM crossed a rung — coal mined (Bram)" in prompt
+
+
+# ------------------------------------------------------------- percept fanout
+
+
+def _now() -> str:
+    """Runtime-stamped: the consumer's freshness guard treats hardcoded
+    dates as a time bomb (the test_percept_fanout lesson)."""
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+class FakePipeline:
+    def __init__(self, store):
+        self._store = store
+        self._ops = []
+
+    def rpush(self, key, value):
+        self._ops.append((key, value))
+
+    def ltrim(self, key, start, stop):
+        pass
+
+    def expire(self, key, ttl):
+        pass
+
+    async def execute(self):
+        for key, value in self._ops:
+            self._store.setdefault(key, []).append(value)
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+class FakeRedis:
+    def __init__(self):
+        self.store: dict[str, list[str]] = {}
+
+    def pipeline(self, transaction=True):
+        return FakePipeline(self.store)
+
+
+def _consumer(redis, roster):
+    consumer = PerceptConsumer.__new__(PerceptConsumer)
+    consumer._redis = redis
+    consumer.on_chat_percept = None
+    consumer.civics = None
+    consumer.race = RaceState()
+    consumer.roster = roster
+    return consumer
+
+
+def _envelope(event_type, payload):
+    return {
+        "eventId": "019fb100-2222-7000-8000-000000000001",
+        "eventType": event_type,
+        "correlationId": "019fb100-2222-7000-8000-00000000c0de",
+        "occurredAt": _now(),
+        "payload": payload,
+    }
+
+
+def _percepts(redis, villager_id):
+    return [json.loads(raw) for raw in redis.store.get(f"percepts:{villager_id}", [])]
+
+
+async def test_milestone_fans_out_to_ticked_participants_personalized():
+    redis = FakeRedis()
+    # Fen (BLUE_3) is deliberately absent from the ticked roster.
+    consumer = _consumer(redis, {RED_1: "Elara", RED_2: "Bram", BLUE_1: "Ansel"})
+    await consumer.handle(_envelope("AttemptStarted", STARTED))
+    await consumer.handle(_envelope("ProgressionMilestone", _milestone("red", "first_coal", RED_2)))
+
+    assert [p["type"] for p in _percepts(redis, RED_1)] == ["AttemptStarted", "ProgressionMilestone"]
+    red_view = _percepts(redis, RED_1)[1]
+    assert red_view["yourTeam"] is True
+    assert red_view["by"] == "Bram"
+    blue_view = _percepts(redis, BLUE_1)[1]
+    assert blue_view["yourTeam"] is False
+    assert _percepts(redis, BLUE_3) == []  # not ticked -> no queue
+
+
+async def test_attempt_ended_personalizes_before_the_cache_clears():
+    redis = FakeRedis()
+    consumer = _consumer(redis, {RED_1: "Elara", BLUE_1: "Ansel"})
+    await consumer.handle(_envelope("AttemptStarted", STARTED))
+    await consumer.handle(
+        _envelope(
+            "AttemptEnded",
+            {"attemptId": ATTEMPT, "outcome": "won", "winningTeamId": "blue", "winningVillagerId": BLUE_3},
+        )
+    )
+    assert _percepts(redis, BLUE_1)[-1]["yourTeam"] is True
+    assert _percepts(redis, RED_1)[-1]["yourTeam"] is False
+    assert consumer.race.snapshot(RED_1) is None  # and the cache did clear
+
+
+async def test_non_participants_hear_nothing():
+    redis = FakeRedis()
+    consumer = _consumer(redis, {"villager-x": "Hollis"})
+    await consumer.handle(_envelope("AttemptStarted", STARTED))
+    await consumer.handle(_envelope("ProgressionMilestone", _milestone("red", "first_coal")))
+    assert _percepts(redis, "villager-x") == []

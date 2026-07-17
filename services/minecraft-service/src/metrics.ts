@@ -99,6 +99,14 @@ export const inventoryPolls = new Counter({
   registers: [registry],
 })
 
+// RB-1: race telemetry — one increment per (team, milestone) per attempt.
+export const progressionMilestones = new Counter({
+  name: 'civ_progression_milestones_total',
+  help: 'ProgressionMilestone events emitted, by milestone and team',
+  labelNames: ['milestone', 'team'] as const,
+  registers: [registry],
+})
+
 // civ_player_inventory_items only has series for held items, so it undercounts
 // empty-handed players — this gauge is the honest "who is being watched" count.
 export const playersTracked = new Gauge({
@@ -108,8 +116,13 @@ export const playersTracked = new Gauge({
   registers: [registry],
 })
 
-/** /healthz + /metrics on the canonical minecraft-service port (8003). */
-export function startAdminServer(port: number): http.Server {
+/** /healthz + /metrics on the canonical minecraft-service port (8003).
+ *  `extraRoutes` (RB-1) lets feature modules mount /internal handlers —
+ *  return true when the request was handled. */
+export function startAdminServer(
+  port: number,
+  extraRoutes?: (req: http.IncomingMessage, res: http.ServerResponse) => Promise<boolean>,
+): http.Server {
   const server = http.createServer(async (req, res) => {
     if (req.url === '/healthz') {
       res.writeHead(200, { 'content-type': 'application/json' })
@@ -119,6 +132,9 @@ export function startAdminServer(port: number): http.Server {
     if (req.url === '/metrics') {
       res.writeHead(200, { 'content-type': registry.contentType })
       res.end(await registry.metrics())
+      return
+    }
+    if (extraRoutes && (await extraRoutes(req, res))) {
       return
     }
     res.writeHead(404)

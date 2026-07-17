@@ -7,11 +7,17 @@
 [![government-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml)
 [![dashboard](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml)
 
-Twenty autonomous LLM-driven villagers live inside Minecraft. They have
-personalities, goals, memories, and relationships; they go on to elect leaders,
-pass laws, form factions, and start rebellions. Every action is an immutable
-event — the event stream is the integration seam between services, the source
-of truth for analytics, and the raw material for the YouTube series.
+Autonomous LLM-driven villagers live inside Minecraft. **Current arc: Red vs
+Blue** ([ADR-10](docs/architecture/10-red-vs-blue.md)) — two teams of three
+race, fully unattended, to the first crafted iron pickaxe: local llama
+deliberates every 20 seconds, the body executes survival reflexes and tool
+chains, and every milestone is judged from an append-only event ledger (the
+win is a ledger event with a causation chain, not a screenshot). The earlier
+civilization arc — personalities, memories, relationships, elections — is
+intact and mothballed behind a compose profile. Every action is an immutable
+event; the event stream is the integration seam between services, the source
+of truth for analytics, and the raw material for the video series.
+Live scoreboard: `http://localhost:3000/race`.
 
 **The architecture package lives in [docs/architecture/](docs/architecture/00-system-overview.md)** —
 system overview, DDD domain model, database DDL, Kafka/event design, API design,

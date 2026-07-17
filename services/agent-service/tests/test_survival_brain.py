@@ -32,7 +32,9 @@ def test_every_verb_fits_under_the_ceiling():
 def test_gather_gets_the_full_session_budget_and_unknowns_get_the_default():
     assert action_timeout_ms("gather") == 60_000
     assert action_timeout_ms("hunt") == 30_000
-    assert action_timeout_ms("craft") == 30_000
+    # RB-1: craft got the full ceiling — chain-resolution smelts up to ~30s of
+    # furnace time inside the one action, plus the walk/place.
+    assert action_timeout_ms("craft") == 60_000
     assert action_timeout_ms("never_heard_of_it") == 30_000
 
 

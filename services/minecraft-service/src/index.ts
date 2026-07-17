@@ -9,6 +9,8 @@ import { CommandConsumer } from './kafka/commandConsumer.ts'
 import { CommandExecutor } from './actions/executor.ts'
 import { CommandDedupe } from './redis/dedupe.ts'
 import { BotRegistry } from './bots/BotRegistry.ts'
+import { AttemptTracker } from './attempt/attemptTracker.ts'
+import { handleAttemptRoute } from './attempt/attemptRoutes.ts'
 import { RconClient } from './rcon/rcon.ts'
 import { InventoryTracker } from './world/inventoryTracker.ts'
 import { InventoryPoller } from './world/inventoryPoller.ts'
@@ -44,8 +46,14 @@ const executor = new CommandExecutor({
     ),
 })
 
+// RB-1 race machinery: the tracker watches every world.events publish and
+// maps outcomes to ProgressionMilestone; the harness drives the attempt
+// lifecycle over /internal/attempt.
+const attempts = new AttemptTracker((envelope) => void producer.publish('world.events', envelope))
+producer.onWorldEvent((envelope) => attempts.observe(envelope))
+
 const consumer = new CommandConsumer(config.KAFKA_BROKERS.split(','), executor)
-const admin = startAdminServer(config.PORT)
+const admin = startAdminServer(config.PORT, (req, res) => handleAttemptRoute(req, res, attempts))
 
 const inventoryPoller = new InventoryPoller({
   intervalMs: config.INVENTORY_POLL_INTERVAL_MS,

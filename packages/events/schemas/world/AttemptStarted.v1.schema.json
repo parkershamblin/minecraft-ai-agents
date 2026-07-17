@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/AttemptStarted.v1.schema.json",
+  "title": "AttemptStartedPayload",
+  "description": "A race attempt opened (ADR-10): the harness stamps one of these before releasing the teams, and every ProgressionMilestone/AttemptEnded carries its attemptId — one attempt is one self-describing, replayable slice of the ledger (best-of-N filming reruns are N attempts). The roster is embedded so replay needs no side-channel teams.json. Producer: minecraft-service on world.events; aggregate is the Attempt.",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Identity of the attempt; the envelope aggregateId."
+    },
+    "label": {
+      "type": ["string", "null"],
+      "maxLength": 120,
+      "description": "Operator label for the take ('normal-soak-2', 'flagship-take-3'); null for unlabeled runs."
+    },
+    "difficulty": {
+      "type": "string",
+      "description": "The server difficulty verified via RCON at stamp time (peaceful/easy/normal/hard) — part of the honest-footage claim, recorded not assumed."
+    },
+    "teams": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "teamId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "villagerIds": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": ["teamId", "villagerIds"],
+        "additionalProperties": false
+      },
+      "description": "The full roster at start — the milestone mapper's villagerId→teamId truth for this attempt."
+    }
+  },
+  "required": ["attemptId", "label", "difficulty", "teams"],
+  "additionalProperties": false
+}

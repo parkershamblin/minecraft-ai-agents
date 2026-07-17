@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/ProgressionMilestone.v1.schema.json",
+  "title": "ProgressionMilestonePayload",
+  "description": "A team crossed a tech-tier milestone during a race attempt (ADR-10). Emitted by the milestone mapper, which derives these from the service's OWN outcome events (ActionCompleted/ResourceGathered — the envelope's causationId points at the source event, so every milestone is ledger-replayable) and dedupes per (attemptId, teamId, milestone): 'first' means first for that team within that attempt. The milestone set is fixed and small by design; growing it is a contract commit. Producer: minecraft-service on world.events; aggregate is the Attempt.",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The race attempt this milestone belongs to (= AttemptStarted's attemptId and the envelope aggregateId)."
+    },
+    "teamId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The team that crossed the milestone, from the attempt's roster. Free string — team names are attempt configuration, not contract vocabulary."
+    },
+    "villagerId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The team member whose action crossed it."
+    },
+    "milestone": {
+      "type": "string",
+      "enum": [
+        "first_coal",
+        "first_iron_ore",
+        "furnace_placed",
+        "first_ingot",
+        "iron_pickaxe"
+      ],
+      "description": "The T1 ladder, in canonical order. iron_pickaxe is the race win condition: first team to a crafted (never looted) iron pickaxe — the mapper only fires it from ActionCompleted{action:craft}, which structurally excludes loot."
+    },
+    "detail": {
+      "type": ["string", "null"],
+      "description": "Human-readable color for the race feed and captions (what was gathered/crafted, where)."
+    }
+  },
+  "required": ["attemptId", "teamId", "villagerId", "milestone", "detail"],
+  "additionalProperties": false
+}

@@ -1,0 +1,54 @@
+{
+  "key": "query_cache",
+  "title": "Query-embedding cache (memory-service, Tier-3)",
+  "report_ref": "bottleneck-report Tier-3 / embeddings.py:29,53 (LRU on the read path)",
+  "primary_metric": "embedding_round_trips",
+  "lower_is_better": true,
+  "iters": 50,
+  "warmup": 10,
+  "primary_delta_pct_p50": -75.0,
+  "correctness_passed": true,
+  "correctness_detail": "20 reads over 5 distinct keys: backend hit 5x (want 5); all cached vectors == uncached truth",
+  "arms": {
+    "baseline": {
+      "embedding_round_trips": {
+        "n": 50,
+        "mean": 20.0,
+        "p50": 20.0,
+        "p95": 20.0,
+        "p99": 20.0,
+        "minimum": 20.0,
+        "maximum": 20.0
+      },
+      "modeled_window_ms": {
+        "n": 50,
+        "mean": 160.0,
+        "p50": 160.0,
+        "p95": 160.0,
+        "p99": 160.0,
+        "minimum": 160.0,
+        "maximum": 160.0
+      }
+    },
+    "treatment": {
+      "embedding_round_trips": {
+        "n": 50,
+        "mean": 5.0,
+        "p50": 5.0,
+        "p95": 5.0,
+        "p99": 5.0,
+        "minimum": 5.0,
+        "maximum": 5.0
+      },
+      "modeled_window_ms": {
+        "n": 50,
+        "mean": 40.0,
+        "p50": 40.0,
+        "p95": 40.0,
+        "p99": 40.0,
+        "minimum": 40.0,
+        "maximum": 40.0
+      }
+    }
+  }
+}

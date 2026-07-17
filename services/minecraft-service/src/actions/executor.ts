@@ -319,10 +319,11 @@ export class CommandExecutor {
             // from a different spot on a future tick
             throw new ActionError('RESOURCE_NOT_FOUND', (err as Error).message, true)
           }
-          if (code === 'TOOL_REQUIRED') {
+          if (code === 'TOOL_REQUIRED' || code === 'TOOL_TIER_REQUIRED') {
             // also honest, but NOT retryable: the same empty hands fail the
-            // same way — the message says what would change that
-            throw new ActionError('TOOL_REQUIRED', (err as Error).message, false)
+            // same way — the message says what would change that (for ores,
+            // the tier ladder: which pickaxe to craft first)
+            throw new ActionError(code, (err as Error).message, false)
           }
           throw err
         }

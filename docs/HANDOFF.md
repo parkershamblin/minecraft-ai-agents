@@ -1,8 +1,84 @@
-# Session Handoff — SURVIVAL LIVE + CPU FOLLOW-UP CLOSED (PR #33 merged; perf PR #34 awaiting Parker's click) · WORLD ON EASY, wheels on · fleet survives autonomously
+# Session Handoff — RB-1 COMPLETE + RB-2 MACHINERY BUILT (3 tuning attempts run) + RB-3 scoreboard LIVE · next: RB-2 exit race
+
+## Session 2026-07-17 (fourth, part 2) — RB-2 machinery + three attempts of tuning + the RB-3 scoreboard
+
+**RB-2 built and battle-tested; the unattended won race is still owed.**
+The race brain (tier-checklist prompt + team-progress percepts, the civics
+pattern), the attempt harness (`scripts/race-rb2.mjs` — the ADR's enumerated
+checklist executed AND verified, honest-race deltas read from Prometheus,
+stall watchdog), and the RB-3 dashboard `/race` scoreboard (validated
+palette, live SSE, verified against a running attempt in Chrome) all landed.
+Race preset active in `.env`: VILLAGER_COUNT=6, TICK=20s. Soak numbers at
+race cadence: ~1.7s mean Ollama deliberation, 6 bots, zero tick errors.
+
+**Three attempts, each converting a real defect into a structural fix:**
+1. 107 chats vs 1 gather — the "split the work out loud" line licensed a
+   debate club → RACE DISCIPLINE directive (mix became 39 gather / 0 chat).
+2. Both teams raced on the barren spawn mountain — blind ±N posts → posts
+   auto-locate the nearest FOREST; stationing was silently broken: a
+   mid-pathfind racer keeps its in-flight goal and walks home →
+   spreadplayers + verify + spawnpoint-anchor + kill/respawn state reset;
+   plus the posOf regex bug (`.match(/g)` keeps the trailing 'd' → NaN).
+3. Attempt 3 (verified rig): wood age converted — a wooden pickaxe WAS
+   crafted, coal ore located and targeted 3.4 blocks away — but the
+   conversion broke: **Fen's pickaxe vanished from the pack** (death
+   suspected despite keepInventory; unproven) and gather failures were
+   processed in same-second BURSTS (command-plane backlog — an executor
+   wedge signal at 6-bot race pace). Attempt ended by the 45m stall
+   watchdog, honest deltas recorded.
+
+**Open defects for the RB-2 exit (next session's first hour):**
+- The vanished wooden pickaxe (trace Fen's death/respawn events in the
+  ledger for attempt 019f7106-a09f-7212-a6ee-157fc87d10a4).
+- Same-second command-failure bursts (check consumer lag / event-loop
+  stalls at 6 walkers; scripts/profile/ exists from #34).
+- Consider: longer stall window for the wood age (45m was nearly enough),
+  and per-bot inventory-conditional hint (the tier prose already teaches).
+Then rerun `node scripts/race-rb2.mjs --label rb2-exit-N` — one command.
+
+RB-3 remaining after the race: POV grid (prismarine-viewer, flag off —
+NEVER deploy minecraft-service mid-race), README hero, filming
+(docs/demo-rb.md has the shot script + caption-to-ledger table).
 
 > A fresh session should be able to continue from this file +
-> `docs/architecture/09-survival-plan.md` (the approved cluster) or
-> `docs/architecture/08-m2-plan.md` (history) without asking questions.
+> `docs/architecture/10-red-vs-blue.md` (the ADR-pinned plan) without
+> asking questions.
+
+## Session 2026-07-17 (fourth) — RB-1, the whole body phase in one autonomous session (branch `rb-1-body`, PR pending)
+
+**Exit criterion met and machine-verified**: `node scripts/drill-rb1.mjs`
+drives Fen mine → smelt → craft iron_pickaxe end-to-end on the live stack;
+the ledger holds the attempt slice (AttemptStarted, FIVE ProgressionMilestones,
+AttemptEnded{won, 57.7s, honest-race zeros}), replayable by attemptId —
+`GET :8081/events?aggregate-type=Attempt&aggregate-id=<id>`. One
+chain-resolution craft crossed furnace_placed + first_ingot + iron_pickaxe
+with causation pointing at the single ActionCompleted{crafted:1, smelted:3}.
+
+In ADR order: **SV-5b gate** (first volume backup executed + verified,
+`docs/runbooks/volume-backup.md`, backups in
+`D:\backups\ai-civilization-engine\2026-07-17\`) → **contract commit**
+(gather += coal/iron_ore · craft += iron_pickaxe · errorCodes +=
+TOOL_TIER_REQUIRED/SMELT_FAILED · AttemptStarted/ProgressionMilestone/
+AttemptEnded · fixtures/gen/FakeProvider rows/timeout rows, craft → 60s
+ceiling) → **body skills** (ore tier gate teaching the pickaxe ladder;
+smelt-inside-craft: find-or-place furnace, fuel ranking coal>planks>logs,
+honest short-yield; auto-equip verified already in skills) → **milestone
+mapper + attempt lifecycle** (producer choke-point observer, per-team
+dedupe, win = craft-completions only, `/internal/attempt` control surface)
+→ **team seed + gov mothball** (villagers.json team fields red/blue,
+VILLAGER_COUNT=6 preset, spawn-teams.mjs, government-service → `gov`
+profile) → **exit drill**.
+
+Drill iterations flushed four real bugs (each cost a run): Paper
+spawn-protection ghost-digs near world spawn (now 0), placeBlock's flaky
+blockUpdate wait (world-verify instead of trusting the throw), interactive
+blocks as placement ground (furnace stacked onto the table opens it
+instead), and rig lessons (thick pad, cleared inventory — scavenged ingots
+once let the pickaxe craft with zero smelts). All in CLAUDE.md gotchas.
+
+**Next session (RB-2)**: tier-checklist prompt + team-progress percepts +
+the enumerated attempt checklist + llama go/no-go smoke + Normal soak.
+The old M2/Survival handoff below is history.
 > **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
 > Survival cluster is in flight: SV-1 (`1915e6d`), SV-2 (`38bc223`) and
 > SV-3 + survival reflexes (PR #33, squash `d9d16bd`) merged. The LIVE

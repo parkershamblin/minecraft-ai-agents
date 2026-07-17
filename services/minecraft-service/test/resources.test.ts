@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ORE_TIER,
   RESOURCE_BLOCKS,
   RESOURCE_YIELD,
   blockNamesFor,
+  blockedDigError,
   allTargetsBlacklistedMessage,
   gatherFailureMessage,
   gatherStartAnnouncement,
@@ -282,7 +284,39 @@ describe('scanNearbyResources (the snapshot survey)', () => {
     const bot = botAt(origin, everywhere)
     const [dirt] = scanNearbyResources(bot, SCAN)!
     expect(dirt).toEqual({ family: 'dirt', nearestDistance: 1, count: 32 })
-    expect(bot.calls).toEqual([64, 64, 64]) // countCap * 2, once per family
+    // countCap * 2, once per family — derived, so growing RESOURCE_BLOCKS
+    // (coal/iron_ore joined in RB-1) doesn't stale this assertion.
+    expect(bot.calls).toEqual(Object.keys(RESOURCE_BLOCKS).map(() => 64))
+  })
+})
+
+describe('blockedDigError (the RB-1 ore tier gate prose)', () => {
+  it('iron ore blocked teaches the stone-pickaxe tier, coded TOOL_TIER_REQUIRED', () => {
+    const blocked = blockedDigError('iron_ore', 'deepslate_iron_ore', 'a pickaxe')
+    expect(blocked.code).toBe('TOOL_TIER_REQUIRED')
+    expect(blocked.message).toContain('a stone pickaxe or better')
+    expect(blocked.message).toContain('craft a stone_pickaxe')
+  })
+
+  it('coal blocked teaches any pickaxe, coded TOOL_TIER_REQUIRED', () => {
+    const blocked = blockedDigError('coal', 'coal_ore', 'a pickaxe')
+    expect(blocked.code).toBe('TOOL_TIER_REQUIRED')
+    expect(blocked.message).toContain('any pickaxe')
+    expect(blocked.message).toContain('craft a wooden_pickaxe')
+  })
+
+  it('non-ore families keep the SV-2 TOOL_REQUIRED prose', () => {
+    const blocked = blockedDigError('stone', 'stone', 'a pickaxe')
+    expect(blocked.code).toBe('TOOL_REQUIRED')
+    expect(blocked.message).toContain('bare-handed drops nothing')
+  })
+
+  it('every ore family with a yield map has a tier row — a new ore without prose fails here', () => {
+    for (const family of ['coal', 'iron_ore']) {
+      expect(RESOURCE_BLOCKS[family]).toBeDefined()
+      expect(RESOURCE_YIELD[family]).toBeDefined()
+      expect(ORE_TIER[family]).toBeDefined()
+    }
   })
 })
 

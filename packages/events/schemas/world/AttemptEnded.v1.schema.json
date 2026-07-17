@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/AttemptEnded.v1.schema.json",
+  "title": "AttemptEndedPayload",
+  "description": "A race attempt closed (ADR-10). 'won' fires when the win-condition milestone lands (first crafted iron pickaxe, occurredAt order, UUIDv7 tiebreak); the winning* fields then point back into the ledger so the victory claim is replayable evidence, not narration. The honestRace block carries the no-pollution assertion as recorded deltas over the attempt window — consumers (and the video captions) assert both are zero rather than trusting the footage. Producer: minecraft-service on world.events; aggregate is the Attempt.",
+  "type": "object",
+  "properties": {
+    "attemptId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["won", "stalled", "aborted"],
+      "description": "won = the win milestone landed; stalled = the harness's stall watchdog gave up (soak data, not failure noise); aborted = the operator ended the take."
+    },
+    "winningTeamId": {
+      "type": ["string", "null"],
+      "description": "null unless outcome is won."
+    },
+    "winningVillagerId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "null unless outcome is won."
+    },
+    "winningEventId": {
+      "type": ["string", "null"],
+      "format": "uuid",
+      "description": "eventId of the winning ActionCompleted{craft:iron_pickaxe} — the ledger-proof pointer; null unless outcome is won."
+    },
+    "durationSeconds": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Wall-clock seconds from AttemptStarted to this event."
+    },
+    "honestRace": {
+      "type": "object",
+      "properties": {
+        "budgetTrippedDelta": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "civ_llm_budget_tripped increase over the attempt window; an honest race requires 0 (a tripped breaker means FakeProvider was deliberating)."
+        },
+        "fakeProviderDelta": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of fake-provider decisions over the attempt window; an honest race requires 0."
+        }
+      },
+      "required": ["budgetTrippedDelta", "fakeProviderDelta"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "attemptId",
+    "outcome",
+    "winningTeamId",
+    "winningVillagerId",
+    "winningEventId",
+    "durationSeconds",
+    "honestRace"
+  ],
+  "additionalProperties": false
+}

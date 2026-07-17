@@ -56,6 +56,7 @@ def _bare(redis) -> PerceptConsumer:
     consumer._redis = redis
     consumer.on_chat_percept = None
     consumer.civics = None
+    consumer.race = None
     consumer.roster = {}
     return consumer
 

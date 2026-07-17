@@ -1,0 +1,54 @@
+{
+  "key": "producer_batch",
+  "title": "Kafka producer batching (agent-service #5)",
+  "report_ref": "bottleneck-report \u00a75 / producer.py:26,33 (fire-and-forget + one flush)",
+  "primary_metric": "awaited_round_trips",
+  "lower_is_better": true,
+  "iters": 50,
+  "warmup": 10,
+  "primary_delta_pct_p50": -87.5,
+  "correctness_passed": true,
+  "correctness_detail": "sends=8 (want 8), flushes=1 (want 1), round_trips=1 (want 1)",
+  "arms": {
+    "baseline": {
+      "awaited_round_trips": {
+        "n": 50,
+        "mean": 8.0,
+        "p50": 8.0,
+        "p95": 8.0,
+        "p99": 8.0,
+        "minimum": 8.0,
+        "maximum": 8.0
+      },
+      "modeled_tick_ms": {
+        "n": 50,
+        "mean": 16.0,
+        "p50": 16.0,
+        "p95": 16.0,
+        "p99": 16.0,
+        "minimum": 16.0,
+        "maximum": 16.0
+      }
+    },
+    "treatment": {
+      "awaited_round_trips": {
+        "n": 50,
+        "mean": 1.0,
+        "p50": 1.0,
+        "p95": 1.0,
+        "p99": 1.0,
+        "minimum": 1.0,
+        "maximum": 1.0
+      },
+      "modeled_tick_ms": {
+        "n": 50,
+        "mean": 2.0,
+        "p50": 2.0,
+        "p95": 2.0,
+        "p99": 2.0,
+        "minimum": 2.0,
+        "maximum": 2.0
+      }
+    }
+  }
+}

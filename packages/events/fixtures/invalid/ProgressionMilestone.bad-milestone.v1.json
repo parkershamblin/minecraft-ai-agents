@@ -1,0 +1,18 @@
+{
+  "eventId": "019fb100-0030-7000-8000-00000000c030",
+  "eventType": "ProgressionMilestone",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T18:22:41.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Attempt",
+  "aggregateId": "019fb100-0000-7000-8000-00000000c000",
+  "correlationId": "019fb100-0031-7000-8000-c0de00000013",
+  "causationId": null,
+  "payload": {
+    "attemptId": "019fb100-0000-7000-8000-00000000c000",
+    "teamId": "red",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0002",
+    "milestone": "first_diamond",
+    "detail": "milestone outside the enum — the T1 ladder is closed by design; T2 is a contract commit"
+  }
+}

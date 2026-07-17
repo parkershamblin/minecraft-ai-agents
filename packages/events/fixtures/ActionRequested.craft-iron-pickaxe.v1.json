@@ -1,0 +1,19 @@
+{
+  "eventId": "019fb100-0050-7000-8000-00000000c050",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T18:35:00.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000d0002",
+  "correlationId": "019fb100-0051-7000-8000-c0de00000015",
+  "causationId": "019fb100-004f-7000-8000-00000000c04f",
+  "payload": {
+    "commandId": "019fb100-0050-7000-8000-00000000c050",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0002",
+    "action": "craft",
+    "params": { "item": "iron_pickaxe" },
+    "priority": 5,
+    "timeoutMs": 60000
+  }
+}
