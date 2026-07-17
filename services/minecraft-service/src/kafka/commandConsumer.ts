@@ -6,9 +6,11 @@ import type { CommandExecutor } from '../actions/executor.ts'
 /**
  * The single executor group for commands.minecraft. Parses envelopes and hands
  * them to the CommandExecutor, which owns dedupe, the timeout watchdog, and
- * the exactly-one-outcome invariant. Partitions are consumed concurrently;
- * WITHIN a partition commands run sequentially — which is exactly the
- * per-villager ordering guarantee (partition key = villagerId).
+ * the exactly-one-outcome invariant. Delivery order per villager comes from
+ * the partition key (villagerId); EXECUTION order per villager comes from the
+ * executor's dispatch lanes — eachMessage never awaits the world (RB-2: the
+ * fetch cycle gates every partition on the slowest in-flight handler, so one
+ * 60s pathfind used to stall all six bots' command planes at once).
  */
 export class CommandConsumer {
   private consumer: Consumer
@@ -63,7 +65,8 @@ export class CommandConsumer {
           logger.warn({ eventType: envelope.eventType }, 'parked non-command on commands.minecraft')
           return
         }
-        await this.executor.execute(envelope)
+        // Enqueue and ack — never await the world here (see class doc).
+        this.executor.dispatch(envelope)
       },
     })
     logger.info('command consumer running')

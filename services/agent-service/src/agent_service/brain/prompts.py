@@ -203,7 +203,39 @@ _RACE_NEXT_HINT = {
 }
 
 
-def _race_section(race: RaceView) -> str:
+def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> str | None:
+    """Attempt-3 lesson (the vanished pickaxe): Fen's wooden pickaxe hit its
+    59-use durability cap mid-dig — pathfinder tunnel digs wear tools too —
+    and the brain, never told that tools break, chased the next rung
+    bare-handed for 35 minutes. The hint is material-aware so the recovery is
+    the SHORTEST path back to mining, and it stays silent at the smelt/win
+    rungs, where a re-tool detour would cost the race."""
+    if inventory is None or next_unmet not in ("first_coal", "first_iron_ore", "furnace_placed"):
+        return None
+    count: dict[str, int] = {}
+    for stack in inventory:
+        item = str(stack.get("item", ""))
+        count[item] = count.get(item, 0) + int(stack.get("count") or 0)
+    if any(item.endswith("_pickaxe") and n > 0 for item, n in count.items()):
+        return None
+    cobble = count.get("cobblestone", 0)
+    sticks = count.get("stick", 0)
+    wood = sum(n for item, n in count.items() if item.endswith(("_log", "_planks")))
+    why = (
+        "TOOL CHECK: your pack holds NO pickaxe — tools wear out and BREAK as you dig; "
+        "a pickaxe that vanished simply broke. Re-craft it now: "
+    )
+    if cobble >= 3 and sticks >= 2:
+        return why + (
+            "craft stone_pickaxe — you already carry the cobblestone and sticks "
+            "(no table standing near? craft crafting_table first, 4 planks)."
+        )
+    if cobble >= 3 and wood > 0:
+        return why + "craft planks → sticks, then stone_pickaxe at a table — you already carry the cobblestone."
+    return why + "gather wood → craft planks → sticks → crafting_table → wooden_pickaxe, then mine on."
+
+
+def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
     """The standing race section: percepts decay off the queue, but a race
     must not — same rule as elections. Checklist truth comes from the
     ledger-fed cache, the next step from the tier table."""
@@ -223,6 +255,9 @@ def _race_section(race: RaceView) -> str:
     ]
     if next_unmet:
         lines.append(f"Your next step: {_RACE_NEXT_HINT[next_unmet]}.")
+        tool_check = _race_tool_check(inventory, next_unmet)
+        if tool_check:
+            lines.append(tool_check)
     # Directive pressure (attempt-1 lesson: 107 chats to 1 gather — the
     # friendly "split the work out loud" line licensed a debate club).
     # Races are won by hands, and the directive must outrank sociability.
@@ -380,9 +415,10 @@ def user_prompt(
         if section:
             sections.append(section)
 
-    # The standing race section (RB-2): same decay rule as elections.
+    # The standing race section (RB-2): same decay rule as elections. The
+    # inventory rides along so the tier hint can catch a broken-tool pack.
     if race is not None:
-        sections.append(_race_section(race))
+        sections.append(_race_section(race, snapshot.get("inventory") if snapshot else None))
 
     # Type-dispatch: unknown percept types are skipped, never a KeyError —
     # the queue outlives any single deploy's vocabulary.

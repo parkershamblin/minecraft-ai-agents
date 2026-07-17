@@ -99,6 +99,15 @@ export const inventoryPolls = new Counter({
   registers: [registry],
 })
 
+// RB-2: commands admitted to per-villager lanes but not yet finished — the
+// backlog the kafka fetch cycle used to hide. Idles at 0; sustained >6 at a
+// 6-bot race means the world is falling behind the brains.
+export const commandLaneDepth = new Gauge({
+  name: 'civ_command_lane_depth',
+  help: 'Commands enqueued or executing in per-villager dispatch lanes',
+  registers: [registry],
+})
+
 // RB-1: race telemetry — one increment per (team, milestone) per attempt.
 export const progressionMilestones = new Counter({
   name: 'civ_progression_milestones_total',

@@ -492,3 +492,83 @@ describe('timeoutMessage', () => {
     expect(message).not.toContain('no outcome within 30000ms')
   })
 })
+
+describe('dispatch lanes (RB-2)', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  function commandFor(
+    villagerId: string,
+    commandId: string,
+    action = 'chat',
+    params: Record<string, unknown> = { message: 'hi' },
+    timeoutMs = 5_000,
+  ): EventEnvelope {
+    const envelope = command(action, params, timeoutMs)
+    const payload = envelope.payload as { commandId: string; villagerId: string }
+    payload.commandId = commandId
+    payload.villagerId = villagerId
+    return envelope
+  }
+
+  it('a hung action on one villager does not delay another villager (the rb2-exit-3 stall)', async () => {
+    let hungSession: SessionActions | undefined
+    let fastSession: SessionActions | undefined
+    const h = harness({ getSession: (vid) => (vid === 'elara-id' ? hungSession : fastSession) })
+    hungSession = { ...h.session, busy: null, moveTo: vi.fn(() => new Promise<never>(() => {})) }
+    fastSession = { ...h.session, busy: null, chat: vi.fn() }
+
+    h.executor.dispatch(commandFor('elara-id', 'c-hung', 'move', { to: { x: 100, y: 64, z: 0 } }))
+    h.executor.dispatch(commandFor('bram-id', 'c-fast', 'chat', { message: 'hello' }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    // Bram's command completed while Elara's still hangs — before the fix,
+    // the fetch-cycle barrier held EVERY bot's commands behind the hang.
+    const fast = h.outcomes.find((o) => o.extra.commandId === 'c-fast')
+    expect(fast?.eventType).toBe('ActionCompleted')
+    expect(h.outcomes.find((o) => o.extra.commandId === 'c-hung')).toBeUndefined()
+
+    await vi.advanceTimersByTimeAsync(5_001)
+    const hung = h.outcomes.find((o) => o.extra.commandId === 'c-hung')
+    expect(hung?.eventType).toBe('ActionFailed')
+    expect(hung?.extra.errorCode).toBe('TIMEOUT')
+    await h.executor.drain()
+  })
+
+  it('commands for the same villager run strictly in order, one at a time', async () => {
+    const order: string[] = []
+    const h = harness(
+      {},
+      {
+        gather: vi.fn(async () => {
+          order.push('gather-started')
+          await new Promise((resolve) => setTimeout(resolve, 1_000))
+          order.push('gather-finished')
+          return gatherResult()
+        }),
+        chat: vi.fn(() => {
+          order.push('chat-ran')
+        }),
+      },
+    )
+    h.executor.dispatch(commandFor('elara-id', 'c-1', 'gather', { resource: 'wood' }))
+    h.executor.dispatch(commandFor('elara-id', 'c-2', 'chat', { message: 'after' }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(order).toEqual(['gather-started']) // the chat waits its turn
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(order).toEqual(['gather-started', 'gather-finished', 'chat-ran'])
+    expect(h.outcomes.map((o) => o.extra.commandId)).toEqual(['c-1', 'c-2'])
+    await h.executor.drain()
+  })
+
+  it('drain reaches quiescence and a drained executor accepts new work', async () => {
+    const h = harness()
+    h.executor.dispatch(commandFor('elara-id', 'c-a', 'chat', { message: 'one' }))
+    h.executor.dispatch(commandFor('bram-id', 'c-b', 'chat', { message: 'two' }))
+    await h.executor.drain()
+    expect(h.outcomes).toHaveLength(2)
+    h.executor.dispatch(commandFor('elara-id', 'c-c', 'chat', { message: 'three' }))
+    await h.executor.drain()
+    expect(h.outcomes).toHaveLength(3)
+  })
+})

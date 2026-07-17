@@ -87,6 +87,41 @@ def test_race_section_renders_checklist_rivals_and_next_step():
     assert "chat" in section
 
 
+def test_tool_check_silent_when_pack_has_a_pickaxe_or_no_snapshot():
+    state = _state()
+    view = state.snapshot(RED_1)
+    with_pickaxe = [{"item": "wooden_pickaxe", "count": 1}]
+    assert "TOOL CHECK" not in _race_section(view, with_pickaxe)
+    assert "TOOL CHECK" not in _race_section(view, None)
+
+
+def test_tool_check_stone_path_when_materials_are_in_the_pack():
+    state = _state()
+    state.milestone(_milestone("red", "first_coal"))
+    inventory = [{"item": "cobblestone", "count": 5}, {"item": "stick", "count": 2}]
+    section = _race_section(state.snapshot(RED_1), inventory)
+    assert "TOOL CHECK" in section
+    assert "craft stone_pickaxe — you already carry the cobblestone and sticks" in section
+    assert "crafting_table first" in section
+
+
+def test_tool_check_wood_bootstrap_when_the_pack_is_bare():
+    state = _state()
+    section = _race_section(state.snapshot(RED_1), [])
+    assert "TOOL CHECK" in section
+    assert "gather wood → craft planks → sticks → crafting_table → wooden_pickaxe" in section
+
+
+def test_tool_check_stays_out_of_the_win_rungs():
+    # A re-tool detour at first_ingot/iron_pickaxe would cost the race —
+    # the check only fires on the mining rungs.
+    state = _state()
+    for milestone in MILESTONES[:3]:
+        state.milestone(_milestone("red", milestone))
+    section = _race_section(state.snapshot(RED_1), [])
+    assert "TOOL CHECK" not in section
+
+
 def test_race_section_win_rung_is_the_last_hint():
     state = _state()
     for milestone in MILESTONES[:-1]:

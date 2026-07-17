@@ -5,7 +5,7 @@ import type { GatherResult } from '../bots/BotSession.ts'
 import type { CraftResult } from '../world/crafting.ts'
 import type { HuntResult } from '../world/hunting.ts'
 import { logger } from '../logging.ts'
-import { commandsProcessed } from '../metrics.ts'
+import { commandLaneDepth, commandsProcessed } from '../metrics.ts'
 
 /** The slice of BotSession the executor drives — mockable in tests. */
 export interface SessionActions {
@@ -105,6 +105,55 @@ export function timeoutMessage(action: string, timeoutMs: number): string {
  */
 export class CommandExecutor {
   constructor(private readonly deps: ExecutorDeps) {}
+
+  /** villagerId -> tail of that villager's serial execution chain (RB-2). */
+  private readonly lanes = new Map<string, Promise<void>>()
+
+  /**
+   * Enqueue and return — consumption decoupled from execution. kafkajs's
+   * fetch cycle waits on the SLOWEST in-flight eachMessage across partitions,
+   * so awaiting the world inside the handler let one 60s pathfind gate every
+   * bot's next command (rb2-exit-3: 40–116s request→outcome lag at 6
+   * walkers, failures landing in same-second bursts as the backlog drained).
+   * Lanes keep the per-villager ordering the partition key used to provide;
+   * the fetch loop never blocks on a body again.
+   *
+   * Crash semantics, deliberate: intents queued here but unexecuted die with
+   * the process. The brain reissues next tick, and dead intents must never
+   * replay into the live world (the STALE_COMMAND rule) — losing them is the
+   * safe side. The age guard runs inside execute(), i.e. at DEQUEUE time, so
+   * time spent waiting in a lane counts against maxCommandAgeMs.
+   */
+  dispatch(command: EventEnvelope): void {
+    const villagerId = String((command.payload as unknown as ActionRequestedPayload).villagerId ?? '')
+    const tail = this.lanes.get(villagerId) ?? Promise.resolve()
+    commandLaneDepth.inc()
+    const next = tail
+      .then(() => this.execute(command))
+      .catch((err) => {
+        // execute() settles its own failures; reaching here means the outcome
+        // publish itself threw. Producer-level crash handling owns kafka-wide
+        // death — log loud, keep the lane alive.
+        logger.error(
+          { err: err instanceof Error ? err.message : String(err) },
+          'command lane step failed past the executor',
+        )
+      })
+      .finally(() => {
+        commandLaneDepth.dec()
+        if (this.lanes.get(villagerId) === next) {
+          this.lanes.delete(villagerId)
+        }
+      })
+    this.lanes.set(villagerId, next)
+  }
+
+  /** Await quiescence of every lane — graceful shutdown and tests. */
+  async drain(): Promise<void> {
+    while (this.lanes.size > 0) {
+      await Promise.all([...this.lanes.values()])
+    }
+  }
 
   async execute(command: EventEnvelope): Promise<void> {
     const payload = command.payload as unknown as ActionRequestedPayload
