@@ -84,7 +84,7 @@ def test_race_section_renders_checklist_rivals_and_next_step():
     assert "team blue has crossed 2/5" in section
     # the next unmet rung for red is iron ore — the hint teaches the tier gate
     assert "stone pickaxe or better" in section
-    assert "chat" in section
+    assert "Chat ONLY" in section
 
 
 def test_tool_check_silent_when_pack_has_a_pickaxe_or_no_snapshot():
@@ -128,6 +128,44 @@ def test_race_section_win_rung_is_the_last_hint():
         state.milestone(_milestone("red", milestone))
     section = _race_section(state.snapshot(RED_1))
     assert "WINS THE RACE" in section
+
+
+# Race mode mutes the peacetime appetites (attempt-4 data: 86 hunt decisions,
+# 71 found nothing — the hunger tier and game-in-sight section drove them).
+
+
+def _hungry_snapshot(food, animals=True):
+    snap = {
+        "position": {"x": 0, "y": 64, "z": 0},
+        "health": 20,
+        "food": food,
+        "timeOfDay": 1000,
+        "inventory": [{"item": "stone_pickaxe", "count": 1}],
+    }
+    if animals:
+        snap["nearbyAnimals"] = [{"family": "cow", "nearestDistance": 12, "count": 3}]
+    return snap
+
+
+def test_race_mode_mutes_mild_hunger_and_game_in_sight():
+    state = _state()
+    prompt = user_prompt(_hungry_snapshot(8), [], [], race=state.snapshot(RED_1))
+    assert "Hunger is setting in" not in prompt
+    assert "Game in sight" not in prompt
+    assert "RACE DISCIPLINE" in prompt
+    assert "NEVER hunt" in prompt
+
+
+def test_race_mode_still_screams_at_true_starvation():
+    state = _state()
+    prompt = user_prompt(_hungry_snapshot(5), [], [], race=state.snapshot(RED_1))
+    assert "YOU ARE STARVING" in prompt
+
+
+def test_peacetime_keeps_hunger_and_animals():
+    prompt = user_prompt(_hungry_snapshot(8), [], [], race=None)
+    assert "Hunger is setting in" in prompt
+    assert "Game in sight" in prompt
 
 
 def test_user_prompt_carries_the_standing_race_section_and_news_lines():

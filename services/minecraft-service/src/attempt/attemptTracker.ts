@@ -59,8 +59,19 @@ export function deriveMilestones(envelope: EventEnvelope): DerivedMilestone[] {
       return []
     }
     const out: DerivedMilestone[] = []
-    if (result.furnacePlaced === true) {
-      out.push({ milestone: 'furnace_placed', villagerId, detail: 'set up a furnace' })
+    // The rung means "this team has furnace access", and there are THREE
+    // honest routes to it: the chain-resolution places one mid-craft
+    // (furnacePlaced), the villager crafts one to carry (item: furnace —
+    // the path the race prompt itself teaches, invisible on the scoreboard
+    // until this line, caught live in attempt 5b), or the chain reuses a
+    // furnace found in the world (furnaceUsed — without this, that path
+    // would NEVER light the rung and the ladder would win at 4/5). The
+    // per-team dedupe makes the overlap harmless.
+    const craftedFurnace = result.item === 'furnace' && typeof result.crafted === 'number' && result.crafted > 0
+    if (result.furnacePlaced === true || result.furnaceUsed === true || craftedFurnace) {
+      const detail =
+        result.furnacePlaced === true ? 'set up a furnace' : craftedFurnace ? 'crafted a furnace' : 'put a found furnace to work'
+      out.push({ milestone: 'furnace_placed', villagerId, detail })
     }
     if (typeof result.smelted === 'number' && result.smelted > 0) {
       out.push({

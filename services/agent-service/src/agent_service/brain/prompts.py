@@ -258,14 +258,17 @@ def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
         tool_check = _race_tool_check(inventory, next_unmet)
         if tool_check:
             lines.append(tool_check)
-    # Directive pressure (attempt-1 lesson: 107 chats to 1 gather — the
-    # friendly "split the work out loud" line licensed a debate club).
-    # Races are won by hands, and the directive must outrank sociability.
+    # Directive pressure, twice-tuned. Attempt-1 lesson: 107 chats to 1
+    # gather — the friendly "split the work out loud" line licensed a debate
+    # club. Attempt-4 lesson: HALF of all 1060 decisions were `move` (gather
+    # and craft already walk the body there), and 86 were `hunt` (71 found
+    # nothing) — the verbs must be named and banned, not implied away.
     lines.append(
-        "RACE DISCIPLINE: act, don't discuss. Choose gather or craft this turn unless you are "
-        "physically unable; move only toward resources; chat ONLY to report a handoff a teammate "
-        "needs (one short line, at most once in a while). Every turn spent talking is a turn the "
-        "rival team spent mining."
+        "RACE DISCIPLINE: choose gather or craft EVERY turn — both walk you to the target on "
+        "their own, so never choose move unless your last gather failed with nothing-in-reach. "
+        "NEVER hunt, never idle, never follow: your body feeds itself from the pack and fights "
+        "its own battles. Chat ONLY to report a handoff a teammate needs (one short line). "
+        "Every turn not mining is a turn the rival team spent mining."
     )
     return "\n".join(lines)
 
@@ -368,10 +371,19 @@ def user_prompt(
             f"- nearby villagers: {nearby or 'nobody in sight'}\n"
             f"- inventory: {', '.join(f'{i['count']} {i['item']}' for i in snapshot.get('inventory', [])) or 'empty'}"
         )
+        # Race mode mutes the peacetime appetites (attempt-4 data, 2026-07-17:
+        # 86 hunt decisions / 71 found nothing, driven by the 7-10 food
+        # "hunt while your legs are quick" tier and the game-in-sight section
+        # — a racing villager burns turns stalking herds it never catches).
+        # True starvation (≤6) still speaks; the body's eat reflex runs
+        # regardless.
+        race_mode = race is not None
+        food = snapshot.get("food")
+        suppress_hunger = race_mode and isinstance(food, (int, float)) and food > 6
         for section in (
-            _survival_section(snapshot),
+            None if suppress_hunger else _survival_section(snapshot),
             _dangers_section(snapshot),
-            _animals_section(snapshot),
+            None if race_mode else _animals_section(snapshot),
             _resources_section(snapshot),
         ):
             if section:

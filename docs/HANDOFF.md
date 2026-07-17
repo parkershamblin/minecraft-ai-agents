@@ -1,4 +1,42 @@
-# Session Handoff — RB-1 COMPLETE + RB-2 MACHINERY BUILT (3 tuning attempts run) + RB-3 scoreboard LIVE · next: RB-2 exit race
+# Session Handoff — RB-2 defects fixed + race lessons consolidated · next: RB-2 exit race (`node scripts/race-rb2.mjs`)
+
+## Session 2026-07-17 (fifth) — branch cleanup + the race-lessons consolidation (branch `rb2-race-lessons`)
+
+**Repo housekeeping**: five stale branches deleted locally (all content
+verified contained in main via in-memory merge-tree diffs — squash merges
+hide containment): `rb-1-body` (#36), `claude/project-bottlenecks-rww3q8`
+(#37, incl. the bench-harness commit), `mcp-minimal-profile` (#39),
+`rb2-tool-check` (#40), `rb2-command-lanes` (#41). Remote deletes were
+classifier-blocked — Parker: `git push origin --delete
+claude/project-bottlenecks-rww3q8 rb-1-body rb2-command-lanes`.
+
+**PR #38 (`rb2-defect-fixes`) was CONFLICTING and mostly superseded** —
+parallel sessions re-implemented its lane fix and gear hint as #41
+(executor dispatch lanes; better: age guard at dequeue + `civ_command_lane_depth`)
+and #40 (`_race_tool_check`; material-aware). Its still-unique pieces —
+carrying evidence from attempts 4–6 that main's HANDOFF never saw — are
+consolidated on `rb2-race-lessons`:
+- `scripts/race-rb2.mjs`: stall watchdog 45m→75m (attempt 3's wood age ran
+  ~45m before the first milestone); mob-free race DEFAULT with `--mobs` to
+  restore hostiles (attempt 4: 254 SELF_DEFENSE_IN_PROGRESS failures in
+  32min — the threat tax drowned the ladder); post-respawn wanderer
+  re-spread loop (a 10s-tick brain walks its bot off the post mid-verify —
+  Wren drifted 54 blocks; spreadplayers retry, not abort); milestone
+  printing diffs a seen-set (status.milestones is SORTED, not append —
+  attempt 6 double-printed red:first_coal, swallowed blue:first_iron_ore).
+- `attemptTracker.ts`: furnace_placed now crosses on ALL THREE honest
+  routes — placed mid-craft, crafted-to-carry (attempt 5b live: three red
+  furnaces crafted, zero rungs lit), or found-furnace reuse (else the
+  ladder can never win 5/5 on that path).
+- `prompts.py`: RACE DISCIPLINE re-tuned from attempt-4 data (HALF of 1060
+  decisions were `move`, 86 `hunt`/71 empty — verbs now named and banned);
+  race mode mutes mild hunger (>6 food) + game-in-sight sections (the
+  hunt-bait); true starvation ≤6 still speaks. Kept main's
+  `_race_tool_check` over #38's `_gear_check_line` (same defect, merged
+  first, material-aware). Close #38 as superseded once `rb2-race-lessons`
+  merges.
+
+Tests: agent 184, mc 296, typecheck clean, race script node --check OK.
 
 ## Session 2026-07-17 (fourth, part 2) — RB-2 machinery + three attempts of tuning + the RB-3 scoreboard
 

@@ -1,8 +1,8 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** RB-1 COMPLETE (exit drill PASSED, T1 ladder in the ledger) + RB-2 machinery built and 3 tuning attempts run (race brain, verified harness, llama GO at ~1% malformed) + RB-3 `/race` scoreboard live-verified. Branch `rb-1-body`, PR #36. Race preset in `.env` (6 bots, 20s tick).
+**Last checkpoint:** RB-2 defects SOLVED (#40 tool check, #41 executor lanes) + repo cleaned (5 stale branches deleted; PR #38 superseded — its unique attempt-4/5b/6 lessons consolidated on branch `rb2-race-lessons`: 75m stall window, mob-free race default, wanderer re-spread, furnace-rung routes, race-discipline re-tune, hunger/game muting). Race preset in `.env` (6 bots, 20s tick).
 
-**Next session:** the RB-2 exit race. Two open defects first (details in `docs/HANDOFF.md`): the vanished wooden pickaxe (attempt 019f7106…, trace Fen), and same-second command-failure bursts at race pace. Then `node scripts/race-rb2.mjs` — one command per take. Plan: `docs/architecture/10-red-vs-blue.md`, shots: `docs/demo-rb.md`.
+**Next session:** merge `rb2-race-lessons` (Parker's click), close #38, then the RB-2 exit race: `node scripts/race-rb2.mjs --label rb2-exit-1` — one command per take. Plan: `docs/architecture/10-red-vs-blue.md`, shots: `docs/demo-rb.md`.
 
 # AI Civilization Engine — project guide
 

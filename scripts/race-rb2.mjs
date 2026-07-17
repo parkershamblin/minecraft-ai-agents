@@ -5,8 +5,9 @@
 //
 // Usage:
 //   node scripts/race-rb2.mjs [--label take-1] [--difficulty easy|normal]
-//     [--red x,y,z] [--blue x,y,z] [--separation 300] [--stall-minutes 45]
+//     [--red x,y,z] [--blue x,y,z] [--separation 300] [--stall-minutes 75]
 //     [--practice]   (practice: skip the hard budget/tick preset checks)
+//     [--mobs]       (restore hostile spawns — default is a mob-free race)
 //
 // Team posts default to world spawn ± separation/2 on the x axis. Exit code:
 // 0 won · 2 stalled · 3 aborted/failed preflight.
@@ -27,7 +28,9 @@ const has = (name) => args.includes(`--${name}`)
 const label = flag('label', `rb2-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`)
 const wantDifficulty = flag('difficulty', 'easy')
 const separation = Number(flag('separation', '300'))
-const stallMinutes = Number(flag('stall-minutes', '45'))
+// 75m default: attempt 3's wood age needed ~45m before its first milestone —
+// 45m was nearly the whole bootstrap, so a slow-but-honest start read as a stall.
+const stallMinutes = Number(flag('stall-minutes', '75'))
 const practice = has('practice')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -102,6 +105,24 @@ rcon('gamerule mobGriefing false') // protects placed furnaces from creepers
 check(rcon('gamerule keepInventory').includes('true'), 'keepInventory true (lossless respawn)')
 check(rcon('gamerule doInsomnia').includes('false'), 'doInsomnia false (no phantom swarms)')
 check(rcon('gamerule mobGriefing').includes('false'), 'mobGriefing false (furnaces survive creepers)')
+
+// Hostiles: OFF by default. Attempt-4 measured the threat tax: 254 commands
+// failed SELF_DEFENSE_IN_PROGRESS in 32 minutes — the fleet spent more wall
+// time fleeing than mining. A race measures the resource ladder, not mob
+// dodging; pass --mobs to restore hostiles for the flagship's realism.
+if (has('mobs')) {
+  rcon('gamerule doMobSpawning true')
+  check(rcon('gamerule doMobSpawning').includes('true'), 'doMobSpawning true (--mobs: flagship realism)')
+} else {
+  rcon('gamerule doMobSpawning false')
+  for (const type of [
+    'zombie', 'skeleton', 'creeper', 'spider', 'cave_spider', 'witch', 'drowned', 'enderman',
+    'phantom', 'pillager', 'zombie_villager', 'creaking', 'slime', 'husk', 'stray', 'bogged',
+  ]) {
+    rcon(`kill @e[type=${type}]`)
+  }
+  check(rcon('gamerule doMobSpawning').includes('false'), 'doMobSpawning false (mob-free race — --mobs restores them)')
+}
 
 // Difficulty: set → save-all → verify (the in-memory-until-save trap).
 rcon(`difficulty ${wantDifficulty}`)
@@ -209,14 +230,30 @@ for (const { teamId, members } of teams) {
   }
   console.log(`  team ${teamId} stationed at x=${x} z=${z} (verified), packs cleared, spawnpoints anchored`)
 }
-// Post-respawn verification: every racer back online AND standing at its post.
+// Post-respawn verification: every racer back online AND standing at its
+// post. At the 10s race tick a brain can fire DURING this wait and walk its
+// bot off the post before we read it (Wren drifted 54 blocks on the first
+// 10s-tick attempt) — a walker is not a stationing failure, so correct with
+// a tp and re-verify instead of aborting the take.
 await sleep(8_000)
 for (const { teamId, members } of teams) {
   const [x, , z] = posts[teamId]
   for (const m of members) {
-    const at = posOf(m.minecraftUsername)
-    if (!at || Math.hypot(at[0] - x, at[2] - z) > 32) {
-      console.error(`  ${m.minecraftUsername} is not at the ${teamId} post after respawn (${at})`)
+    let atPost = false
+    for (let attempt = 0; attempt < 4 && !atPost; attempt++) {
+      const at = posOf(m.minecraftUsername)
+      if (at && Math.hypot(at[0] - x, at[2] - z) <= 32) {
+        atPost = true
+        break
+      }
+      console.log(`  ${m.minecraftUsername} wandered off the ${teamId} post (${at}) — spread back (try ${attempt + 1})`)
+      // spreadplayers, not tp: it finds a legal SURFACE spot at the post —
+      // a raw tp to the wanderer's y-level could bury them in a hillside.
+      rcon(`spreadplayers ${x} ${z} 0 8 false ${m.minecraftUsername}`)
+      await sleep(1_500)
+    }
+    if (!atPost) {
+      console.error(`  ${m.minecraftUsername} cannot be kept at the ${teamId} post`)
       process.exit(3)
     }
   }
@@ -257,7 +294,7 @@ console.log('zero human intervention from here — watching the ledger.')
 
 const startedAt = Date.now()
 let lastMilestoneAt = Date.now()
-let seenCount = 0
+const seenMilestones = new Set()
 let outcome = null
 
 while (true) {
@@ -267,13 +304,17 @@ while (true) {
   if (tripped > 0) {
     budgetTrippedSeen = 1
   }
+  // status.milestones is a SORTED set, not an append-log — a slice(seenCount)
+  // tail re-prints old rungs and swallows new ones that sort into the middle
+  // (attempt 6 printed red:first_coal twice and blue:first_iron_ore never).
+  // Diff against a seen-set instead.
   const milestones = status.milestones ?? []
-  if (milestones.length > seenCount) {
-    for (const m of milestones.slice(seenCount)) {
+  for (const m of milestones) {
+    if (!seenMilestones.has(m)) {
+      seenMilestones.add(m)
       console.log(`  [${Math.round((Date.now() - startedAt) / 60000)}m] milestone: ${m}`)
+      lastMilestoneAt = Date.now()
     }
-    seenCount = milestones.length
-    lastMilestoneAt = Date.now()
   }
   if (status.win) {
     outcome = 'won'

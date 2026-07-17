@@ -61,6 +61,26 @@ describe('deriveMilestones', () => {
     expect(deriveMilestones(worldEvent('ActionCompleted', 'v', { action: 'gather', result: { item: 'iron_pickaxe' } }))).toEqual([])
     expect(deriveMilestones(crafted('v', { item: 'iron_pickaxe', crafted: 0 }))).toEqual([])
   })
+
+  // Attempt 5b, live: three red furnaces crafted-to-carry (the path the race
+  // prompt teaches), zero rungs lit — the mapper only honored the placement
+  // route. All three honest routes must cross furnace_placed.
+  it('crafting a furnace to carry crosses furnace_placed', () => {
+    const derived = deriveMilestones(crafted('v', { item: 'furnace', crafted: 1, furnacePlaced: false, furnaceUsed: false }))
+    expect(derived.map((m) => m.milestone)).toEqual(['furnace_placed'])
+    expect(derived[0]!.detail).toBe('crafted a furnace')
+  })
+
+  it('reusing a found furnace during a smelt crosses furnace_placed (never a 4/5 win)', () => {
+    const derived = deriveMilestones(
+      crafted('v', { item: 'iron_pickaxe', crafted: 1, smelted: 3, furnacePlaced: false, furnaceUsed: true }),
+    ).map((m) => m.milestone)
+    expect(derived).toEqual(['furnace_placed', 'first_ingot', 'iron_pickaxe'])
+  })
+
+  it('a furnace craft that yields nothing earns nothing', () => {
+    expect(deriveMilestones(crafted('v', { item: 'furnace', crafted: 0 }))).toEqual([])
+  })
 })
 
 describe('AttemptTracker', () => {
