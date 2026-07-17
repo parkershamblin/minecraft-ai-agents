@@ -30,6 +30,9 @@ export interface ExecutorDeps {
   isFresh(commandId: string): Promise<boolean>
   /** commands older than this are dead intents — dropped with STALE_COMMAND */
   maxCommandAgeMs: number
+  /** watchdog ceiling: payload.timeoutMs is clamped to this — an oversized
+   *  wire value must never pin the partition behind one body */
+  maxTimeoutMs: number
   publishOutcome(
     command: EventEnvelope,
     eventType: 'ActionCompleted' | 'ActionFailed',
@@ -182,18 +185,23 @@ export class CommandExecutor {
       return true
     }
 
+    // The deadline is the wire value CLAMPED to the ceiling: timeoutMs comes
+    // off the topic unvalidated, and one oversized value would hold the busy
+    // claim — and the partition, and every partition-mate — for its whole
+    // duration. The message speaks the applied deadline, not the ask.
+    const timeoutMs = Math.min(payload.timeoutMs, this.deps.maxTimeoutMs)
     let watchdog: NodeJS.Timeout | undefined
     const watchdogFired = new Promise<void>((resolve) => {
       watchdog = setTimeout(() => {
         this.deps.getSession(payload.villagerId)?.stopMoving()
         commandsProcessed.inc({ action: payload.action, outcome: 'timeout' })
-        log.warn({ timeoutMs: payload.timeoutMs }, 'command timed out — watchdog emitted the outcome')
+        log.warn({ timeoutMs }, 'command timed out — watchdog emitted the outcome')
         void outcome('ActionFailed', {
           errorCode: 'TIMEOUT',
-          errorMessage: timeoutMessage(payload.action, payload.timeoutMs),
+          errorMessage: timeoutMessage(payload.action, timeoutMs),
           retryable: true,
         }).finally(resolve)
-      }, payload.timeoutMs)
+      }, timeoutMs)
     })
 
     // The action runs in its own closure that handles BOTH outcomes, so a

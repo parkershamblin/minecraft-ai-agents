@@ -33,7 +33,9 @@ configure_logging(settings.log_level)
 async def lifespan(app: FastAPI):
     logger.info("memory-service starting", db=settings.memory_db_name)
     http_client = httpx.AsyncClient()
-    engine = make_engine(settings.memory_db_url)
+    engine = make_engine(
+        settings.memory_db_url, pool_size=settings.db_pool_size, max_overflow=settings.db_max_overflow
+    )
     sessions = make_session_factory(engine)
     embeddings = await build_embedding_provider(settings, http_client)
 

@@ -25,6 +25,7 @@ from agent_service.events.envelope import (
 from agent_service.llm.decide import DecisionOutcome, decide_safely
 from agent_service.logging import logger
 from agent_service.memory_client import RetrievedMemory
+from agent_service.villagers.relationships import RelationshipUpdate
 
 
 @dataclass(frozen=True)
@@ -63,8 +64,9 @@ class TickDeps:
     world: Any  # WorldGateway-shaped: snapshot(), drain_percepts()
     memory: Any  # MemoryService-shaped: search(), store()
     llm: Any  # LLMProvider-shaped: complete()
-    publish: Any  # async (topic, envelope) -> None
-    relationships: Any = None  # RelationshipRepo-shaped: apply_update() (None: feature off, e.g. old tests)
+    publish: Any  # async (topic, envelope) -> None (fire-and-forget; flush confirms)
+    flush: Any = None  # async () -> None: awaits delivery of the tick's publishes (None: publish is synchronous, e.g. tests)
+    relationships: Any = None  # RelationshipRepo-shaped: apply_updates() (None: feature off, e.g. old tests)
     awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
     civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
     community_goal: str | None = None  # D2 filming lever: one system-prompt line
@@ -265,26 +267,43 @@ def build_tick_graph(deps: TickDeps):
                     )
                 )
 
+        batch: list[RelationshipUpdate] = []
         for target_id, affinity_delta, trust_delta, reason, source in updates:
             if target_id == str(villager.id):
                 continue  # no self-edges, even if the LLM tries
             try:
-                change = await deps.relationships.apply_update(
-                    villager.id,
-                    uuid.UUID(target_id),
-                    affinity_delta,
-                    trust_delta,
-                    reason,
-                    ambient=(source == "heuristic"),
-                )
-            except Exception as exc:  # noqa: BLE001 — hallucinated ids must not kill the tick
+                target_uuid = uuid.UUID(target_id)
+            except (ValueError, TypeError):  # hallucinated non-UUID must not kill the tick
                 logger.warning(
                     "relationship update rejected",
                     villager=villager.name,
                     target=target_id,
-                    error=str(exc),
+                    error="malformed target id",
                 )
                 continue
+            batch.append(
+                RelationshipUpdate(
+                    target_id=target_uuid,
+                    affinity_delta=affinity_delta,
+                    trust_delta=trust_delta,
+                    reason=reason,
+                    ambient=(source == "heuristic"),
+                )
+            )
+        if not batch:
+            return
+        try:
+            # One session/transaction for the whole tick's deltas (was one per
+            # edge); unknown targets are skipped inside with a warning.
+            applied = await deps.relationships.apply_updates(villager.id, batch)
+        except Exception as exc:  # noqa: BLE001 — a poisoned batch must not kill the tick
+            logger.warning(
+                "relationship batch rejected",
+                villager=villager.name,
+                error=str(exc),
+            )
+            return
+        for update, change in applied:
             await deps.publish(
                 TOPIC_SOCIAL,
                 build_envelope(
@@ -292,13 +311,13 @@ def build_tick_graph(deps: TickDeps):
                     villager.id,
                     {
                         "villagerId": str(villager.id),
-                        "targetId": target_id,
+                        "targetId": str(update.target_id),
                         "previousAffinity": change.previous_affinity,
                         "newAffinity": change.new_affinity,
                         "previousTrust": change.previous_trust,
                         "newTrust": change.new_trust,
-                        "reason": reason,
-                        "source": source,
+                        "reason": update.reason,
+                        "source": "heuristic" if update.ambient else "deliberation",
                     },
                     correlation_id=state["correlation_id"],
                     causation_id=decision_event_id,
@@ -375,6 +394,10 @@ def build_tick_graph(deps: TickDeps):
                 causation_id=state["decision_event_id"],
             ),
         )
+        if deps.flush is not None:
+            # publish() is fire-and-forget — one confirmed round-trip per tick,
+            # here at the end, instead of 4-8 serial awaited sends.
+            await deps.flush()
         return {}
 
     graph = StateGraph(TickState)

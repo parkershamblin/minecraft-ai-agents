@@ -138,6 +138,9 @@ export class BotSession {
   /** the in-flight hunt's abandonment flag — stopMoving() (the watchdog's
    *  cancel lever) flips it so the kill loop goes silent within one poll */
   private huntAbandon: { abandoned: boolean } | null = null
+  /** last snapshot actually written to Redis (dedupe body + wall time) —
+   *  the write-skip gate in startSnapshots reads and stamps it */
+  private lastSnapshotWrite: { body: string; at: number } | null = null
   /** last survey result, merged into every snapshot until the next scan (null until one runs) */
   private nearbyResources: ResourceSighting[] | null = null
   private lastScan: { position: Position; at: number } | null = null
@@ -333,6 +336,23 @@ export class BotSession {
       const hostiles = this.threatWatcher ? this.threatWatcher.nearbyHostiles() : null
       const snapshot = buildSnapshot(this.villagerId, this.bot, this.deps.others(), this.nearbyResources, animals, hostiles)
       if (snapshot) {
+        // Write-skip gate: build + stringify every pass (cheap), but only SET
+        // when the world actually changed. capturedAt and timeOfDay advance
+        // every pass by clock alone, so they're masked out of the comparison
+        // — a skipped write leaves them at most one force period stale, noise
+        // at deliberation cadence (30s+ ticks). INVARIANT: the key's EX TTL
+        // is the ONLY downstream staleness signal (agent-service's
+        // WorldGateway reads the key blind), so an unchanged snapshot is
+        // still force-written every TTL/2 — the key can never expire under a
+        // live, merely-idle bot.
+        const body = JSON.stringify({ ...snapshot, capturedAt: '', timeOfDay: 0 })
+        const now = Date.now()
+        const forceAfterMs = (config.SNAPSHOT_TTL_SECONDS * 1_000) / 2
+        const last = this.lastSnapshotWrite
+        if (last && last.body === body && now - last.at < forceAfterMs) {
+          return
+        }
+        this.lastSnapshotWrite = { body, at: now }
         void redis
           .set(`world:${this.villagerId}`, JSON.stringify(snapshot), 'EX', config.SNAPSHOT_TTL_SECONDS)
           .catch((err: Error) => this.log.warn({ err: err.message }, 'snapshot write failed'))
@@ -371,6 +391,9 @@ export class BotSession {
     // A reconnect respawns somewhere else — don't carry a stale survey there.
     this.nearbyResources = null
     this.lastScan = null
+    // …and despawn() deletes the Redis key: the write-skip gate must never
+    // dedupe the next body's first snapshot against a key that's gone.
+    this.lastSnapshotWrite = null
   }
 
   /**

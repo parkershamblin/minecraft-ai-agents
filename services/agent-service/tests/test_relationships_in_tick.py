@@ -40,17 +40,25 @@ class FakeRelationships:
         self.ambients = []
         self._reject = reject or set()
 
-    async def apply_update(self, villager_id, target_id, affinity_delta, trust_delta, reason=None, *, ambient=False):
-        if str(target_id) in self._reject:
-            raise ValueError("unknown target (FK)")
-        self.applied.append((str(villager_id), str(target_id), affinity_delta, trust_delta))
-        self.reasons.append(reason)
-        self.ambients.append(ambient)
-        return RelationshipChange(
-            villager_id=villager_id, target_id=target_id,
-            previous_affinity=0, new_affinity=int(affinity_delta),
-            previous_trust=50, new_trust=int(50 + trust_delta),
-        )
+    async def apply_updates(self, villager_id, updates):
+        applied = []
+        for update in updates:
+            if str(update.target_id) in self._reject:
+                continue  # unknown target — the real repo skips it with a warning
+            self.applied.append(
+                (str(villager_id), str(update.target_id), update.affinity_delta, update.trust_delta)
+            )
+            self.reasons.append(update.reason)
+            self.ambients.append(update.ambient)
+            applied.append((
+                update,
+                RelationshipChange(
+                    villager_id=villager_id, target_id=update.target_id,
+                    previous_affinity=0, new_affinity=int(update.affinity_delta),
+                    previous_trust=50, new_trust=int(50 + update.trust_delta),
+                ),
+            ))
+        return applied
 
     async def edges_for(self, villager_id, target_ids):
         return []  # the read seam: no prior feelings in these tick tests

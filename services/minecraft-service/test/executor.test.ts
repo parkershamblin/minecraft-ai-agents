@@ -93,6 +93,7 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
       outcomes.push({ eventType, extra })
     },
     maxCommandAgeMs: 600_000,
+    maxTimeoutMs: 60_000,
     ...overrides,
   }
   return { executor: new CommandExecutor(deps), outcomes, session, seen }
@@ -140,6 +141,36 @@ describe('CommandExecutor', () => {
     // the watchdog settles the command — a never-settling action promise
     // previously froze eachMessage and, with one partition, every bot.
     await expect(run).resolves.toBeUndefined()
+  })
+
+  it('an oversized timeoutMs is clamped to the ceiling — the watchdog still fires (wedge regression)', async () => {
+    const h = harness(
+      {},
+      { moveTo: vi.fn(() => new Promise<never>(() => {})) }, // hangs forever
+    )
+    // A day-long ask off the wire must not pin the partition for a day.
+    const run = h.executor.execute(command('move', { to: { x: 100, y: 64, z: 0 } }, 86_400_000))
+    await vi.advanceTimersByTimeAsync(59_999)
+    expect(h.outcomes).toHaveLength(0) // the clamp is a ceiling, not a shortening
+    await vi.advanceTimersByTimeAsync(2)
+    expect(h.outcomes).toHaveLength(1)
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('TIMEOUT')
+    // The prose speaks the APPLIED deadline, not the oversized ask.
+    expect(h.outcomes[0]!.extra.errorMessage).toBe(timeoutMessage('move', 60_000))
+    await expect(run).resolves.toBeUndefined()
+  })
+
+  it('a timeoutMs under the ceiling is untouched by the clamp', async () => {
+    const h = harness(
+      {},
+      { moveTo: vi.fn(() => new Promise<never>(() => {})) }, // hangs forever
+    )
+    const run = h.executor.execute(command('move', { to: { x: 100, y: 64, z: 0 } }, 5_000))
+    await vi.advanceTimersByTimeAsync(5_001)
+    expect(h.outcomes).toHaveLength(1)
+    expect(h.outcomes[0]!.extra.errorMessage).toBe(timeoutMessage('move', 5_000))
+    await run
   })
 
   it('a late completion after timeout is suppressed — exactly one outcome', async () => {

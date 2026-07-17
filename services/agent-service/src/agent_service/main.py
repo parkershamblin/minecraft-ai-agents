@@ -74,6 +74,7 @@ async def lifespan(app: FastAPI):
             memory=memory,
             llm=llm,
             publish=publisher.publish,
+            flush=publisher.flush,
             relationships=relationships,
             awareness=ActionAwareness(),
             civics=civics,

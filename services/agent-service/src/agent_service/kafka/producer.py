@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any
 
@@ -7,7 +8,13 @@ from agent_service.logging import logger
 
 
 class EventPublisher:
-    """Envelope publisher; key = aggregateId keeps per-villager ordering."""
+    """Envelope publisher; key = aggregateId keeps per-villager ordering.
+
+    publish() is fire-and-forget: the shared producer batches events and keeps
+    per-partition ordering, and the tick pays ONE broker round-trip at its end
+    (flush(), called from the reflect node) instead of one per event. Delivery
+    failures surface through the done-callback log, correlationId included.
+    """
 
     def __init__(self, brokers: str):
         self._producer = AIOKafkaProducer(
@@ -20,8 +27,32 @@ class EventPublisher:
         await self._producer.start()
 
     async def stop(self) -> None:
-        await self._producer.stop()
+        await self._producer.stop()  # flushes anything still buffered
 
     async def publish(self, topic: str, envelope: dict[str, Any]) -> None:
-        await self._producer.send_and_wait(topic, key=envelope["aggregateId"], value=envelope)
+        future = await self._producer.send(topic, key=envelope["aggregateId"], value=envelope)
+        future.add_done_callback(
+            lambda f: self._log_delivery(
+                f, topic, envelope["eventType"], envelope["eventId"], envelope.get("correlationId")
+            )
+        )
         logger.debug("published", topic=topic, event_type=envelope["eventType"], event_id=envelope["eventId"])
+
+    async def flush(self) -> None:
+        """Await delivery of everything published so far — the once-per-tick seam."""
+        await self._producer.flush()
+
+    @staticmethod
+    def _log_delivery(
+        future: asyncio.Future, topic: str, event_type: str, event_id: str, correlation_id: str | None
+    ) -> None:
+        if future.cancelled() or future.exception() is None:
+            return
+        logger.error(
+            "event delivery failed",
+            topic=topic,
+            event_type=event_type,
+            event_id=event_id,
+            correlationId=correlation_id,
+            error=str(future.exception()),
+        )

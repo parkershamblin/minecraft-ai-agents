@@ -14,6 +14,21 @@ services:
     image: pgvector/pgvector:0.8.0-pg16
     profiles: [infra]
     ports: ["5432:5432"]
+    # One instance hosts all five logical DBs (agent/memory/event/government/
+    # analytics), so stock defaults (shared_buffers=128MB) starve the HNSW
+    # vector searches and the ledger's append stream of the same page cache.
+    # Sized for the 2G mem_limit below; revisit when the DBs split.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=1536MB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=128MB
+    mem_limit: 2g
     environment:
       POSTGRES_USER: civ
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-civ_dev}
@@ -53,6 +68,12 @@ services:
       - --rpc-addr=redpanda:33145
       - --advertise-rpc-addr=redpanda:33145
       - --default-log-level=warn
+      # Auto-create OFF: a producer that beats provision-topics.mjs used to
+      # silently recreate its topic at the broker default of 1 partition (the
+      # pre-M2-4 decision→speech-gap bug). Misordering now fails loud instead.
+      - --set
+      - redpanda.auto_create_topics_enabled=false
+    mem_limit: 1536m
     ports:
       - "9092:9092"   # external Kafka listener (host-run services)
       - "9644:9644"   # admin API (rpk, metrics)
@@ -199,6 +220,9 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-2000000}
+      # Backpressure for the shared LLM backend: excess deliberations queue at
+      # the provider instead of thrashing one GPU with 20 concurrent requests.
+      LLM_MAX_CONCURRENT_REQUESTS: ${LLM_MAX_CONCURRENT_REQUESTS:-4}
       TICK_INTERVAL_SECONDS: ${TICK_INTERVAL_SECONDS:-60}
       VILLAGER_COUNT: ${VILLAGER_COUNT:-1}
       # D2 filming lever (M2-10): one shared-aim line in every system prompt.
@@ -284,6 +308,9 @@ services:
     # same discipline as MC_VERSION. Bump only deliberately.
     image: itzg/minecraft-server:2026.7.0-java21
     profiles: [minecraft]
+    # 3G heap + JVM/native overhead; a hard ceiling so a Paper leak can't
+    # starve Postgres/Redpanda (nothing else on the host caps it).
+    mem_limit: 4g
     environment:
       EULA: "TRUE"
       TYPE: PAPER

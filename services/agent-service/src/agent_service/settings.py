@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     ollama_base_url: str = "http://localhost:11434"
     llm_model_ollama: str = "llama3.1:8b"
     llm_temperature: float = 0.7
+    # Max in-flight completions against the one shared backend — extra ticks
+    # queue at the provider (a single Ollama GPU thrashes under 20 parallel
+    # calls; serial-ish requests finish sooner in aggregate).
+    llm_max_concurrent_requests: int = 4
     # Hard daily ceiling — hitting it flips deliberation to the fake provider
     # (circuit breaker) so a forgotten overnight run cannot burn the wallet.
     llm_daily_token_budget: int = 2_000_000

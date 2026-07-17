@@ -26,6 +26,17 @@ class Settings(BaseSettings):
     retrieval_w_relevance: float = 1.0
     recency_decay_per_hour: float = 0.995
     retrieval_candidate_factor: int = 3
+    # HNSW recall: the villager_id filter post-filters ANN candidates, so
+    # pgvector's default ef_search=40 under-recalls as the table grows. Sized
+    # per retrieval as max(floor, k * candidate_factor * multiplier).
+    hnsw_ef_search_floor: int = 40
+    hnsw_ef_search_multiplier: int = 4
+    # In-process LRU over QUERY embeddings only (writes are never cached).
+    query_embedding_cache_size: int = 512
+
+    # --- Database pool -------------------------------------------------------
+    db_pool_size: int = 10
+    db_max_overflow: int = 20
 
     # --- Reflections (M1-9): own LLM port, own breaker — budgets are per
     # service. No fake fallback in the chain: no real LLM means reflections OFF.

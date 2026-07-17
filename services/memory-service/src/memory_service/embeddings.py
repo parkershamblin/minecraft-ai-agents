@@ -9,6 +9,7 @@ import hashlib
 import math
 import struct
 import time
+from collections import OrderedDict
 from typing import Protocol
 
 import httpx
@@ -23,6 +24,45 @@ class EmbeddingProvider(Protocol):
     dim: int
 
     async def embed(self, text: str) -> list[float]: ...
+
+
+class QueryEmbeddingCache:
+    """In-process LRU over an EmbeddingProvider — for QUERY embeddings only.
+    Content embeddings on the write path must never route through this: every
+    stored memory owns its own vector, and caching there buys nothing.
+
+    Keyed on (model, text) so a provider swap can never serve stale vectors.
+    No lock: everything runs on the single event loop and the dict is only
+    touched between awaits, so operations can't interleave mid-mutation. Two
+    concurrent misses on the same key just embed twice (deterministic per
+    provider) and the second write wins — wasteful once, never wrong."""
+
+    def __init__(self, provider: EmbeddingProvider, capacity: int = 512):
+        self._provider = provider
+        self._capacity = capacity
+        self._cache: OrderedDict[tuple[str, str], list[float]] = OrderedDict()
+
+    @property
+    def name(self) -> str:
+        return self._provider.name
+
+    @property
+    def dim(self) -> int:
+        return self._provider.dim
+
+    async def embed(self, text: str) -> list[float]:
+        key = (self._provider.name, text)
+        cached = self._cache.get(key)
+        if cached is not None:
+            self._cache.move_to_end(key)
+            return cached
+        vector = await self._provider.embed(text)
+        if self._capacity > 0:
+            self._cache[key] = vector
+            self._cache.move_to_end(key)
+            while len(self._cache) > self._capacity:
+                self._cache.popitem(last=False)
+        return vector
 
 
 class FakeEmbeddingProvider:

@@ -6,9 +6,24 @@ import pytest
 from memory_service.embeddings import (
     FakeEmbeddingProvider,
     OllamaEmbeddingProvider,
+    QueryEmbeddingCache,
     build_embedding_provider,
 )
 from memory_service.settings import Settings
+
+
+class CountingProvider:
+    """Deterministic per-text vectors, counting embed calls."""
+
+    name = "counting"
+    dim = 3
+
+    def __init__(self):
+        self.calls = 0
+
+    async def embed(self, text: str) -> list[float]:
+        self.calls += 1
+        return [float(len(text)), 0.0, 0.0]
 
 
 class TestFakeProvider:
@@ -21,6 +36,37 @@ class TestFakeProvider:
         assert a1 != b
         assert len(a1) == 768
         assert math.isclose(math.sqrt(sum(v * v for v in a1)), 1.0, rel_tol=1e-9)
+
+
+class TestQueryEmbeddingCache:
+    async def test_hit_skips_provider_and_delegates_identity(self):
+        inner = CountingProvider()
+        cache = QueryEmbeddingCache(inner, capacity=8)
+        first = await cache.embed("the oak tree")
+        second = await cache.embed("the oak tree")
+        assert first == second == [12.0, 0.0, 0.0]
+        assert inner.calls == 1
+        assert (cache.name, cache.dim) == ("counting", 3)
+
+    async def test_lru_evicts_least_recently_used(self):
+        inner = CountingProvider()
+        cache = QueryEmbeddingCache(inner, capacity=2)
+        await cache.embed("a")
+        await cache.embed("b")
+        await cache.embed("a")  # refresh "a" — "b" is now LRU
+        await cache.embed("c")  # evicts "b"
+        assert inner.calls == 3
+        await cache.embed("a")  # still cached
+        assert inner.calls == 3
+        await cache.embed("b")  # was evicted — re-embeds
+        assert inner.calls == 4
+
+    async def test_zero_capacity_disables_caching(self):
+        inner = CountingProvider()
+        cache = QueryEmbeddingCache(inner, capacity=0)
+        await cache.embed("a")
+        await cache.embed("a")
+        assert inner.calls == 2
 
 
 def _client(handler) -> httpx.AsyncClient:

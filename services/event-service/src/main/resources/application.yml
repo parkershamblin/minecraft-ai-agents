@@ -20,7 +20,10 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     listener:
-      ack-mode: record
+      # Batch listener: one poll's records -> one multi-row ledger insert;
+      # offsets commit only after the whole batch is stored.
+      type: batch
+      ack-mode: batch
   mvc:
     problemdetails:
       enabled: true
@@ -40,6 +43,12 @@ civ:
   # causation chains, never acted on (each plane has exactly one executor:
   # minecraft-service for the world, government-service for governance).
   topics: ${CIV_TOPICS:world.events,agent.events,social.events,government.events,commands.minecraft,commands.government}
+  # Kafka listener containers per @KafkaListener — spreads the six topics'
+  # partitions across parallel consumer threads.
+  consumer-concurrency: ${CIV_CONSUMER_CONCURRENCY:3}
   sse:
     heartbeat-ms: 15000
     timeout-ms: 1800000
+    # Bounded hand-off from ingest to the fan-out thread; drops oldest under
+    # pressure (the live feed is lossy by contract — the store backfills).
+    fanout-queue-capacity: 1024

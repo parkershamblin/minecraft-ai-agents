@@ -103,6 +103,10 @@ const schema = z.object({
   // Freshness guard on commands.minecraft (same failure class as the percept
   // guard): a stale committed offset must never replay the past into the world.
   COMMAND_MAX_AGE_SECONDS: z.coerce.number().int().min(1).default(600),
+  // Watchdog ceiling: payload.timeoutMs arrives off the wire — unclamped, one
+  // oversized value pins its partition (and every partition-mate) for the
+  // duration. Matches the contract's per-verb ceiling (TIMEOUT_TABLE_MAX_MS).
+  COMMAND_TIMEOUT_MAX_MS: z.coerce.number().int().min(1000).default(60000),
   // Per-player inventory metrics: one process-wide poll — in-memory reads for
   // bots, per-slot RCON `data get` for humans. 0 disables the poller entirely.
   INVENTORY_POLL_INTERVAL_MS: z.coerce.number().int().min(0).default(15000),

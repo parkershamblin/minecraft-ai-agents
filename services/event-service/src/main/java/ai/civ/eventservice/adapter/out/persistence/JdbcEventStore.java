@@ -10,9 +10,11 @@ import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -23,6 +25,10 @@ class JdbcEventStore implements EventStorePort {
 
     private static final RowMapper<StoredEvent> ROW_MAPPER = JdbcEventStore::mapRow;
 
+    /** Exactly what mapRow reads — never SELECT * (it would drag the search_text tsvector over the wire). */
+    private static final String COLUMNS = "event_id, event_type, schema_version, occurred_at, recorded_at, "
+            + "source, aggregate_type, aggregate_id, correlation_id, causation_id, topic, payload";
+
     private final JdbcClient jdbc;
 
     JdbcEventStore(JdbcClient jdbc) {
@@ -30,34 +36,52 @@ class JdbcEventStore implements EventStorePort {
     }
 
     @Override
-    public boolean append(StoredEvent e) {
-        // ON CONFLICT DO NOTHING: the UUIDv7 PK doubles as the idempotency key,
-        // making persistence safe under Kafka's at-least-once redelivery.
-        int inserted = jdbc.sql("""
-                        INSERT INTO events (event_id, event_type, schema_version, occurred_at, source,
-                                            aggregate_type, aggregate_id, correlation_id, causation_id, topic, payload)
-                        VALUES (:eventId, :eventType, :schemaVersion, :occurredAt, :source,
-                                :aggregateType, :aggregateId, :correlationId, :causationId, :topic, :payload::jsonb)
-                        ON CONFLICT (event_id) DO NOTHING
-                        """)
-                .param("eventId", e.eventId())
-                .param("eventType", e.eventType())
-                .param("schemaVersion", e.schemaVersion())
-                .param("occurredAt", e.occurredAt())
-                .param("source", e.source())
-                .param("aggregateType", e.aggregateType())
-                .param("aggregateId", e.aggregateId())
-                .param("correlationId", e.correlationId())
-                .param("causationId", e.causationId())
-                .param("topic", e.topic())
-                .param("payload", e.payloadJson())
-                .update();
-        return inserted == 1;
+    public Set<UUID> appendAll(List<StoredEvent> events) {
+        if (events.isEmpty()) {
+            return new HashSet<>();
+        }
+        // One multi-row INSERT per poll batch. ON CONFLICT DO NOTHING: the
+        // UUIDv7 PK doubles as the idempotency key, making persistence safe
+        // under Kafka's at-least-once redelivery — RETURNING tells us which
+        // rows were genuinely new. A single statement is also atomic, so a
+        // failed batch inserts nothing and can be retried wholesale.
+        // Param count stays comfortably under Postgres's 65535 limit: 11 per
+        // row x max.poll.records (default 500) = 5500.
+        StringBuilder sql = new StringBuilder("""
+                INSERT INTO events (event_id, event_type, schema_version, occurred_at, source,
+                                    aggregate_type, aggregate_id, correlation_id, causation_id, topic, payload)
+                VALUES """);
+        for (int i = 0; i < events.size(); i++) {
+            if (i > 0) {
+                sql.append(",\n       ");
+            }
+            sql.append(("(:eventId%1$d, :eventType%1$d, :schemaVersion%1$d, :occurredAt%1$d, :source%1$d, "
+                    + ":aggregateType%1$d, :aggregateId%1$d, :correlationId%1$d, :causationId%1$d, "
+                    + ":topic%1$d, :payload%1$d::jsonb)").formatted(i));
+        }
+        sql.append("\nON CONFLICT (event_id) DO NOTHING RETURNING event_id");
+
+        JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
+        for (int i = 0; i < events.size(); i++) {
+            StoredEvent e = events.get(i);
+            spec = spec.param("eventId" + i, e.eventId())
+                    .param("eventType" + i, e.eventType())
+                    .param("schemaVersion" + i, e.schemaVersion())
+                    .param("occurredAt" + i, e.occurredAt())
+                    .param("source" + i, e.source())
+                    .param("aggregateType" + i, e.aggregateType())
+                    .param("aggregateId" + i, e.aggregateId())
+                    .param("correlationId" + i, e.correlationId())
+                    .param("causationId" + i, e.causationId())
+                    .param("topic" + i, e.topic())
+                    .param("payload" + i, e.payloadJson());
+        }
+        return new HashSet<>(spec.query((rs, rowNum) -> rs.getObject("event_id", UUID.class)).list());
     }
 
     @Override
     public EventPage query(EventFilter f) {
-        StringBuilder sql = new StringBuilder("SELECT * FROM events WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT " + COLUMNS + " FROM events WHERE 1=1");
         Map<String, Object> params = new HashMap<>();
 
         if (f.types() != null && !f.types().isEmpty()) {
@@ -110,7 +134,7 @@ class JdbcEventStore implements EventStorePort {
 
     @Override
     public Optional<StoredEvent> findById(UUID eventId) {
-        return jdbc.sql("SELECT * FROM events WHERE event_id = :id")
+        return jdbc.sql("SELECT " + COLUMNS + " FROM events WHERE event_id = :id")
                 .param("id", eventId)
                 .query(ROW_MAPPER)
                 .optional();

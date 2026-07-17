@@ -1,6 +1,7 @@
 """LLM providers. Each returns the raw response text plus usage; parsing and
 contract validation live in decide.py — providers stay transport-only."""
 
+import asyncio
 import json
 import time
 from dataclasses import dataclass
@@ -114,13 +115,29 @@ class FakeProvider:
 class OpenAIProvider:
     name = "openai"
 
-    def __init__(self, api_key: str, model: str, temperature: float, client: httpx.AsyncClient):
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        temperature: float,
+        client: httpx.AsyncClient,
+        max_concurrent: int = 4,
+    ):
         self.model = model
         self._api_key = api_key
         self._temperature = temperature
         self._client = client
+        # One provider instance per process, so this gate is shared by every
+        # caller (all villager ticks). Queuing here is intentional backpressure:
+        # the wait counts toward the deliberate node's latency budget instead
+        # of thrashing the backend with N parallel requests.
+        self._gate = asyncio.Semaphore(max_concurrent)
 
     async def complete(self, system: str, user: str) -> LLMResponse:
+        async with self._gate:
+            return await self._complete(system, user)
+
+    async def _complete(self, system: str, user: str) -> LLMResponse:
         started = time.perf_counter()
         response = await self._client.post(
             "https://api.openai.com/v1/chat/completions",
@@ -158,13 +175,29 @@ class OpenAIProvider:
 class OllamaProvider:
     name = "ollama"
 
-    def __init__(self, base_url: str, model: str, temperature: float, client: httpx.AsyncClient):
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        temperature: float,
+        client: httpx.AsyncClient,
+        max_concurrent: int = 4,
+    ):
         self.model = model
         self._url = f"{base_url.rstrip('/')}/api/chat"
         self._temperature = temperature
         self._client = client
+        # Shared across all ticks (one provider instance per process). A single
+        # local GPU thrashes under 20 parallel completions; queued ticks wait
+        # here on purpose — the wait counts toward the deliberate node's
+        # latency budget as backpressure, not as a bug.
+        self._gate = asyncio.Semaphore(max_concurrent)
 
     async def complete(self, system: str, user: str) -> LLMResponse:
+        async with self._gate:
+            return await self._complete(system, user)
+
+    async def _complete(self, system: str, user: str) -> LLMResponse:
         started = time.perf_counter()
         response = await self._client.post(
             self._url,
@@ -214,7 +247,13 @@ async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> L
 
     if choice in ("auto", "openai") and settings.openai_api_key:
         logger.info("llm provider: openai", model=settings.llm_model_openai)
-        return OpenAIProvider(settings.openai_api_key, settings.llm_model_openai, settings.llm_temperature, client)
+        return OpenAIProvider(
+            settings.openai_api_key,
+            settings.llm_model_openai,
+            settings.llm_temperature,
+            client,
+            settings.llm_max_concurrent_requests,
+        )
     if choice == "openai":
         logger.warning("LLM_PROVIDER=openai but OPENAI_API_KEY is blank — walking the chain instead")
 
@@ -224,7 +263,13 @@ async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> L
         models = [m["name"] for m in response.json().get("models", [])]
         wanted = settings.llm_model_ollama
         if any(m == wanted or m.split(":")[0] == wanted.split(":")[0] for m in models):
-            provider = OllamaProvider(settings.ollama_base_url, wanted, settings.llm_temperature, client)
+            provider = OllamaProvider(
+                settings.ollama_base_url,
+                wanted,
+                settings.llm_temperature,
+                client,
+                settings.llm_max_concurrent_requests,
+            )
             await provider.warmup()
             logger.info("llm provider: ollama (warmed)", model=wanted)
             return provider

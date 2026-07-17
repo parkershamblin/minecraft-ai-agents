@@ -7,12 +7,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select, update
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from uuid6 import uuid7
 
 from memory_service.logging import logger
-from memory_service.embeddings import EmbeddingProvider
+from memory_service.embeddings import EmbeddingProvider, QueryEmbeddingCache
 from memory_service.envelope import TOPIC_AGENT, build_envelope
 from memory_service.kafka import EventPublisher
 from memory_service.llm import BudgetExhausted, SummarizerProvider
@@ -73,6 +73,9 @@ class MemoryService:
     ):
         self._sessions = session_factory
         self._embeddings = embeddings
+        # Search queries repeat across ticks; content on the write path never
+        # goes through the cache (store() uses self._embeddings directly).
+        self._query_embeddings = QueryEmbeddingCache(embeddings, settings.query_embedding_cache_size)
         self._settings = settings
         self._summarizer = summarizer
         self._publisher = publisher
@@ -137,17 +140,30 @@ class MemoryService:
             relevance=self._settings.retrieval_w_relevance,
         )
         started = time.perf_counter()
-        query_vector = await self._embeddings.embed(query)
+        query_vector = await self._query_embeddings.embed(query)
         now = datetime.now(UTC)
+        candidates = max(k * self._settings.retrieval_candidate_factor, k)
 
         async with self._sessions() as session:
+            # HNSW recall: the villager_id predicate post-filters ANN candidates,
+            # so pgvector's default ef_search=40 under-recalls as the table
+            # grows. Size it to the candidate need. SET LOCAL can't take bind
+            # params; set_config(..., is_local=true) can, and autobegin has
+            # already opened the transaction the ANN query below shares.
+            ef_search = max(
+                self._settings.hnsw_ef_search_floor,
+                candidates * self._settings.hnsw_ef_search_multiplier,
+            )
+            await session.execute(
+                text("SELECT set_config('hnsw.ef_search', :v, true)"), {"v": str(ef_search)}
+            )
             distance = Memory.embedding.cosine_distance(query_vector)
             rows = (
                 await session.execute(
                     select(Memory, distance.label("distance"))
                     .where(Memory.villager_id == villager_id)
                     .order_by(distance)
-                    .limit(max(k * self._settings.retrieval_candidate_factor, k))
+                    .limit(candidates)
                 )
             ).all()
 

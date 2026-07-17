@@ -30,6 +30,7 @@ const executor = new CommandExecutor({
   despawn: (villagerId) => registry.despawn(villagerId),
   isFresh: (commandId) => dedupe.isFresh(commandId),
   maxCommandAgeMs: config.COMMAND_MAX_AGE_SECONDS * 1_000,
+  maxTimeoutMs: config.COMMAND_TIMEOUT_MAX_MS,
   publishOutcome: (command, eventType, extra) =>
     producer.publish(
       'world.events',
