@@ -38,6 +38,43 @@ export const hazardEscapes = new Counter({
   registers: [registry],
 })
 
+// Survival reflexes (SV-6/8/12). no_effect = post-consume food delta ≤ 0 —
+// the ghost-dig honesty rule applied to eating.
+export const eatReflex = new Counter({
+  name: 'civ_eat_reflex_total',
+  help: 'Eat reflex attempts by outcome (ate | ate_desperate | no_effect | failed | timeout)',
+  labelNames: ['outcome'] as const,
+  registers: [registry],
+})
+
+export const threatEpisodes = new Counter({
+  name: 'civ_threat_episodes_total',
+  help: 'Threat episodes closed, by outcome (killed | escaped | aborted)',
+  labelNames: ['outcome'] as const,
+  registers: [registry],
+})
+
+export const threatResponses = new Counter({
+  name: 'civ_threat_responses_total',
+  help: 'Fight/flee maneuvers run, by response and outcome',
+  labelNames: ['response', 'outcome'] as const,
+  registers: [registry],
+})
+
+// A slot leak is visible in one scrape: the gauge should idle at 0.
+export const threatFightsActive = new Gauge({
+  name: 'civ_threat_fights_active',
+  help: 'Concurrent fights currently holding a fleet fight slot',
+  registers: [registry],
+})
+
+export const hunts = new Counter({
+  name: 'civ_hunts_total',
+  help: 'Hunt commands by family and outcome (killed | empty | escaped | not_found | aborted) — the herd depletion curve',
+  labelNames: ['family', 'outcome'] as const,
+  registers: [registry],
+})
+
 // Per-player material tracking (post-M2). `player` is the in-game username —
 // the repo's first entity-level label, bounded by MAX_PLAYERS (30) × item
 // types actually touched. kind: villager (bot) | player (human via RCON).

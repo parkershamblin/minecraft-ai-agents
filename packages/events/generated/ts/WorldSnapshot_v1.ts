@@ -30,6 +30,28 @@ export interface WorldSnapshot {
    */
   timeOfDay: number;
   /**
+   * Huntable animal families in tracking range (additive, survival cluster). Computed on the 1s snapshot pass UNGATED — an entities-map filter, ~1000x cheaper than one findBlocks sweep, and animals move while bots stand still. Absent when the feature is off; empty when nothing is in range.
+   */
+  nearbyAnimals?: {
+    /**
+     * A huntable family the hunt action accepts (cow/pig/sheep/chicken).
+     */
+    family: string;
+    nearestDistance: number;
+    count: number;
+  }[];
+  /**
+   * Hostile mobs in alert range (additive, survival cluster), from the threat watcher's cached pass — zero extra scanning. Absent when the watcher is off; empty when the night is quiet.
+   */
+  nearbyHostiles?: {
+    /**
+     * Entity name (zombie, skeleton, creeper, ...).
+     */
+    type: string;
+    count: number;
+    nearestDistance: number;
+  }[];
+  /**
    * Gatherable resource families in range (additive, M2-2). Refreshed on its own ~5s cadence — deliberately staler than the 1s snapshot (findBlocks scans are the cost). The scan is biased to the villager's altitude band, so entries lean reachable; count saturates at the scan cap. Absent (not empty) when no scan has run yet.
    */
   nearbyResources?: {

@@ -444,11 +444,14 @@ neighbor about the night it died last week.
 4. **Backup again before the ceremony** (same stopped-stack procedure).
    Ceremony (Parker, on camera): keepInventory→false, full night/day cycle,
    zero deaths. Never a session side effect.
-5. **Episode 2 filming flag:** film BEFORE Sprint 9's first deploy (every arc
-   deploy restarts minecraft-service + reseeds the fleet; never deploy
-   mid-election). Preconditions per HANDOFF: REMOVE the live COMMUNITY_GOAL
-   line from .env + restart agent-service; the filmed election is a RE-ELECTION
-   (Bram is seated) unless a nuke — with its re-apply checklist — precedes it.
+5. **Episode 2 filming flag — WAIVED by Parker, 2026-07-17** (recorded in
+   HANDOFF): Episode 2 filming is skipped; Survival deploys proceed unfilmed
+   (SV-3 was the first). Original gate, kept for the record: film BEFORE
+   Sprint 9's first deploy (every arc deploy restarts minecraft-service +
+   reseeds the fleet; never deploy mid-election). Preconditions per HANDOFF:
+   REMOVE the live COMMUNITY_GOAL line from .env + restart agent-service; the
+   filmed election is a RE-ELECTION (Bram is seated) unless a nuke — with its
+   re-apply checklist — precedes it.
 
 ## Cluster Definition of Done
 

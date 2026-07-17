@@ -4,7 +4,7 @@ import mineflayerPathfinder from 'mineflayer-pathfinder'
 import type Redis from 'ioredis'
 import type { Config } from '../config.ts'
 import { logger } from '../logging.ts'
-import { botSessions, hazardEscapes, reconnects } from '../metrics.ts'
+import { botSessions, eatReflex, hazardEscapes, hunts, reconnects, threatEpisodes, threatResponses } from '../metrics.ts'
 import { buildEnvelope } from '../events/envelope.ts'
 import {
   type BusyState,
@@ -14,6 +14,33 @@ import {
   hardenMovements,
   hazardPayload,
 } from './hazard.ts'
+import { type EatBot, EatWatcher } from './eat.ts'
+import {
+  THREAT_ALERT_RADIUS,
+  type ThreatBot,
+  type ThreatPhase,
+  type ThreatResponse,
+  ThreatWatcher,
+  type TrackedHostile,
+} from './threat.ts'
+import { type CombatBot, FightDriver, type FightSlots } from './combat.ts'
+import {
+  HUNT_BLACKLIST_MS,
+  HUNT_FAMILIES,
+  type HuntBot,
+  type HuntResult,
+  type HuntableEntity,
+  PRIMARY_MEAT,
+  allHuntTargetsBlacklistedMessage,
+  groupAnimalSightings,
+  huntNotFoundMessage,
+  huntStartAnnouncement,
+  huntSuccessAnnouncement,
+  isHuntYield,
+  pickHuntTarget,
+  runKillLoop,
+  targetEscapedMessage,
+} from '../world/hunting.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { MovementTracker } from '../world/movementTracker.ts'
 import { buildSnapshot, type NearbyVillager } from '../world/snapshot.ts'
@@ -32,6 +59,15 @@ import {
   targetKey,
 } from '../world/resources.ts'
 import { type GatherSessionResult, runGatherSession } from '../world/gatherSession.ts'
+import {
+  CRAFT_TABLE_SEARCH_DISTANCE,
+  type CraftResult,
+  cheapestGaps,
+  craftError,
+  noPlacementMessage,
+  pickTableSpot,
+  runCraftFlow,
+} from '../world/crafting.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
 
 /** What a gather command reports back to the mind: the session totals plus
@@ -60,6 +96,8 @@ interface SessionDeps {
   onChat: (session: BotSession, speakerUsername: string, message: string) => void
   /** positions of all other sessions, for the snapshot's nearbyVillagers */
   others: () => NearbyVillager[]
+  /** the fleet-wide fight cap — ONE instance per process (combat.ts) */
+  fightSlots: FightSlots
 }
 
 /**
@@ -86,6 +124,15 @@ export class BotSession {
   private resourceScanTimer: NodeJS.Timeout | null = null
   private hazardTimer: NodeJS.Timeout | null = null
   private hazardWatcher: HazardWatcher | null = null
+  private eatTimer: NodeJS.Timeout | null = null
+  private eatWatcher: EatWatcher | null = null
+  private threatTimer: NodeJS.Timeout | null = null
+  private threatWatcher: ThreatWatcher | null = null
+  /** hunt targets that recently escaped this bot: entity id → expiry ms */
+  private readonly huntBlacklist = new Map<number, number>()
+  /** the in-flight hunt's abandonment flag — stopMoving() (the watchdog's
+   *  cancel lever) flips it so the kill loop goes silent within one poll */
+  private huntAbandon: { abandoned: boolean } | null = null
   /** last survey result, merged into every snapshot until the next scan (null until one runs) */
   private nearbyResources: ResourceSighting[] | null = null
   private lastScan: { position: Position; at: number } | null = null
@@ -205,6 +252,8 @@ export class BotSession {
     this.startSnapshots()
     this.startResourceScan()
     this.startHazardWatch()
+    this.startThreatWatch()
+    this.startEatWatch()
 
     for (const waiter of this.spawnWaiters.splice(0)) {
       waiter(reason)
@@ -253,7 +302,12 @@ export class BotSession {
       if (!this.bot) {
         return
       }
-      const snapshot = buildSnapshot(this.villagerId, this.bot, this.deps.others(), this.nearbyResources)
+      // Animals ride the 1s pass UNGATED — one entities-map filter, ~1000x
+      // cheaper than a findBlocks sweep, and animals move while bots stand
+      // still. Hostiles come from the threat watcher's cached pass.
+      const animals = groupAnimalSightings(this.huntableEntities(), 48)
+      const hostiles = this.threatWatcher ? this.threatWatcher.nearbyHostiles() : null
+      const snapshot = buildSnapshot(this.villagerId, this.bot, this.deps.others(), this.nearbyResources, animals, hostiles)
       if (snapshot) {
         void redis
           .set(`world:${this.villagerId}`, JSON.stringify(snapshot), 'EX', config.SNAPSHOT_TTL_SECONDS)
@@ -275,10 +329,21 @@ export class BotSession {
       clearInterval(this.hazardTimer)
       this.hazardTimer = null
     }
+    if (this.eatTimer) {
+      clearInterval(this.eatTimer)
+      this.eatTimer = null
+    }
+    if (this.threatTimer) {
+      clearInterval(this.threatTimer)
+      this.threatTimer = null
+    }
     // A reconnect respawns somewhere else — forget the trap along with the
     // survey. (An in-flight escape attempt still owns `busy` until its race
-    // settles; its own finally releases it.)
+    // settles; its own finally releases it.) Same for the hunger crisis and
+    // any threat episode: the new body reads fresh state next pass.
     this.hazardWatcher = null
+    this.eatWatcher = null
+    this.threatWatcher = null
     // A reconnect respawns somewhere else — don't carry a stale survey there.
     this.nearbyResources = null
     this.lastScan = null
@@ -353,6 +418,314 @@ export class BotSession {
       },
     })
     this.hazardTimer = setInterval(() => this.hazardWatcher?.check(), config.HAZARD_WATCH_INTERVAL_MS)
+  }
+
+  /**
+   * The hunger watch (SV-6) — a 4th sibling loop. Each pass is two scalar
+   * reads; the inventory scan runs only when a threshold trips. Gated on the
+   * busy seam AND both open-episode getters (priority: escape > combat > eat).
+   */
+  private startEatWatch(): void {
+    const { config } = this.deps
+    if (config.EAT_CHECK_INTERVAL_MS === 0) {
+      return // disabled
+    }
+    this.eatWatcher = new EatWatcher({
+      bot: () => this.eatBot(),
+      getBusy: () => this.busy,
+      setBusy: (state) => {
+        this.busy = state
+      },
+      hazardOpen: () => this.hazardWatcher?.trapped ?? false,
+      threatOpen: () => this.threatWatcher?.episodeOpen ?? false,
+      emitCrisis: (phase, position, detail) => this.emitStarvation(phase, position, detail),
+      record: (outcome) => eatReflex.inc({ outcome }),
+      generation: () => this.spawnGeneration,
+      log: this.log,
+      config: {
+        foodThreshold: config.EAT_FOOD_THRESHOLD,
+        criticalFood: config.EAT_CRITICAL_FOOD,
+        recoverFood: config.EAT_RECOVER_FOOD,
+        hurtHealthThreshold: config.EAT_HURT_HEALTH_THRESHOLD,
+        eatTimeoutMs: config.EAT_TIMEOUT_MS,
+        retryMs: config.EAT_RETRY_MS,
+        bannedFoods: new Set(config.EAT_BANNED_FOODS.split(',').map((s) => s.trim()).filter(Boolean)),
+        desperationFoods: new Set(config.EAT_DESPERATION_FOODS.split(',').map((s) => s.trim()).filter(Boolean)),
+      },
+    })
+    this.eatTimer = setInterval(() => this.eatWatcher?.check(), config.EAT_CHECK_INTERVAL_MS)
+  }
+
+  /**
+   * The threat watch (SV-12a) — the 5th sibling loop. One entities-map
+   * filter per pass; the maneuvers (combat.ts) run raced-with-deadline
+   * inside the watcher, never on this interval's stack.
+   */
+  private startThreatWatch(): void {
+    const { config } = this.deps
+    if (config.THREAT_WATCH_INTERVAL_MS === 0) {
+      return // disabled — snapshots omit nearbyHostiles entirely
+    }
+    const driver = new FightDriver(() => this.combatBot(), this.deps.fightSlots, this.log, {
+      fightTimeoutMs: config.THREAT_FIGHT_TIMEOUT_MS,
+      fleeTimeoutMs: config.THREAT_FLEE_TIMEOUT_MS,
+      buddyRadius: config.THREAT_FLEE_BUDDY_RADIUS,
+    })
+    this.threatWatcher = new ThreatWatcher({
+      bot: () => this.threatBot(),
+      getBusy: () => this.busy,
+      setBusy: (state) => {
+        this.busy = state
+      },
+      hazardOpen: () => this.hazardWatcher?.trapped ?? false,
+      emit: (phase, threatType, response, count, dist, position, detail) =>
+        this.emitThreat(phase, threatType, response, count, dist, position, detail),
+      driver,
+      stance: () => config.THREAT_DEFAULT_STANCE,
+      cry: (line) => {
+        try {
+          this.bot?.chat(line)
+        } catch {
+          // a dead connection can reject chat — the cry is color, never load-bearing
+        }
+      },
+      recordEpisode: (outcome) => threatEpisodes.inc({ outcome }),
+      recordResponse: (response, outcome) => threatResponses.inc({ response, outcome }),
+      generation: () => this.spawnGeneration,
+      log: this.log,
+      config: { alertRadius: THREAT_ALERT_RADIUS, maneuverCooldownMs: config.THREAT_MANEUVER_COOLDOWN_MS },
+    })
+    this.threatTimer = setInterval(() => this.threatWatcher?.check(), config.THREAT_WATCH_INTERVAL_MS)
+  }
+
+  /** How far above/below a hostile still counts as a threat. The alert
+   *  radius is a 3D sphere with no line-of-sight check, and the village
+   *  sits over inhabited caves — without the band, every surface villager
+   *  lives in a PERMANENT phantom episode against mobs 12 blocks below
+   *  solid rock (measured 2026-07-17: the whole fleet perpetually fleeing
+   *  ghosts, event loop pinned; the resource scan's yBand precedent).
+   *  Damage promotion (threat.ts) is the safety net for what the band
+   *  hides — a cliff skeleton that actually lands a hit still opens an
+   *  episode. */
+  private static readonly HOSTILE_Y_BAND = 8
+
+  /** One filter over the client's entity map: every tracked hostile within
+   *  the vertical band, with its live distance, nearest first. */
+  private trackedHostiles(): TrackedHostile[] {
+    return this.scanHostiles(BotSession.HOSTILE_Y_BAND)
+  }
+
+  private scanHostiles(yBand: number | null): TrackedHostile[] {
+    const bot = this.bot
+    const origin = this.position
+    if (!bot?.entity || !origin) {
+      return []
+    }
+    const out: TrackedHostile[] = []
+    for (const entity of Object.values(bot.entities)) {
+      if (entity === bot.entity || entity.kind !== 'Hostile mobs' || !entity.position) {
+        continue
+      }
+      if (yBand !== null && Math.abs(entity.position.y - origin.y) > yBand) {
+        continue
+      }
+      out.push({
+        id: entity.id,
+        name: entity.name ?? 'unknown',
+        distance: distance(origin, entity.position),
+        position: { x: entity.position.x, y: entity.position.y, z: entity.position.z },
+      })
+    }
+    return out.sort((a, b) => a.distance - b.distance)
+  }
+
+  /** Huntable passive mobs with the ageable baby flag (metadata index 16 on
+   *  1.21.6 — heights never rescale, so metadata is the only working
+   *  exclusion; spike-pinned). */
+  private huntableEntities(): HuntableEntity[] {
+    const bot = this.bot
+    const origin = this.position
+    if (!bot?.entity || !origin) {
+      return []
+    }
+    const names = HUNT_FAMILIES.any as readonly string[]
+    const out: HuntableEntity[] = []
+    for (const entity of Object.values(bot.entities)) {
+      if (!entity.name || !names.includes(entity.name) || !entity.position) {
+        continue
+      }
+      out.push({
+        id: entity.id,
+        name: entity.name,
+        position: { x: entity.position.x, y: entity.position.y, z: entity.position.z },
+        distance: distance(origin, entity.position),
+        baby: (entity.metadata as unknown[] | undefined)?.[16] === true,
+      })
+    }
+    return out
+  }
+
+  private eatBot(): EatBot | null {
+    const bot = this.bot
+    if (!bot) {
+      return null
+    }
+    const registry = bot.registry as unknown as { foods?: Record<number, { foodPoints?: number }> }
+    return {
+      alive: Boolean(bot.entity),
+      health: () => bot.health,
+      food: () => bot.food,
+      position: () => this.position,
+      carriedFood: () =>
+        bot.inventory.items().flatMap((item) => {
+          const foodPoints = registry.foods?.[item.type]?.foodPoints
+          return foodPoints ? [{ name: item.name, foodPoints }] : []
+        }),
+      equipFood: async (name) => {
+        const stack = bot.inventory.items().find((item) => item.name === name)
+        if (!stack) {
+          throw new Error(`no ${name} left in the pack`)
+        }
+        await bot.equip(stack, 'hand')
+      },
+      consume: () => bot.consume(),
+    }
+  }
+
+  private threatBot(): ThreatBot | null {
+    const bot = this.bot
+    if (!bot) {
+      return null
+    }
+    return {
+      alive: Boolean(bot.entity),
+      health: () => bot.health,
+      position: () => this.position,
+      hostiles: () => this.trackedHostiles(),
+      allHostiles: () => this.scanHostiles(null),
+      armed: () => bot.inventory.items().some((item) => item.name.endsWith('_sword') || item.name.endsWith('_axe')),
+    }
+  }
+
+  private combatBot(): CombatBot | null {
+    const bot = this.bot
+    if (!bot) {
+      return null
+    }
+    return {
+      alive: Boolean(bot.entity),
+      food: () => bot.food,
+      position: () => this.position,
+      hostileById: (id) => this.trackedHostiles().find((h) => h.id === id) ?? null,
+      hostiles: () => this.trackedHostiles(),
+      villagers: () => this.deps.others().flatMap((o) => (o.position ? [o.position] : [])),
+      equipWeapon: async (name) => {
+        const stack = bot.inventory.items().find((item) => item.name === name)
+        if (stack) {
+          await bot.equip(stack, 'hand')
+        }
+      },
+      carried: () => bot.inventory.items().map((item) => item.name),
+      setGoalFollow: (targetId, range) => {
+        const entity = bot.entities[targetId]
+        if (entity) {
+          bot.pathfinder.setGoal(new goals.GoalFollow(entity, range), true)
+        }
+      },
+      setGoalXZ: (x, z) => bot.pathfinder.setGoal(new goals.GoalXZ(x, z)),
+      clearGoal: () => bot.pathfinder.setGoal(null),
+      lookAt: (p) => {
+        void bot.lookAt(this.vecAt(p), true).catch(() => {})
+      },
+      attack: (targetId) => {
+        const entity = bot.entities[targetId]
+        if (entity) {
+          bot.attack(entity)
+        }
+      },
+      setSprint: (state) => bot.setControlState('sprint', state),
+    }
+  }
+
+  private huntBot(): HuntBot {
+    const bot = this.bot as Bot
+    return {
+      alive: Boolean(bot.entity),
+      position: () => this.position,
+      targetById: (id) => {
+        const entity = bot.entities[id]
+        const origin = this.position
+        if (!entity?.position || !origin) {
+          return null
+        }
+        return {
+          position: { x: entity.position.x, y: entity.position.y, z: entity.position.z },
+          distance: distance(origin, entity.position),
+        }
+      },
+      setGoalFollow: (targetId, range) => {
+        const entity = bot.entities[targetId]
+        if (entity) {
+          bot.pathfinder.setGoal(new goals.GoalFollow(entity, range), true)
+        }
+      },
+      clearGoal: () => bot.pathfinder.setGoal(null),
+      lookAt: (p) => {
+        void bot.lookAt(this.vecAt(p), true).catch(() => {})
+      },
+      attack: (targetId) => {
+        const entity = bot.entities[targetId]
+        if (entity) {
+          bot.attack(entity)
+        }
+      },
+      goTo: async (p) => {
+        await bot.pathfinder.goto(new goals.GoalNear(p.x, p.y, p.z, 0))
+      },
+      generation: () => this.spawnGeneration,
+    }
+  }
+
+  /** Mint a real Vec3 from the entity's own position (prismarine methods
+   *  need one; importing the transitive package is the recorded anti-pattern). */
+  private vecAt(p: Position) {
+    const base = (this.bot as Bot).entity.position.floored()
+    return base.offset(p.x - base.x, p.y - base.y, p.z - base.z)
+  }
+
+  private emitStarvation(phase: 'trapped' | 'escaped', position: Position, detail: string | null): void {
+    if (phase === 'escaped') {
+      hazardEscapes.inc({ outcome: 'escaped' })
+    }
+    const envelope = buildEnvelope({
+      eventType: 'HazardEncountered',
+      aggregateId: this.villagerId,
+      payload: { villagerId: this.villagerId, hazardType: 'starvation', phase, position, detail },
+    })
+    this.log.warn({ phase, detail, eventId: envelope.eventId }, 'starvation crisis event')
+    void this.deps.producer
+      .publish('world.events', envelope)
+      .catch((err: Error) => this.log.warn({ err: err.message }, 'starvation event publish failed'))
+  }
+
+  private emitThreat(
+    phase: ThreatPhase,
+    threatType: string,
+    response: ThreatResponse | null,
+    count: number,
+    dist: number,
+    position: Position,
+    detail: string | null,
+  ): void {
+    const envelope = buildEnvelope({
+      eventType: 'ThreatEncountered',
+      aggregateId: this.villagerId,
+      payload: { villagerId: this.villagerId, threatType, phase, response, count, distance: dist, position, detail },
+    })
+    this.log.info({ phase, threatType, response, count, distance: dist }, 'threat encountered')
+    void this.deps.producer
+      .publish('world.events', envelope)
+      .catch((err: Error) => this.log.warn({ err: err.message }, 'threat event publish failed'))
   }
 
   /** Adapt the live Bot to the reflex's narrow surface (fresh each pass —
@@ -593,7 +966,281 @@ export class BotSession {
     return { blockType, position: { x: block.position.x, y: block.position.y, z: block.position.z }, collected }
   }
 
+  /**
+   * Craft one recipe application of a contract item (SV-3) — resolve the
+   * wood-abstract families against the pack, acquire a crafting table when
+   * the recipe needs the 3x3 grid (walk to a standing one, else place a
+   * carried one), craft, and report the honest inventory delta. All control
+   * flow lives in runCraftFlow (unit-tested botless); this method is only
+   * the world touches.
+   */
+  async craft(item: string): Promise<CraftResult> {
+    const bot = this.bot
+    if (!bot?.entity) {
+      throw new Error('bot has no entity — not spawned')
+    }
+    const itemId = (name: string) => bot.registry.itemsByName[name]?.id
+    // blockAt/placeBlock need real Vec3s (prismarine calls their methods) —
+    // mint them from the entity's own position rather than importing an
+    // undeclared transitive package (the hazardBot precedent).
+    const vecAt = (p: Position) => {
+      const base = bot.entity.position.floored()
+      return base.offset(p.x - base.x, p.y - base.y, p.z - base.z)
+    }
+    return await runCraftFlow(item, {
+      carried: () => bot.inventory.items().map((stack) => ({ name: stack.name, count: stack.count })),
+      craftableNow: (name, allowTable) => {
+        const id = itemId(name)
+        // recipesFor reads the table param only as availability at filter
+        // time (mineflayer craft.js) — `true` answers the hypothetical
+        // "standing at a table, could I?" honestly, no Block needed.
+        return id !== undefined && bot.recipesFor(id, null, 1, allowTable).length > 0
+      },
+      ingredientGaps: (name) => {
+        const id = itemId(name)
+        if (id === undefined) {
+          return []
+        }
+        return cheapestGaps(
+          bot.recipesAll(id, null, true).map((recipe) =>
+            recipe.delta
+              .filter((d) => d.count < 0)
+              .map((d) => ({
+                name: bot.registry.items[d.id]?.name ?? `item ${d.id}`,
+                required: -d.count,
+                have: bot.inventory.count(d.id, null),
+              })),
+          ),
+          bot.inventory.items().map((stack) => ({ name: stack.name, count: stack.count })),
+        )
+      },
+      findTable: () => {
+        const found = bot.findBlock({
+          matching: (candidate) => candidate.name === 'crafting_table',
+          maxDistance: CRAFT_TABLE_SEARCH_DISTANCE,
+        })
+        return found ? { x: found.position.x, y: found.position.y, z: found.position.z } : null
+      },
+      walkTo: async (p) => {
+        // Range 2 keeps the table within interaction reach for bot.craft's
+        // activateBlock; the executor's watchdog owns the deadline.
+        await bot.pathfinder.goto(new goals.GoalNear(p.x, p.y, p.z, 2))
+      },
+      placeTable: async () => {
+        const spot = pickTableSpot(this.position as Position, (p) => {
+          const block = bot.blockAt(vecAt(p))
+          return block
+            ? { air: block.name === 'air' || block.name === 'cave_air', solid: block.boundingBox === 'block' }
+            : null
+        })
+        if (!spot) {
+          throw craftError('PATH_NOT_FOUND', noPlacementMessage(), true)
+        }
+        const tableStack = bot.inventory.items().find((stack) => stack.name === 'crafting_table')
+        if (!tableStack) {
+          throw new Error('crafting table vanished from the pack before placement')
+        }
+        await bot.equip(tableStack, 'hand')
+        const ground = bot.blockAt(vecAt(spot.ground))
+        if (!ground) {
+          throw craftError('PATH_NOT_FOUND', noPlacementMessage(), true)
+        }
+        await bot.placeBlock(ground, ground.position.offset(0, 1, 0).minus(ground.position))
+        const placed = bot.blockAt(vecAt(spot.spot))
+        if (placed?.name !== 'crafting_table') {
+          // The server can silently reject a placement (the ghost-dig lesson
+          // in reverse) — never craft against a table that isn't really there.
+          throw new Error(`table placement did not take (the spot reads ${placed?.name ?? 'unloaded'})`)
+        }
+        return spot.spot
+      },
+      craft: async (name, tableAt) => {
+        const id = itemId(name)
+        if (id === undefined) {
+          throw new Error(`unknown item '${name}' in this world's registry`)
+        }
+        const tableBlock = tableAt ? bot.blockAt(vecAt(tableAt)) : null
+        if (tableAt && !tableBlock) {
+          throw new Error('the crafting table is out of loaded range')
+        }
+        const recipes = bot.recipesFor(id, null, 1, tableBlock ?? false)
+        if (recipes.length === 0) {
+          throw new Error(`the ${name} recipe stopped matching your pack mid-craft`)
+        }
+        await bot.craft(recipes[0]!, 1, tableBlock ?? undefined)
+      },
+      countItem: (name) =>
+        bot.inventory
+          .items()
+          .filter((stack) => stack.name === name)
+          .reduce((sum, stack) => sum + stack.count, 0),
+      // The executor claims busy='action' for the command's lifetime and
+      // clears it when the watchdog abandons the race — the same seam SV-2's
+      // gather session reads, no new machinery.
+      bodyStillOurs: () => this.busy === 'action',
+      announce: (line) => bot.chat(line),
+      position: () => this.position as Position,
+    })
+  }
+
+  /**
+   * Hunt one animal (SV-8): pick the nearest huntable adult, chase it with
+   * the kill loop (dynamic follow, fire-and-forget swings, leash + deadline),
+   * collect the drops, report the honest inventory delta. One animal per
+   * action — a wounded escapee keeps its damage. Failures are coded and
+   * prescriptive; the blacklist keeps yesterday's escapee off today's menu.
+   */
+  async hunt(animal: string, maxDistance: number): Promise<HuntResult> {
+    const bot = this.bot
+    if (!bot?.entity) {
+      throw new Error('bot has no entity — not spawned')
+    }
+    const coded = (code: string, message: string, retryable: boolean): Error => {
+      const err = new Error(message) as Error & { code?: string; retryable?: boolean }
+      err.code = code
+      err.retryable = retryable
+      return err
+    }
+    if (!HUNT_FAMILIES[animal]) {
+      throw coded('INVALID_PARAMS', `'${animal}' is not huntable — hunt one of: cow, pig, sheep, chicken, any`, false)
+    }
+    const now = Date.now()
+    for (const [id, until] of this.huntBlacklist) {
+      if (until <= now) {
+        this.huntBlacklist.delete(id)
+      }
+    }
+    const candidates = this.huntableEntities()
+    const target = pickHuntTarget(candidates, animal, maxDistance, this.huntBlacklist, now)
+    if (!target) {
+      const families = HUNT_FAMILIES[animal] as readonly string[]
+      const anyEligible = candidates.some((c) => families.includes(c.name) && !c.baby && c.distance <= maxDistance)
+      hunts.inc({ family: animal, outcome: 'not_found' })
+      throw coded(
+        'RESOURCE_NOT_FOUND',
+        anyEligible ? allHuntTargetsBlacklistedMessage(animal) : huntNotFoundMessage(animal, maxDistance),
+        true,
+      )
+    }
+
+    // Yield counting: snapshot the relevant stacks before the chase — deltas
+    // keep the kill presumption honest (the ghost-dig lesson).
+    const yieldCounts = (): Map<string, number> => {
+      const counts = new Map<string, number>()
+      for (const item of bot.inventory.items()) {
+        if (isHuntYield(target.name, item.name)) {
+          counts.set(item.name, (counts.get(item.name) ?? 0) + item.count)
+        }
+      }
+      return counts
+    }
+    const before = yieldCounts()
+
+    // Mark before the attempt (the dedupe pattern) — clear only on a real
+    // haul, so an escapee stays off the menu for the blacklist TTL.
+    this.huntBlacklist.set(target.id, now + HUNT_BLACKLIST_MS)
+    bot.chat(huntStartAnnouncement(target))
+
+    const ctx = { abandoned: false }
+    this.huntAbandon = ctx
+    let outcome
+    try {
+      outcome = await runKillLoop(this.huntBot(), target.id, {
+        chaseTimeoutMs: this.deps.config.HUNT_CHASE_TIMEOUT_MS,
+        leashBlocks: maxDistance + 16,
+        ctx,
+      })
+    } finally {
+      this.huntAbandon = null
+    }
+
+    if (outcome.kind === 'abandoned') {
+      hunts.inc({ family: animal, outcome: 'aborted' })
+      // The watchdog already settled the command — the latch suppresses this.
+      throw new Error('hunt abandoned by the watchdog')
+    }
+    if (outcome.kind === 'escaped') {
+      hunts.inc({ family: animal, outcome: 'escaped' })
+      throw coded('TARGET_ESCAPED', targetEscapedMessage(target.name, outcome.chaseSeconds), true)
+    }
+
+    // Presumed kill: walk onto the drop site, chase stray item entities —
+    // best-effort, a failed collection still ends as an honest completion.
+    try {
+      await bot.pathfinder.goto(new goals.GoalNear(outcome.lastPosition.x, outcome.lastPosition.y, outcome.lastPosition.z, 0))
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      if (sumCounts(yieldCounts()) === sumCounts(before)) {
+        const lastPos = outcome.lastPosition
+        const drop = bot.nearestEntity(
+          (entity) => entity.name === 'item' && entity.position.distanceTo(this.vecAt(lastPos)) < 8,
+        )
+        if (drop) {
+          await bot.pathfinder.goto(new goals.GoalNear(drop.position.x, drop.position.y, drop.position.z, 0))
+          await new Promise((resolve) => setTimeout(resolve, 700))
+        }
+      }
+    } catch {
+      this.log.info({ target: target.name }, 'hunt drop collection fell short — reporting the honest count')
+    }
+
+    const after = yieldCounts()
+    const drops: Record<string, number> = {}
+    let collected = 0
+    for (const [name, count] of after) {
+      const gained = count - (before.get(name) ?? 0)
+      if (gained > 0) {
+        drops[name] = gained
+        collected += gained
+      }
+    }
+    // Ruling 6: hunt emits ResourceGathered per drop type — the economy
+    // primitive the ledger already carries. An empty kill emits one honest
+    // zero on the primary meat (the ghost-block precedent: the record keeps
+    // what the world refused to yield).
+    const emissions =
+      collected > 0
+        ? Object.entries(drops)
+        : ([[PRIMARY_MEAT[target.name] ?? 'meat', 0]] as Array<[string, number]>)
+    for (const [resourceType, quantity] of emissions) {
+      void this.deps.producer.publish(
+        'world.events',
+        buildEnvelope({
+          eventType: 'ResourceGathered',
+          aggregateId: this.villagerId,
+          payload: { villagerId: this.villagerId, resourceType, quantity, position: outcome.lastPosition },
+        }),
+      )
+    }
+    if (collected > 0) {
+      this.huntBlacklist.delete(target.id)
+      if (this.busy === 'action') {
+        const line = huntSuccessAnnouncement(target.name, drops)
+        if (line) {
+          bot.chat(line)
+        }
+      }
+    }
+    hunts.inc({ family: animal, outcome: collected > 0 || outcome.kind === 'killed' ? 'killed' : 'empty' })
+    const meat = PRIMARY_MEAT[target.name] ?? 'meat'
+    return {
+      animal,
+      target: target.name,
+      killed: true,
+      collected,
+      drops,
+      position: outcome.lastPosition,
+      chaseSeconds: outcome.chaseSeconds,
+      note:
+        collected > 0
+          ? `raw ${meat} sates hunger, if poorly — your body eats from the pack by itself when hungry`
+          : 'the kill left nothing to carry — drops sometimes roll away or burn',
+    }
+  }
+
   stopMoving(): void {
+    if (this.huntAbandon) {
+      this.huntAbandon.abandoned = true // the kill loop goes silent within one poll
+    }
     this.bot?.pathfinder.setGoal(null)
   }
 
@@ -608,4 +1255,12 @@ export class BotSession {
     await this.deps.redis.del(`world:${this.villagerId}`)
     this.log.info('bot despawned')
   }
+}
+
+function sumCounts(counts: ReadonlyMap<string, number>): number {
+  let total = 0
+  for (const count of counts.values()) {
+    total += count
+  }
+  return total
 }

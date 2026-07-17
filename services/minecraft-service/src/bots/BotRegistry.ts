@@ -1,9 +1,11 @@
 import type Redis from 'ioredis'
 import type { Config } from '../config.ts'
 import { logger } from '../logging.ts'
+import { threatFightsActive } from '../metrics.ts'
 import { buildEnvelope } from '../events/envelope.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { BotSession } from './BotSession.ts'
+import { FightSlots } from './combat.ts'
 import { Roster } from '../redis/roster.ts'
 import { ChatRouter } from '../world/chatRouter.ts'
 import type { BotInventoryView } from '../world/inventoryPoller.ts'
@@ -18,6 +20,8 @@ export class BotRegistry {
   private sessions = new Map<string, BotSession>()
   private chatRouter: ChatRouter
   readonly roster: Roster
+  /** the FLEET-wide fight cap — one instance, shared by every session */
+  private readonly fightSlots: FightSlots
 
   constructor(
     private readonly config: Config,
@@ -25,6 +29,7 @@ export class BotRegistry {
     private readonly redis: Redis,
   ) {
     this.roster = new Roster(redis)
+    this.fightSlots = new FightSlots(config.THREAT_MAX_CONCURRENT_FIGHTS, threatFightsActive)
     this.chatRouter = new ChatRouter({
       rosterByUsername: (username) => this.roster.villagerIdFor(username),
       activeSessions: () =>
@@ -114,6 +119,7 @@ export class BotRegistry {
         )
       },
       others: () => this.othersFor(villagerId),
+      fightSlots: this.fightSlots,
     })
     this.sessions.set(villagerId, session)
     session.connect()

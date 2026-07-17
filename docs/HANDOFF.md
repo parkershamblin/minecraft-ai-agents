@@ -1,19 +1,237 @@
-# Session Handoff — SV-2 SHIPPED (sustained gather sessions, PR #29) · next code session = SV-3 (craft verb, body) · Episode 2 filming BEFORE any Survival deploy
+# Session Handoff — SURVIVAL REFLEXES LIVE (eat/threat/hunt + craft, PR #33 awaiting Parker's merge click) · WORLD ON EASY, wheels on · fleet survives autonomously
 
 > A fresh session should be able to continue from this file +
 > `docs/architecture/09-survival-plan.md` (the approved cluster) or
 > `docs/architecture/08-m2-plan.md` (history) without asking questions.
 > **M1 + M2 complete and merged (Mayor Bram seated, fleet ticking). The
-> Survival cluster (peaceful→easy: eat/craft/hunt/cook, fight-or-flee, death
-> awareness, staged wheel removal, on-camera ceremony) is APPROVED and in
-> flight: SV-1 (contract commit A) MERGED to main (`1915e6d`); SV-2
-> (sustained gather sessions, body) shipped as PR #29 (awaiting merge);
-> Sprint 9's single body lane continues at SV-3 (craft verb, body) → SV-4
-> (crafting brain + the per-verb timeout table). Nothing Survival has
-> DEPLOYED — the filming constraint gates DEPLOYS, not commits: Episode 2
-> filming must happen BEFORE the first Survival deploy (docs/demo-m2.md;
-> remove the live COMMUNITY_GOAL line + restart agent-service; the filmed
-> election is a re-election unless a nuke precedes it).**
+> Survival cluster is in flight: SV-1 (`1915e6d`) and SV-2 (`38bc223`)
+> merged; SV-3 (craft verb, body) shipped as PR #33 and IS DEPLOYED to the
+> live fleet (branch-built image; rebuild from main post-merge). The
+> Episode 2 filming gate was WAIVED by Parker on 2026-07-17 — Survival
+> deploys no longer wait on filming (recorded in 09-survival-plan rollout
+> §5). Sprint 9's single body lane continues at SV-4 (crafting brain + the
+> per-verb timeout table with TIMEOUT_TABLE_MAX_MS=60s).**
+
+## Session 2026-07-17 (later) — SURVIVAL REFLEXES: eat + threat + hunt shipped and DEPLOYED (rides PR #33)
+
+**Parker's brief: "Update the AI bots so they are able to survive on
+difficulty easy on their own. The goal is that the AI bots are not slain,
+and do not starve to death."** Shipped the survival capability cluster in
+one arc (SV-4 + SV-6/7 + SV-8/10 + SV-12a/b + SV-13-lite + the contracts
+they need), body-before-mind, all on the PR #33 branch.
+
+- **Contracts (additive)**: ThreatEncountered.v1 (edge-triggered episodes,
+  victim-only); ActionRequested += `hunt` (+ flat HuntParams — one animal
+  per action); ActionFailed errorCodes += BODY_BUSY /
+  SELF_DEFENSE_IN_PROGRESS / TARGET_ESCAPED; WorldSnapshot += nearbyAnimals
+  + nearbyHostiles; HazardEncountered description records the starvation
+  reuse. Fixtures + invalid + catalog rows + `task gen` committed.
+- **Body (minecraft-service)**: `bots/eat.ts` (SV-6 brief verbatim: tiers
+  14/6/10 + hurt modifier, foodPoints ranking, banned/desperation foods,
+  per-item 60s blacklist, raced consume, starvation crisis via
+  HazardEncountered{starvation}, generation-bump honesty);
+  `bots/threat.ts` (classification + pure decision table — flee is every
+  default, cautious flees melee; 2-pass debounce + instant danger radii
+  {creeper 12, skeleton 16}; edge-triggered emission, overwhelmed ≤1/60s;
+  canned cries); `bots/combat.ts` (hand-rolled FightDriver per the NO-GO
+  spike: 650ms full-charge swings, fire-and-forget goals ONLY; flee with
+  ±90° deflection + 60° buddy-bias cone + starving-walks + cornered flail;
+  FLEET-wide FightSlots cap, overflow downgrades to flee);
+  `world/hunting.ts` + BotSession.hunt (kill loop, baby exclusion via
+  metadata index 16, entity blacklist, leash, honest yield deltas,
+  ResourceGathered per drop type — ruling 6, wired after the live verify
+  caught the miss); executor BUSY_BOUNCE table; busy seam grows
+  'combat'|'eat' (priority escape > combat > eat > commands, no
+  preemption); snapshot senses; metrics civ_eat_reflex_total /
+  civ_threat_{episodes,responses,fights_active} / civ_hunts_total.
+  mc tests 168→244.
+- **Brain (agent-service)**: DELIBERATE_ACTIONS += craft, hunt (validated
+  against the real $defs); **the per-verb timeout table** (SV-4,
+  TIMEOUT_TABLE_MAX_MS=60s ceiling, gather 60s — count is now advertised);
+  craft/hunt affordances with recipe-chain + herds-are-slow norms; the
+  "your body looks after itself" teaching; standing hunger section (≤10
+  urgent, ≤6 STARVING + ask-for-help legitimizer); Game-in-sight +
+  DANGERS-in-sight sections; ThreatEncountered percept lines per phase;
+  **the SV-7 type-blind hazard-directive FIX** (starvation no longer told
+  to "get off the deep snow"); percepts: ThreatEncountered victim-only,
+  wakes on spotted+overwhelmed only; reflect folds for threats +
+  starvation. agent tests 143→167. All six suites green; zero malformed in
+  the live window post-deploy.
+- **Ops levers** (compose pass-throughs): THREAT_MAX_CONCURRENT_FIGHTS
+  (default 4; 0 = flee-only fleet) and THREAT_DEFAULT_STANCE (cautious;
+  brave = armed villagers fight melee). Everything else runs code defaults.
+- **LIVE-VERIFIED on the easy world, same hour**:
+  - **Organic creeper episode 60s after deploy** (before any drill):
+    spotted 4.9 blocks → engaged{flee} → overwhelmed (cornered on the
+    mountainside) → **escaped after ~47s, zero deaths** — the reflex saved
+    a villager from a live creeper on its first outing.
+  - **Ansel's starvation arc, organic-then-assisted**: his crisis opened
+    HONESTLY (food 0, empty pantry — trapped in the ledger) the moment the
+    watcher booted; an operator /give played the sharing neighbor; the
+    reflex ate 0→8→16→20 (hurt-modifier top-up), crisis
+    escaped-at-hysteresis in the ledger, health regenerating. Plus 4 fully
+    organic eats fleet-wide in the first minutes.
+  - **Drill zombie** (helmeted, daylight): 8+ villagers spotted it,
+    engaged{flee} across the board (cautious default), all episodes closed
+    escaped. Cleanup `kill @e[type=zombie]` removed **67 cave zombies** —
+    the underground had been breeding since the easy flip; expect busy
+    nights.
+  - **Hunt end-to-end**: drill cow killed in a 2s chase, 3 beef collected,
+    honest RESOURCE_NOT_FOUND prose when the earlier herd had wandered
+    (fail-fast worked), ResourceGathered emission verified after the fix.
+- **First-night finding, fixed same session (`071e1cf`)**: the flee
+  no-progress window (3s) was TIGHTER than the pathfinder think budget
+  (10s) — the cornered verdict fired before tickTimeout-starved A* even
+  started the body moving, the goal got cleared, and the fleet jittered in
+  place spamming overwhelmed{cornered} (distance also emitted as a
+  hardcoded 0). Widened to 7s + real distance/count in the emit;
+  redeployed mid-night. Zero deaths throughout either way (wheels +
+  10-HP easy floor held). Also of note: a `creaking` (1.21.4 pale-garden
+  mob) hit the unknown-hostile flee-class default correctly.
+- **Second night finding, fixed same session (`06fa495`)**: 20 perpetual
+  concurrent flees at 24-block A* hops pinned the minecraft-service event
+  loop at **99.9% CPU** (caught via docker stats before any cascade — zero
+  kafka rejoins, commands still completing; the recorded pursuit-pinning
+  risk realized through FLEE, which the fight cap can't reach). Fix = the
+  hazard escapeRetryMs pattern applied to maneuvers
+  (`THREAT_MANEUVER_COOLDOWN_MS=5000`, first maneuver immediate, failed
+  ones back off) + flee hops 24→16 (A* cost is super-linear on rough
+  terrain; the loop re-hops anyway). Night-flee outcome ratio pre-fix was
+  120 cornered : 1 escaped per minute — perpetual running that WORKED
+  (fleet health 19×20/20 + one 17 regenerating, ZERO deaths all night),
+  just hot.
+- **Third finding — the ROOT cause, fixed same session (`e15b13b`)**: dawn
+  CPU stayed pinned because the alert radius is a 3D sphere with NO
+  line-of-sight — **the inhabited caves under the village kept every
+  surface villager in a permanent phantom episode** against mobs 12 blocks
+  below solid rock (this, not night sieges, drove both the CPU burn and
+  the inverted cornered:escaped ratio). Fix at the single source:
+  `trackedHostiles` applies an 8-block vertical band (the resource-scan
+  yBand precedent) — watcher, maneuvers, and the snapshot's nearbyHostiles
+  all stop seeing ghosts; **damage promotion** is the safety net (a real
+  hit opens an episode instantly against the best-named suspect from the
+  unbanded view — cliff snipers, aggroed endermen, anything unmapped;
+  regen never promotes). Tests 247. The fleet survived the WHOLE first
+  night either way: **zero deaths across every sample.**
+- **Watch-fors**: organic hunt/craft decisions need hunger pressure (fleet
+  was 17–20 food at session end — the survival section fires ≤10); llama
+  go/no-go on hunt/craft emission still pending organic evidence; hunt's
+  ResourceGathered emission is unit-covered but its live ledger proof
+  still pending (drill cows kept wandering off / recreates interrupted);
+  SV-5b backup STILL not taken. **CPU follow-up (tracked, not urgent)**:
+  minecraft-service settles at ~100% of one core even in daytime with the
+  band + cooldown in (episode behavior fixed: 23 closes, 33:73
+  escaped:cornered vs the original 1:120) — every health signal is green
+  (0 kafka rejoins, ~0 command timeouts, MSPT ~16, 0 deaths), consistent
+  with the 10ms-sliced pathfinder duty cycle staying responsive while
+  saturated; profile before tuning (candidates: PATHFINDER_TICK_TIMEOUT,
+  scan caching, flee-hop cost) rather than guessing further.
+- **NEXT**: watch the first night; Parker merges PR #33 (single click —
+  the whole survival arc rides it); then SV-9 (cook), SV-14 (gear/armor),
+  SV-15/16 (death awareness) per the plan; stance rider (SV-13 full) when
+  personality-driven bravery is wanted.
+
+## Session 2026-07-17 — SV-3 shipped + DEPLOYED (craft verb body, PR #33) · filming gate waived · stack recovered
+
+**Parker's brief: "skip episode 2 filming, and begin developing and deploying
+SV-3."** The filming gate is waived (recorded in 09-survival-plan rollout §5);
+this session made the first Survival deploy.
+
+- **What shipped** (`SV-3: craft verb (body)`, branch `claude/sv-3-craft-verb`,
+  commits `d794234` + `2ef058a`, **PR #33 — OPEN, awaiting Parker's merge
+  click** (the session's permission mode blocked `gh pr merge`; CI green,
+  MERGEABLE)), all minecraft-service:
+  - **`world/crafting.ts` (new pure module)** — wood-family resolution
+    (planks → the most-carried log's planks; sticks → stick), the
+    table-acquire decision tree, missing-ingredient prose with recipe-chain
+    hints (`cheapestGaps` picks the recipe variant to teach: fewest missing →
+    pack affinity → known materials), the placement scan (`pickTableSpot`:
+    solid ground + 2 air, never the bot's own cell, ±1 step for hillsides),
+    and `runCraftFlow` — one craft = ONE recipe application (the chain is the
+    mind's multi-tick project, which is the arc's point). Every world touch
+    injected (the SV-2 pattern) — the decision tree is unit-tested botless.
+  - **`BotSession.craft`** = adapter only: recipesFor/recipesAll/craft,
+    findBlock for a standing table (16-block search), placeBlock for a
+    carried one with post-place verification (the ghost-dig lesson in
+    reverse), honest inventory-delta results, Vec3s minted from the entity
+    position (the hazardBot no-new-dep precedent).
+  - **Executor**: craft case passes coded prescriptive failures through
+    verbatim on EXISTING errorCodes (missing ingredients →
+    RESOURCE_NOT_FOUND, no table → TOOL_REQUIRED, no placement ground →
+    PATH_NOT_FOUND retryable, off-enum → INVALID_PARAMS — no contract
+    change needed); craft-specific TIMEOUT prose names the table-walk lever.
+  - **Wedge/zombie safety, zero new machinery**: the busy seam doubles as
+    the cancellation signal — an abandoned flow never crafts or speaks after
+    the watchdog settles (tested, incl. the announce-suppressed-but-honest-
+    result case).
+  - **Contract tripwire (ajv)**: `CRAFTABLE_ITEMS` pinned to the committed
+    CraftParams enum BOTH directions — SV-11's leather-armor contract commit
+    fails loud in this suite until the body handles it.
+  - **Stone tier rode along** (same generic recipe path — the Sprint 10
+    valve wasn't needed). Deploy-safe by construction: nothing advertises
+    craft to the LLM until SV-4.
+  - Tests **134→168** (tripwire, resolution, gap selection, prose, placement
+    scan, decision tree, executor cases), typecheck clean, **all six suites
+    green** (`task test`, jacoco gates passing), CI green on the PR.
+- **Stack recovery first** (machine had restarted ~1h before the session;
+  containers auto-restarted with the engine): 11 containers up BUT the Paper
+  container was GONE entirely and the fleet 0/20 — minds ticking into a dead
+  world, every command an honest BOT_DISCONNECTED. World volume intact.
+  Paper restarted from the MAIN repo (`--profile minecraft up -d --wait`):
+  connection-throttle −1 HELD, difficulty peaceful, canon world loaded.
+- **Deploy** (body-only; agent-service untouched all session — no brain
+  changes in SV-3): minecraft-service rebuilt from the worktree branch and
+  deployed (`up -d --build --no-deps`, the PR #5 worktree-image precedent;
+  **rebuild from main after the merge to restore deployed-provenance=main** —
+  content is identical to the squash). Fleet re-embodied via
+  `spawn-fleet.mjs`, **20/20 in <1 min, twice** (once per image deploy).
+- **LIVE-VERIFIED: the whole Sprint 9 filmable beat ran on Maren** (operator
+  plane, causationId-null dev practice; she carried 343 dark oak logs):
+  planks → **4 dark oak planks** (most-carried-log resolution, ledger
+  `ActionCompleted{crafted:4, itemName:"dark_oak_planks"}`, 8ms) →
+  crafting_table (52ms) → wooden_sword **failed prescriptively as designed**
+  (no planks left: "…you carry no dark oak planks; craft planks from your
+  logs first…") → planks → sticks → **wooden_sword crafted 1,
+  {tableUsed:true, tablePlaced:true}, 1049ms** — she placed her own table
+  and made the village's first wooden sword at it. Table verified standing
+  at (-132, 92, 17) (RCON execute-if-block); **all five announcements landed
+  in world chat and were heard as ChatObserved percepts** ("Set up a
+  crafting table at (-132, 92, 17).", "Crafted a wooden sword!"). MSPT ~7.8
+  avg after; 12 containers healthy; fleet ticking.
+- **Live wart found and fixed same session**: the deliberate sword failure
+  first taught "2 CHERRY planks" — an equal-shortfall recipe-variant tie
+  llama would chase literally. `cheapestGaps` now tie-breaks by pack
+  affinity (ingredient carried, or its log/planks precursor carried);
+  regression test cites the live case (`2ef058a`, redeployed before the
+  sword run above).
+- **DIFFICULTY ERA FLIP (same session, Parker's call: "flip difficulty to
+  easy and deploy")** — the world is now on **EASY with the training wheels
+  ON**, via the plan's closed-loop procedure: gamerules first
+  (keepInventory→true, doInsomnia→false, mobGriefing→false), RCON
+  `difficulty easy`, `save-all flush`, **deliberate Paper restart, then all
+  four RCON-verified on the rebooted world** (level.dat persistence proven,
+  not assumed). Fleet auto-reconnected after the restart. compose
+  `DIFFICULTY: easy` now seeds future worlds (comment carries the post-nuke
+  re-apply warning — a nuked world boots easy with DEFAULT gamerules).
+  **Known exposure, accepted with the call**: no eat reflex until SV-6 —
+  food drains and pins (easy starvation floors at 10 HP; no starvation
+  deaths, but regen stops below 18 food); no threat
+  perception/combat/flee until Sprint 11 — night mobs WILL kill villagers;
+  deaths are material-lossless (keepInventory) and bodies auto-respawn, but
+  minds cannot perceive death until SV-15/16 lands (ghost deaths, no
+  memories formed). **No stack-down volume backup was taken (SV-5b's gate)**
+  — run it before leaving the stack unattended for long, and REQUIRED before
+  the Sprint 12 ceremony. The ceremony still removes the wheels on camera —
+  never flip keepInventory off as a session side effect.
+- **NEXT: Parker merges PR #33** (then optionally `up -d --build --no-deps
+  minecraft-service` from main + `spawn-fleet.mjs` for provenance), then
+  **SV-4 — crafting brain**: DELIBERATE_ACTIONS + `_PARAMS_DEF_BY_ACTION`
+  for craft, SYSTEM_TEMPLATE recipe-chain affordance prose, the per-verb
+  timeout table with `TIMEOUT_TABLE_MAX_MS=60_000` (load-bearing, ruling 2),
+  FakeProvider co-update, prompt tests, llama go/no-go smoke ("N real
+  decisions emit valid craft"). Strong candidates to pull forward given the
+  easy era: SV-5b (backup + runbooks) and SV-6/SV-7 (eat reflex + hunger
+  brain) — the fleet is hungry NOW.
 
 ## Session 2026-07-16 — docs-only: README refresh (PR #31 merged)
 

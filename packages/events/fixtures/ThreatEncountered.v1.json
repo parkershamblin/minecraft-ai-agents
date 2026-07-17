@@ -1,0 +1,21 @@
+{
+  "eventId": "019f9d10-0001-7000-8000-00000000b201",
+  "eventType": "ThreatEncountered",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T22:41:03.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000d0007",
+  "correlationId": "019f9d10-0002-7000-8000-c0de00000003",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0007",
+    "threatType": "zombie",
+    "phase": "escaped",
+    "response": "flee",
+    "count": 1,
+    "distance": 29.4,
+    "position": { "x": -131, "y": 92, "z": 18 },
+    "detail": "broke contact after fleeing 26 blocks toward the plaza"
+  }
+}

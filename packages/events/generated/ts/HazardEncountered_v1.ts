@@ -10,7 +10,7 @@
 export interface HazardEncounteredPayload {
   villagerId: string;
   /**
-   * The concrete hazard, named after the world feature: powder_snow today; lava, fire, drowning are future values.
+   * The concrete hazard, named after the world feature or condition: powder_snow (the escape reflex) and starvation (the eat reflex's crisis — trapped when starving AND helpless, escaped on recovery, escape_failed never emitted); lava, fire, drowning are future values.
    */
   hazardType: string;
   /**

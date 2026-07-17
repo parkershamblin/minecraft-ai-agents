@@ -15,7 +15,7 @@ export interface ActionFailedPayload {
   villagerId: string;
   action: string;
   /**
-   * Machine-readable failure class; consumers branch on this, never on errorMessage.
+   * Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it).
    */
   errorCode:
     | "TIMEOUT"
@@ -28,6 +28,9 @@ export interface ActionFailedPayload {
     | "UNKNOWN_ACTION"
     | "STALE_COMMAND"
     | "HAZARD_ESCAPE_IN_PROGRESS"
+    | "BODY_BUSY"
+    | "SELF_DEFENSE_IN_PROGRESS"
+    | "TARGET_ESCAPED"
     | "INTERNAL";
   errorMessage: string;
   retryable: boolean;

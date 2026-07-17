@@ -2,6 +2,8 @@ import type { EventEnvelope, ActionRequestedPayload } from '@civ/events/ts'
 import type { Position } from '../world/position.ts'
 import type { BusyState } from '../bots/hazard.ts'
 import type { GatherResult } from '../bots/BotSession.ts'
+import type { CraftResult } from '../world/crafting.ts'
+import type { HuntResult } from '../world/hunting.ts'
 import { logger } from '../logging.ts'
 import { commandsProcessed } from '../metrics.ts'
 
@@ -15,6 +17,8 @@ export interface SessionActions {
   moveTo(to: Position, range: number): Promise<{ finalPosition: Position; blocksTraveled: number }>
   chat(message: string): void
   gather(resource: string, maxDistance: number, count: number): Promise<GatherResult>
+  craft(item: string): Promise<CraftResult>
+  hunt(animal: string, maxDistance: number): Promise<HuntResult>
   stopMoving(): void
 }
 
@@ -43,6 +47,28 @@ class ActionError extends Error {
   }
 }
 
+/** The reflex-ownership bounce table (SV-6): commands arriving while a
+ *  reflex holds the body fast-fail with an honest, retryable, named reason.
+ *  The messages are the villager's next percept — each teaches what the body
+ *  is doing and when to try again. */
+const BUSY_BOUNCE = {
+  escape: {
+    errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
+    errorMessage: 'the body is busy digging itself out of powder snow — retry shortly',
+    outcome: 'hazard_escape',
+  },
+  eat: {
+    errorCode: 'BODY_BUSY',
+    errorMessage: 'the body is busy eating — a few seconds at most; retry shortly',
+    outcome: 'body_busy',
+  },
+  combat: {
+    errorCode: 'SELF_DEFENSE_IN_PROGRESS',
+    errorMessage: 'the body is fighting or fleeing a hostile — retry when the danger passes',
+    outcome: 'self_defense',
+  },
+} as const
+
 /**
  * Prescriptive TIMEOUT prose (SV-2). This string is the villager's next
  * percept — the M2-1 lesson applies: the diagnosis must carry the fix. The
@@ -58,6 +84,10 @@ export function timeoutMessage(action: string, timeoutMs: number): string {
     case 'move':
     case 'follow':
       return `you did not arrive within ${budget} and stopped where you stood — the destination may be unreachable from here; pick a nearer or different spot and try again`
+    case 'craft':
+      return `the crafting errand ran past its ${budget} limit and was called off — if the walk to a crafting table ate the time, move nearer to one (or carry your own) and try again`
+    case 'hunt':
+      return `the hunt ran past its ${budget} limit and was called off — chase nearer game (smaller maxDistance) or move toward the herds before hunting`
     default:
       return `'${action}' ran past its ${budget} limit and was abandoned — try again with a smaller version of the same intent`
   }
@@ -108,20 +138,22 @@ export class CommandExecutor {
       return
     }
 
-    // The hazard reflex owns the body for bounded stretches (≤ its race
-    // deadline). Never queue behind it — the mind hears a retryable failure
-    // now instead of a silent stall (same fast-rejection shape as the stale
-    // guard above; a single-partition topic must never block on one body).
+    // A reflex owns the body for bounded stretches (≤ its own deadline).
+    // Never queue behind one — the mind hears a retryable failure now
+    // instead of a silent stall (a single-partition topic must never block
+    // on one body). The BUSY_BOUNCE table names each reflex honestly:
+    // "terrain trapped me" reads differently from "something is attacking me".
     const session = this.deps.getSession(payload.villagerId)
-    if (session?.busy === 'escape') {
-      commandsProcessed.inc({ action: payload.action, outcome: 'hazard_escape' })
-      log.info('command rejected — the body is mid-escape from a hazard')
+    const bounce = session?.busy ? BUSY_BOUNCE[session.busy as keyof typeof BUSY_BOUNCE] : undefined
+    if (bounce) {
+      commandsProcessed.inc({ action: payload.action, outcome: bounce.outcome })
+      log.info({ busy: session?.busy }, 'command rejected — a reflex owns the body')
       await this.deps.publishOutcome(command, 'ActionFailed', {
         commandId: payload.commandId,
         villagerId: payload.villagerId,
         action: payload.action,
-        errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
-        errorMessage: 'the body is busy digging itself out of powder snow — retry shortly',
+        errorCode: bounce.errorCode,
+        errorMessage: bounce.errorMessage,
         retryable: true,
       })
       return
@@ -283,6 +315,42 @@ export class CommandExecutor {
             // also honest, but NOT retryable: the same empty hands fail the
             // same way — the message says what would change that
             throw new ActionError('TOOL_REQUIRED', (err as Error).message, false)
+          }
+          throw err
+        }
+      }
+      case 'craft': {
+        const session = this.requireSession(payload.villagerId)
+        const { item } = payload.params as { item?: string }
+        if (!item || typeof item !== 'string') {
+          throw new ActionError('INVALID_PARAMS', 'craft requires params.item — what to craft', false)
+        }
+        try {
+          return { ...(await session.craft(item)) }
+        } catch (err) {
+          // The body throws coded, prescriptive failures (crafting.ts) —
+          // pass code + retryability through untouched; the message is the
+          // villager's next percept and must arrive verbatim.
+          const { code, retryable } = err as Error & { code?: string; retryable?: boolean }
+          if (code) {
+            throw new ActionError(code, (err as Error).message, retryable ?? false)
+          }
+          throw err
+        }
+      }
+      case 'hunt': {
+        const session = this.requireSession(payload.villagerId)
+        const { animal, maxDistance } = payload.params as { animal?: string; maxDistance?: number }
+        try {
+          // Defaults mirror the contract (HuntParams): animal 'any',
+          // maxDistance 32 clamped 4..48 — a chase budget, not a sight limit.
+          return {
+            ...(await session.hunt(animal ?? 'any', Math.min(Math.max(maxDistance ?? 32, 4), 48))),
+          }
+        } catch (err) {
+          const { code, retryable } = err as Error & { code?: string; retryable?: boolean }
+          if (code) {
+            throw new ActionError(code, (err as Error).message, retryable ?? false)
           }
           throw err
         }

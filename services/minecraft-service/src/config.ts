@@ -37,6 +37,42 @@ const schema = z.object({
   // The whole attempt races this deadline (corollary 3: never await a
   // mineflayer promise un-raced) — a timed-out attempt is escape_failed.
   HAZARD_ESCAPE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(25000),
+  // Eat reflex (SV-6): a 4th sibling interval mirroring the hazard watch.
+  // 0 disables the reflex entirely. Thresholds are food points (0..20).
+  EAT_CHECK_INTERVAL_MS: z.coerce.number().int().min(0).default(2000),
+  EAT_FOOD_THRESHOLD: z.coerce.number().int().min(1).max(20).default(14),
+  EAT_CRITICAL_FOOD: z.coerce.number().int().min(0).max(20).default(6),
+  EAT_RECOVER_FOOD: z.coerce.number().int().min(1).max(20).default(10),
+  // Hurt modifier: also eat when health ≤ this and food is below the regen
+  // gate (18, a game constant) — eating restarts natural healing. 0 disables.
+  EAT_HURT_HEALTH_THRESHOLD: z.coerce.number().int().min(0).max(20).default(14),
+  EAT_TIMEOUT_MS: z.coerce.number().int().min(1000).default(8000),
+  EAT_RETRY_MS: z.coerce.number().int().min(1000).default(10000),
+  EAT_BANNED_FOODS: z.string().default('pufferfish,spider_eye,poisonous_potato,chorus_fruit'),
+  EAT_DESPERATION_FOODS: z.string().default('rotten_flesh'),
+  // Threat watcher + maneuvers (SV-12a/b): the 5th sibling interval. 0
+  // disables detection (and with it fight/flee) entirely.
+  THREAT_WATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(1000),
+  // Fleet-wide concurrent fight cap — spike-measured: pursuit event-loop p99
+  // 141.8ms at 20 concurrent, 38.8ms at 5. 0 = flee-only fleet (rollout
+  // stage 1); overflow downgrades to flee, never queues.
+  THREAT_MAX_CONCURRENT_FIGHTS: z.coerce.number().int().min(0).default(4),
+  THREAT_FIGHT_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
+  THREAT_FLEE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(12000),
+  // Backoff between maneuvers within one episode (the hazard escapeRetryMs
+  // pattern): the first runs immediately; a failed one waits. Bounds the
+  // fleet's night-flee duty cycle — 20 back-to-back flee cycles pinned the
+  // event loop on the first night. 0 restores the hot loop.
+  THREAT_MANEUVER_COOLDOWN_MS: z.coerce.number().int().min(0).default(5000),
+  // Flee buddy bias: steer toward the nearest villager inside a 60° cone of
+  // the away-vector (fleeing INTO the village is story). 0 disables.
+  THREAT_FLEE_BUDDY_RADIUS: z.coerce.number().int().min(0).default(32),
+  // Default stance until the brain's stance rider ships (SV-13): cautious =
+  // armed villagers still flee melee mobs; brave = they stand and fight.
+  THREAT_DEFAULT_STANCE: z.enum(['brave', 'cautious']).default('cautious'),
+  // Hunt (SV-8): the chase deadline must stay under hunt's per-verb timeout
+  // (30s) minus a ~8s collection reserve.
+  HUNT_CHASE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(20000),
   // Pathfinder budgets: tickTimeout is the SYNCHRONOUS per-physics-tick A*
   // slice on the shared event loop (default 40ms × 20 pathing bots pins it);
   // thinkTimeout is the total wall-clock path budget, raised to compensate.
@@ -63,7 +99,11 @@ const schema = z.object({
 export type Config = z.infer<typeof schema>
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = schema.safeParse(env)
+  const parsed = schema
+    .refine((c) => c.EAT_CRITICAL_FOOD < c.EAT_RECOVER_FOOD && c.EAT_RECOVER_FOOD <= c.EAT_FOOD_THRESHOLD, {
+      message: 'eat thresholds must satisfy EAT_CRITICAL_FOOD < EAT_RECOVER_FOOD <= EAT_FOOD_THRESHOLD',
+    })
+    .safeParse(env)
   if (!parsed.success) {
     throw new Error(`invalid configuration: ${parsed.error.message}`)
   }

@@ -136,6 +136,11 @@ services:
       RCON_HOST: ${RCON_HOST:-minecraft}
       RCON_PORT: ${RCON_PORT:-25575}
       RCON_PASSWORD: ${RCON_PASSWORD:-civ_rcon}
+      # Survival reflexes (eat/threat/hunt) run on code defaults (config.ts);
+      # only the staged-rollout levers are exposed: fight cap 0 = flee-only
+      # fleet, stance brave = armed villagers stand their ground vs melee.
+      THREAT_MAX_CONCURRENT_FIGHTS: ${THREAT_MAX_CONCURRENT_FIGHTS:-4}
+      THREAT_DEFAULT_STANCE: ${THREAT_DEFAULT_STANCE:-cautious}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -284,7 +289,13 @@ services:
       TYPE: PAPER
       VERSION: ${MC_VERSION:-1.21.6}
       ONLINE_MODE: "FALSE"          # bots auth 'offline' (BotSession.ts) — must match
-      DIFFICULTY: peaceful          # no hostile mobs — villagers can't be killed
+      # Easy-by-default since 2026-07-17 (Parker's call; Survival era). Seeds
+      # NEW worlds only — the live world's difficulty lives in level.dat
+      # (flipped via RCON + save-all + restart-verify, the closed-loop
+      # procedure). A nuked world boots easy with DEFAULT gamerules: run the
+      # post-nuke re-apply checklist (training wheels keepInventory=true /
+      # doInsomnia=false / mobGriefing=false + connection-throttle -1).
+      DIFFICULTY: easy
       OPS: ParkerShamblin           # offline mode: helper derives the offline UUID
       MAX_PLAYERS: "30"             # 20 bot slots + room for Parker to spectate
       MEMORY: 3G

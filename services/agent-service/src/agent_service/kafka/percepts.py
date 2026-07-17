@@ -153,7 +153,35 @@ class PerceptConsumer:
             )
             if payload.get("phase") == "trapped" and self.on_chat_percept:
                 # The generic wake lever (named for its first caller): a body
-                # sinking in freezing snow must not wait for the cadence.
+                # sinking in freezing snow — or starving with an empty pack —
+                # must not wait for the cadence.
+                self.on_chat_percept(villager_id, envelope.get("eventId"))
+
+        elif event_type == "ThreatEncountered":
+            # Victim-only, every phase; reactive wake on spotted (the one
+            # moment the mind can preempt) + overwhelmed (the one moment only
+            # the mind can change the plan). Other phases ride the cadence —
+            # a siege waking 20 minds per swing is the recorded GPU stampede.
+            villager_id = payload.get("villagerId")
+            if not villager_id:
+                return
+            await self._push(
+                villager_id,
+                {
+                    "type": "ThreatEncountered",
+                    "threatType": payload.get("threatType"),
+                    "phase": payload.get("phase"),
+                    "response": payload.get("response"),
+                    "count": payload.get("count"),
+                    "distance": payload.get("distance"),
+                    "position": payload.get("position"),
+                    "detail": payload.get("detail"),
+                    "sourceEventId": envelope.get("eventId"),
+                    "correlationId": envelope.get("correlationId"),
+                    "occurredAt": envelope.get("occurredAt"),
+                },
+            )
+            if payload.get("phase") in ("spotted", "overwhelmed") and self.on_chat_percept:
                 self.on_chat_percept(villager_id, envelope.get("eventId"))
 
         elif event_type == "ChatObserved":

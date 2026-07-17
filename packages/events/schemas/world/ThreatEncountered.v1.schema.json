@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ai-civilization-engine.local/world/ThreatEncountered.v1.schema.json",
+  "title": "ThreatEncounteredPayload",
+  "description": "A hostile mob episode around one villager's body, narrated by the threat watcher (survival cluster). Edge-triggered on episode STATE, never per-pass: spotted once when the episode opens; engaged re-emitted only when the response flips (none->fight->flee, monotonic); killed/escaped close the episode; overwhelmed is rate-limited to once per 60s with the episode left open. Victim-only fanout. Producer: minecraft-service on world.events.",
+  "type": "object",
+  "properties": {
+    "villagerId": { "type": "string", "format": "uuid" },
+    "threatType": {
+      "type": "string",
+      "description": "The nearest hostile's entity name (zombie, skeleton, creeper, ...). Free string — new mobs must not need a contract commit."
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["spotted", "engaged", "killed", "escaped", "overwhelmed"],
+      "description": "spotted = episode opened (the mind's chance to preempt); engaged = a maneuver started or the response flipped; killed = the threat died and the episode closed; escaped = the body broke contact and the episode closed; overwhelmed = the maneuver is not working (cornered, out-damaged) — the one moment only the mind can change the plan."
+    },
+    "response": {
+      "type": ["string", "null"],
+      "enum": ["fight", "flee", null],
+      "description": "The body's current maneuver; null before one is chosen (spotted) or when none applies."
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Hostiles tracked in the episode at emission time."
+    },
+    "distance": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Blocks to the nearest tracked hostile at emission time."
+    },
+    "position": { "$ref": "#/$defs/Position" },
+    "detail": {
+      "type": ["string", "null"],
+      "description": "Human-readable color for prompts and the ledger: what attacked, how the fight ended, why the maneuver failed."
+    }
+  },
+  "required": ["villagerId", "threatType", "phase", "response", "count", "distance", "position", "detail"],
+  "additionalProperties": false,
+  "$defs": {
+    "Position": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    }
+  }
+}

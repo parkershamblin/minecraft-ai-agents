@@ -13,8 +13,11 @@ import { type Position, roundPos } from '../world/position.ts'
  */
 
 /** Cross-cutting body ownership: the executor claims 'action' for a command's
- *  lifetime, the reflex claims 'escape' for an attempt's. Never both. */
-export type BusyState = 'action' | 'escape' | null
+ *  lifetime; reflexes claim their own literal for an attempt's. Never two at
+ *  once. Priority ladder (survival cluster): escape > combat > eat >
+ *  action-commands — enforced by each claimant checking the seam (and the
+ *  open-episode getters) before claiming, never by preemption. */
+export type BusyState = 'action' | 'escape' | 'combat' | 'eat' | null
 
 export type HazardPhase = 'trapped' | 'escaped' | 'escape_failed'
 
@@ -128,6 +131,13 @@ export class HazardWatcher {
   private attemptInFlight = false
 
   constructor(private readonly deps: HazardWatcherDeps) {}
+
+  /** An open trap episode — lower-priority reflexes (combat, eat) gate on
+   *  this so they never claim the body between escape attempts (the
+   *  retry-backoff window would otherwise be a hole in the ladder). */
+  get trapped(): boolean {
+    return this.episode !== null
+  }
 
   check(): void {
     try {

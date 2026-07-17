@@ -17,7 +17,9 @@ from typing import Any
 from jsonschema import Draft202012Validator
 
 # Villagers may not spawn/despawn themselves — those are platform commands.
-DELIBERATE_ACTIONS = ("move", "gather", "chat", "follow", "idle")
+# craft + hunt joined with the survival cluster (there is deliberately NO eat
+# verb — eating is a body reflex; acquisition is the mind's job).
+DELIBERATE_ACTIONS = ("move", "gather", "chat", "follow", "idle", "craft", "hunt")
 
 # The civic verbs (M2-7). Laws (M3) and factions (M4) are deliberately absent.
 GOVERNANCE_ACTIONS = ("declare_candidacy", "vote")
@@ -94,6 +96,8 @@ _PARAMS_DEF_BY_ACTION = {
     "chat": "ChatParams",
     "follow": "FollowParams",
     "gather": "GatherParams",
+    "craft": "CraftParams",
+    "hunt": "HuntParams",
 }
 
 

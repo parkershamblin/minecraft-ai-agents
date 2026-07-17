@@ -25,6 +25,27 @@ class NearbyVillager(BaseModel):
     distance: confloat(ge=0.0)
 
 
+class NearbyAnimal(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    family: str = Field(
+        ...,
+        description='A huntable family the hunt action accepts (cow/pig/sheep/chicken).',
+    )
+    nearestDistance: confloat(ge=0.0)
+    count: conint(ge=1)
+
+
+class NearbyHostile(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: str = Field(..., description='Entity name (zombie, skeleton, creeper, ...).')
+    count: conint(ge=1)
+    nearestDistance: confloat(ge=0.0)
+
+
 class NearbyResource(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -64,6 +85,14 @@ class WorldSnapshot(BaseModel):
     timeOfDay: conint(ge=0, le=24000) = Field(
         ...,
         description='Minecraft ticks: 0 = dawn, 6000 = noon, 13000 = dusk, 18000 = midnight.',
+    )
+    nearbyAnimals: list[NearbyAnimal] | None = Field(
+        None,
+        description='Huntable animal families in tracking range (additive, survival cluster). Computed on the 1s snapshot pass UNGATED — an entities-map filter, ~1000x cheaper than one findBlocks sweep, and animals move while bots stand still. Absent when the feature is off; empty when nothing is in range.',
+    )
+    nearbyHostiles: list[NearbyHostile] | None = Field(
+        None,
+        description="Hostile mobs in alert range (additive, survival cluster), from the threat watcher's cached pass — zero extra scanning. Absent when the watcher is off; empty when the night is quiet.",
     )
     nearbyResources: list[NearbyResource] | None = Field(
         None,

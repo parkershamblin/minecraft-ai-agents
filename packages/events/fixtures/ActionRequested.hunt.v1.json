@@ -1,0 +1,18 @@
+{
+  "eventId": "019f9d10-0007-7000-8000-00000000b204",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T23:05:40.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000d0004",
+  "correlationId": "019f9d10-0008-7000-8000-c0de00000004",
+  "causationId": "019f9d10-0009-7000-8000-00000000b205",
+  "payload": {
+    "commandId": "019f9d10-0007-7000-8000-00000000b204",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0004",
+    "action": "hunt",
+    "params": { "animal": "cow", "maxDistance": 32 },
+    "timeoutMs": 30000
+  }
+}

@@ -24,13 +24,14 @@
         "chat",
         "follow",
         "idle",
-        "craft"
+        "craft",
+        "hunt"
       ],
-      "description": "spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job)."
+      "description": "spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent)."
     },
     "params": {
       "type": "object",
-      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams; despawn/idle take {})."
+      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {})."
     },
     "priority": {
       "type": "integer",
@@ -168,6 +169,25 @@
           "maximum": 8,
           "default": 1,
           "description": "Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument."
+        }
+      },
+      "additionalProperties": false
+    },
+    "HuntParams": {
+      "type": "object",
+      "properties": {
+        "animal": {
+          "type": "string",
+          "enum": ["cow", "pig", "sheep", "chicken", "any"],
+          "default": "any",
+          "description": "Animal family to hunt; 'any' takes the nearest huntable adult. Babies are never targeted (the ageable metadata flag — diegetic ecology brake #1)."
+        },
+        "maxDistance": {
+          "type": "number",
+          "minimum": 4,
+          "maximum": 48,
+          "default": 32,
+          "description": "Chase budget in blocks, not a sight limit (entity tracking reaches ≥64 under our view settings — spike-measured). One animal per action; a wounded escapee keeps its damage."
         }
       },
       "additionalProperties": false

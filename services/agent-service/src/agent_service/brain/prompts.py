@@ -20,12 +20,16 @@ Available actions and their params:
 - move: {{"to": {{"x": number, "y": number, "z": number}}, "range": number}} — walk somewhere
 - chat: {{"message": "what you say out loud (max 256 chars)"}} — speak to those nearby
 - follow: {{"targetVillagerId": "uuid"}} — walk to another villager
-- gather: {{"resource": "wood"|"stone"|"dirt"}} — chop or mine the nearest such resource (param optional; wood is the default; reach is handled for you)
+- gather: {{"resource": "wood"|"stone"|"dirt", "count": 1-8}} — chop or mine up to count blocks of that resource in one trip (both optional; wood and 1 are the defaults; reach is handled for you)
+- craft: {{"item": "planks"|"sticks"|"crafting_table"|"wooden_axe"|"wooden_pickaxe"|"wooden_sword"|"stone_axe"|"stone_pickaxe"|"stone_sword"|"furnace"}} — craft ONE step of a recipe chain. The chain: planks come from logs; sticks from planks; a crafting_table takes 4 planks; tools take planks/cobblestone + sticks and need a table (your body finds or places one if you carry it). One step per turn — a sword is a project, not a wish.
+- hunt: {{"animal": "cow"|"pig"|"sheep"|"chicken"|"any"}} — chase and kill one animal for meat (param optional; nearest game is the default). Hunt when food runs low, not for sport: the herds are slow to return.
 - idle: {{}} — deliberately do nothing this turn
+
+Your body looks after itself where it can: it eats carried food by itself when hungry, and it fights or flees hostile monsters by itself when attacked. Your job is what only a mind can do — keep food in your pack (hunt), keep a weapon at your side (craft), and choose where to stand when night falls.
 
 Also rate this moment for your own memory: importance (0-10, how much you'll want to remember this) and sentiment (-1 to 1, how it feels).
 If this moment changed how you feel about someone, set relationshipUpdates to a list of {{"villagerId", "affinityDelta" (-20..20), "trustDelta" (-20..20), "reason"}} — otherwise set it to null. Only include villagers whose villagerId you can see in the snapshot or overheard lines.
-Stay in character. Prefer small, concrete actions over grand plans — and material work (gathering, exploring, providing) is as much a villager's life as conversation."""
+Stay in character. Prefer small, concrete actions over grand plans — and material work (gathering, hunting, crafting, providing) is as much a villager's life as conversation."""
 
 
 def system_prompt(
@@ -96,6 +100,59 @@ def _feelings_section(
             "legitimate; do not perform warmth you do not feel."
         )
     return "How you feel about those nearby:\n" + "\n".join(lines)
+
+
+def _survival_section(snapshot: dict[str, Any]) -> str | None:
+    """The standing hunger pressure (SV-7): percepts decay off the queue, but
+    an empty stomach must not. Escalates at the starving tier and legitimizes
+    asking for help — the in-voice distress cry stays emergent."""
+    food = snapshot.get("food")
+    if not isinstance(food, (int, float)) or food > 10:
+        return None
+    if food <= 6:
+        return (
+            f"YOU ARE STARVING (food {food:g}/20). Your body will eat anything edible you carry, "
+            "but your pack decides whether you live well — get food NOW: hunt the nearest game, "
+            "and asking a neighbor for food in chat is a legitimate, honorable ask."
+        )
+    return (
+        f"Hunger is setting in (food {food:g}/20) — your body eats from your pack by itself, "
+        "so what matters is having food IN the pack: hunt while your legs are still quick, "
+        "and don't wander far from the herds."
+    )
+
+
+def _animals_section(snapshot: dict[str, Any]) -> str | None:
+    """Game in sight — absent field = feature off (no section); [] = looked
+    and found nothing, said honestly with the fix (walking)."""
+    animals = snapshot.get("nearbyAnimals")
+    if animals is None:
+        return None
+    if not animals:
+        return "Game in sight: none — the herds keep to open grass; hunting means walking first."
+    lines = "\n".join(
+        f"- {a['family']}: nearest {a['nearestDistance']} blocks away, {a['count']} seen" for a in animals
+    )
+    return "Game in sight (hunt can reach these):\n" + lines
+
+
+def _dangers_section(snapshot: dict[str, Any]) -> str | None:
+    """Hostiles in sight, from the threat watcher's pass. The body handles
+    the reflex; the section exists so the MIND can preempt — move, light,
+    company, warning others — before the reflex has to."""
+    hostiles = snapshot.get("nearbyHostiles")
+    if not hostiles:  # absent OR empty — a quiet night needs no section
+        return None
+    lines = "\n".join(
+        f"- {h['count']} {h['type'].replace('_', ' ')}{'s' if h['count'] != 1 else ''}, nearest {h['nearestDistance']} blocks"
+        for h in hostiles
+    )
+    return (
+        "DANGERS in sight:\n"
+        + lines
+        + "\nYour body will fight or flee by itself if they close in — but distance, torchlight, "
+        "company, and a warning shouted to neighbors are choices only you can make now."
+    )
 
 
 def _resources_section(snapshot: dict[str, Any]) -> str | None:
@@ -215,9 +272,14 @@ def user_prompt(
             f"- nearby villagers: {nearby or 'nobody in sight'}\n"
             f"- inventory: {', '.join(f'{i['count']} {i['item']}' for i in snapshot.get('inventory', [])) or 'empty'}"
         )
-        resources = _resources_section(snapshot)
-        if resources:
-            sections.append(resources)
+        for section in (
+            _survival_section(snapshot),
+            _dangers_section(snapshot),
+            _animals_section(snapshot),
+            _resources_section(snapshot),
+        ):
+            if section:
+                sections.append(section)
     else:
         sections.append(
             "You cannot sense the world right now (no snapshot) — you may still think, speak, or wait."
@@ -262,7 +324,10 @@ def user_prompt(
     action_lines = []
     overheard_lines = []
     news_lines = []
-    hazard_this_tick = False
+    # The hazard directive is TYPE-keyed (the SV-7 fix): the powder-snow
+    # prose used to fire for ANY hazard, which would have told a starving
+    # villager to get off the deep snow.
+    hazard_types_this_tick: set[str] = set()
     for i, percept in enumerate(percepts):
         if i == claimed_index:
             continue  # already voiced in "Your last decision"
@@ -272,10 +337,18 @@ def user_prompt(
         elif kind == "ActionFailed":
             action_lines.append(f"- your '{percept['action']}' FAILED: {json.dumps(percept['detail'])}")
         elif kind == "HazardEncountered":
-            hazard = str(percept.get("hazardType") or "a hazard").replace("_", " ")
+            hazard_type = str(percept.get("hazardType") or "hazard")
+            hazard = hazard_type.replace("_", " ")
             where = _pos(percept.get("position"))
             phase = percept.get("phase")
-            if phase == "trapped":
+            if hazard_type == "starvation":
+                if phase == "trapped":
+                    line = "- you are STARVING with nothing edible in your pack — your body cannot help until you get food"
+                elif phase == "escaped":
+                    line = "- you finally ate; the gnawing eases and your strength returns"
+                else:
+                    continue  # escape_failed is never emitted for starvation
+            elif phase == "trapped":
                 line = f"- you are SUNK in {hazard} at {where}, freezing and barely able to move"
             elif phase == "escaped":
                 line = f"- you dug free of the {hazard} at {where}"
@@ -283,7 +356,35 @@ def user_prompt(
                 line = f"- you fought the {hazard} at {where} and are still trapped"
             else:
                 continue  # an unknown phase is unknown vocabulary — skipped
-            hazard_this_tick = True
+            hazard_types_this_tick.add(hazard_type)
+            detail = percept.get("detail")
+            action_lines.append(f"{line} — {detail}" if detail else line)
+        elif kind == "ThreatEncountered":
+            threat = str(percept.get("threatType") or "something hostile").replace("_", " ")
+            where = _pos(percept.get("position"))
+            phase = percept.get("phase")
+            count = percept.get("count") or 1
+            plural = f"{count} {threat}s" if isinstance(count, int) and count > 1 else f"a {threat}"
+            if phase == "spotted":
+                line = (
+                    f"- {plural} SPOTTED near {where} — your body will defend itself if it must, "
+                    "but right now YOU choose: distance, company, or standing ground"
+                )
+            elif phase == "engaged":
+                response = percept.get("response")
+                verb = "is fighting" if response == "fight" else "is fleeing"
+                line = f"- your body {verb} {plural} near {where}"
+            elif phase == "killed":
+                line = f"- you KILLED the {threat} near {where}"
+            elif phase == "escaped":
+                line = f"- you got clear of {plural} near {where}"
+            elif phase == "overwhelmed":
+                line = (
+                    f"- you are OVERWHELMED by {plural} near {where} — the fight is NOT working; "
+                    "run somewhere else, shout for help, or change the plan NOW"
+                )
+            else:
+                continue  # unknown phase — skipped
             detail = percept.get("detail")
             action_lines.append(f"{line} — {detail}" if detail else line)
         elif kind == "ChatObserved" and len(overheard_lines) < 5:
@@ -312,7 +413,7 @@ def user_prompt(
             news_lines.append(
                 f"- your {percept.get('action', 'request')} was refused: {percept.get('message', 'no reason given')}"
             )
-    if hazard_this_tick:
+    if "powder_snow" in hazard_types_this_tick:
         # The survival directive (powder-snow fix): without it, models file
         # "I am freezing" under smalltalk and carry on with the grand plan.
         action_lines.append(
@@ -320,6 +421,15 @@ def user_prompt(
             "get off the deep snow, keep that spot out of your future plans, and "
             "consider warning your neighbors in chat; do not linger where you sink."
         )
+    if "starvation" in hazard_types_this_tick:
+        action_lines.append(
+            "Hunger has you hollowed out. Food is the only cure and only you can get it — "
+            "hunt the nearest game, or ask a neighbor in chat to share what they carry."
+        )
+    hazard_types_this_tick -= {"powder_snow", "starvation"}
+    if hazard_types_this_tick:
+        # A future hazard type still deserves weight, in general words.
+        action_lines.append("Something here endangers you. Weigh survival in this decision before all else.")
     if action_lines:
         sections.append("Since your last turn:\n" + "\n".join(action_lines))
     if overheard_lines:

@@ -37,6 +37,27 @@ class VillagerBrief:
     backstory: str | None
 
 
+# The per-verb timeout table (SV-4). The ceiling is LOAD-BEARING: every
+# no-preemption safety argument in the survival cluster reads "a reflex is
+# locked out ≤ max(per-verb timeout) = 60s" — raising any verb past the cap
+# triggers the PREEMPTED_BY_THREAT contingency review (risk register).
+TIMEOUT_TABLE_MAX_MS = 60_000
+_TIMEOUT_MS_BY_ACTION = {
+    "move": 30_000,
+    "follow": 30_000,
+    "chat": 10_000,  # instant verb — a stuck chat is a stuck connection
+    "idle": 10_000,
+    "gather": 60_000,  # a full count-8 session must fit (ruling 2)
+    "craft": 30_000,  # SV-3 measured worst case ~1s + a 16-block table walk
+    "hunt": 30_000,  # HUNT_CHASE_TIMEOUT_MS (20s) + collection reserve
+}
+_TIMEOUT_DEFAULT_MS = 30_000
+
+
+def action_timeout_ms(action: str) -> int:
+    return _TIMEOUT_MS_BY_ACTION.get(action, _TIMEOUT_DEFAULT_MS)
+
+
 @dataclass
 class TickDeps:
     world: Any  # WorldGateway-shaped: snapshot(), drain_percepts()
@@ -150,7 +171,7 @@ def build_tick_graph(deps: TickDeps):
                     "villagerId": str(villager.id),
                     "action": decision.action,
                     "params": decision.params,
-                    "timeoutMs": 30_000,
+                    "timeoutMs": action_timeout_ms(decision.action),
                 },
                 correlation_id=correlation,
                 causation_id=decision_event["eventId"],
@@ -303,12 +324,32 @@ def build_tick_graph(deps: TickDeps):
                 pos = percept.get("position") or {}
                 near = f"({round(pos.get('x', 0))}, {round(pos.get('y', 0))}, {round(pos.get('z', 0))})"
                 phase = percept.get("phase")
-                if phase == "trapped":
+                if percept.get("hazardType") == "starvation":
+                    # The hunger crisis is a condition, not a place — fold it
+                    # in its own words or the memory reads like terrain.
+                    if phase == "trapped":
+                        content += " (I was starving with nothing left to eat.)"
+                    elif phase == "escaped":
+                        content += " (I finally ate and the strength came back.)"
+                elif phase == "trapped":
                     content += f" (I was trapped in {hazard} near {near}.)"
                 elif phase == "escaped":
                     content += f" (Earlier I dug myself out of {hazard} near {near}.)"
                 elif phase == "escape_failed":
                     content += f" (I fought the {hazard} near {near} and could not get free.)"
+            elif kind == "ThreatEncountered":
+                threat = str(percept.get("threatType") or "something hostile").replace("_", " ")
+                pos = percept.get("position") or {}
+                near = f"({round(pos.get('x', 0))}, {round(pos.get('y', 0))}, {round(pos.get('z', 0))})"
+                phase = percept.get("phase")
+                if phase == "spotted":
+                    content += f" (A {threat} came at me near {near}.)"
+                elif phase == "killed":
+                    content += f" (I fought off a {threat} near {near}.)"
+                elif phase == "escaped":
+                    content += f" (I ran from a {threat} near {near} and got clear.)"
+                elif phase == "overwhelmed":
+                    content += f" (I was overwhelmed by a {threat} near {near} — it was close.)"
 
         record = await deps.memory.store(
             villager.id,

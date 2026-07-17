@@ -46,6 +46,7 @@ const PARAMS_DEF_BY_ACTION = {
     follow: 'FollowParams',
     gather: 'GatherParams',
     craft: 'CraftParams',
+    hunt: 'HuntParams',
     despawn: null,
     idle: null,
   },

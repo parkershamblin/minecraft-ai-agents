@@ -19,5 +19,12 @@
   "nearbyResources": [
     { "family": "wood", "nearestDistance": 12.4, "count": 32 },
     { "family": "dirt", "nearestDistance": 1.0, "count": 32 }
+  ],
+  "nearbyAnimals": [
+    { "family": "cow", "nearestDistance": 21.7, "count": 3 },
+    { "family": "chicken", "nearestDistance": 9.2, "count": 1 }
+  ],
+  "nearbyHostiles": [
+    { "type": "zombie", "count": 2, "nearestDistance": 18.5 }
   ]
 }

@@ -20,6 +20,9 @@ class ErrorCode(StrEnum):
     UNKNOWN_ACTION = 'UNKNOWN_ACTION'
     STALE_COMMAND = 'STALE_COMMAND'
     HAZARD_ESCAPE_IN_PROGRESS = 'HAZARD_ESCAPE_IN_PROGRESS'
+    BODY_BUSY = 'BODY_BUSY'
+    SELF_DEFENSE_IN_PROGRESS = 'SELF_DEFENSE_IN_PROGRESS'
+    TARGET_ESCAPED = 'TARGET_ESCAPED'
     INTERNAL = 'INTERNAL'
 
 
@@ -35,7 +38,7 @@ class ActionFailedPayload(BaseModel):
     action: str
     errorCode: ErrorCode = Field(
         ...,
-        description='Machine-readable failure class; consumers branch on this, never on errorMessage.',
+        description="Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it).",
     )
     errorMessage: str
     retryable: bool

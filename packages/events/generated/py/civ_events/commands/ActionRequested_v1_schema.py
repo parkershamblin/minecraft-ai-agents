@@ -19,6 +19,7 @@ class Action(StrEnum):
     follow = 'follow'
     idle = 'idle'
     craft = 'craft'
+    hunt = 'hunt'
 
 
 class ActionRequestedPayload(BaseModel):
@@ -32,11 +33,11 @@ class ActionRequestedPayload(BaseModel):
     villagerId: UUID
     action: Action = Field(
         ...,
-        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job).",
+        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent).",
     )
     params: dict[str, Any] = Field(
         ...,
-        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams; despawn/idle take {}).',
+        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {}).',
     )
     priority: conint(ge=1, le=10) | None = 5
     timeoutMs: conint(ge=1000) = Field(
@@ -110,6 +111,28 @@ class GatherParams(BaseModel):
     count: conint(ge=1, le=8) | None = Field(
         1,
         description='Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument.',
+    )
+
+
+class Animal(StrEnum):
+    cow = 'cow'
+    pig = 'pig'
+    sheep = 'sheep'
+    chicken = 'chicken'
+    any = 'any'
+
+
+class HuntParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    animal: Animal | None = Field(
+        'any',
+        description="Animal family to hunt; 'any' takes the nearest huntable adult. Babies are never targeted (the ageable metadata flag — diegetic ecology brake #1).",
+    )
+    maxDistance: confloat(ge=4.0, le=48.0) | None = Field(
+        32,
+        description='Chase budget in blocks, not a sight limit (entity tracking reaches ≥64 under our view settings — spike-measured). One animal per action; a wounded escapee keeps its damage.',
     )
 
 

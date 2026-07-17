@@ -1,0 +1,18 @@
+{
+  "eventId": "019f9d10-0005-7000-8000-00000000b203",
+  "eventType": "HazardEncountered",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-17T23:02:11.000Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000d0004",
+  "correlationId": "019f9d10-0006-7000-8000-c0de00000004",
+  "causationId": null,
+  "payload": {
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0004",
+    "hazardType": "starvation",
+    "phase": "trapped",
+    "position": { "x": -98, "y": 95, "z": -71 },
+    "detail": "food 4/20 and nothing edible carried — the eat reflex is helpless until food is acquired"
+  }
+}

@@ -23,6 +23,18 @@ export interface NearbyVillager {
  * agent-service's perceive node reads it. Inventory is a grouped summary, not
  * the raw 36-slot grid.
  */
+export interface AnimalSighting {
+  family: string
+  nearestDistance: number
+  count: number
+}
+
+export interface HostileSighting {
+  type: string
+  count: number
+  nearestDistance: number
+}
+
 export function buildSnapshot(
   villagerId: string,
   bot: BotLike,
@@ -30,6 +42,9 @@ export function buildSnapshot(
   // null = no resource scan has run (or it's disabled) → field omitted;
   // [] = scanned and nothing in sight → field present and empty.
   resources: ResourceSighting[] | null = null,
+  // null = the feature is off → field omitted (same convention as resources)
+  animals: AnimalSighting[] | null = null,
+  hostiles: HostileSighting[] | null = null,
   capturedAt: Date = new Date(),
 ): WorldSnapshot | null {
   if (!bot.entity) {
@@ -58,5 +73,7 @@ export function buildSnapshot(
       })),
     timeOfDay: Math.max(0, Math.min(24000, Math.round(bot.time.timeOfDay))),
     ...(resources !== null && { nearbyResources: resources }),
+    ...(animals !== null && { nearbyAnimals: animals }),
+    ...(hostiles !== null && { nearbyHostiles: hostiles }),
   } as WorldSnapshot
 }

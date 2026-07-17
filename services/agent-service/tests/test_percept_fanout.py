@@ -229,6 +229,67 @@ async def test_hazard_without_villager_id_is_ignored():
     assert redis.store == {}
 
 
+def threat_envelope(phase, *, response="flee", villager_id=ELARA, occurred_at=None):
+    return {
+        "eventId": "019f8e2b-5555-7000-8000-000000000005",
+        "eventType": "ThreatEncountered",
+        "correlationId": "019f8e2b-5555-7000-8000-00000000c0de",
+        "occurredAt": occurred_at or _now(),
+        "payload": {
+            "villagerId": villager_id,
+            "threatType": "zombie",
+            "phase": phase,
+            "response": response,
+            "count": 1,
+            "distance": 9.4,
+            "position": {"x": -131, "y": 92, "z": 18},
+            "detail": None,
+        },
+    }
+
+
+async def test_threat_percepts_reach_only_the_victim_with_the_full_shape():
+    redis = FakeRedis()
+    consumer = _bare(redis)
+
+    await consumer.handle(threat_envelope("engaged"))
+
+    assert list(redis.store) == [f"percepts:{ELARA}"]  # victim-only, never broadcast
+    [raw] = redis.store[f"percepts:{ELARA}"]
+    percept = json.loads(raw)
+    assert percept["type"] == "ThreatEncountered"
+    assert percept["threatType"] == "zombie"
+    assert percept["phase"] == "engaged"
+    assert percept["response"] == "flee"
+    assert percept["sourceEventId"] == "019f8e2b-5555-7000-8000-000000000005"
+
+
+async def test_spotted_and_overwhelmed_wake_the_mind_other_phases_ride_the_cadence():
+    """spotted = the one moment the mind can preempt; overwhelmed = the one
+    moment only the mind can change the plan. Everything else queueing
+    quietly is the GPU guard — a siege must not wake 20 minds per swing."""
+    redis = FakeRedis()
+    consumer = _bare(redis)
+    requests = []
+    consumer.on_chat_percept = lambda villager_id, cause: requests.append((villager_id, cause)) or True
+
+    await consumer.handle(threat_envelope("spotted", response=None))
+    await consumer.handle(threat_envelope("engaged"))
+    await consumer.handle(threat_envelope("killed", response="fight"))
+    await consumer.handle(threat_envelope("escaped"))
+    await consumer.handle(threat_envelope("overwhelmed"))
+
+    assert len(requests) == 2  # spotted + overwhelmed only
+    assert len(redis.store[f"percepts:{ELARA}"]) == 5  # every phase queued
+
+
+async def test_stale_threats_never_become_percepts():
+    redis = FakeRedis()
+    consumer = _bare(redis)
+    await consumer.handle(threat_envelope("spotted", occurred_at="2026-07-01T00:00:00Z"))
+    assert redis.store == {}
+
+
 # ---------------------------------------------------------------- M2-8 civic
 
 
