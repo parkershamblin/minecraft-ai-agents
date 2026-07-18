@@ -1,27 +1,19 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** fast cycle SMOKED LIVE — and the drill ladder peeled
-THREE brain defects in one evening, each drill reaching one rung further
-(session seventh, `docs/HANDOFF.md`). №1 stalled 0/5 (llama crafted planks 4×,
-never sticks/table/pickaxe → chain-as-prose fails; fixed with computed
-single-step `_race_tool_check`). №2 crossed first_coal at 2m, then crafted a
-stone_AXE and looped (ANY pickaxe silenced the check; fixed tier-aware +
-"iron drops NOTHING to your tool" ban — replay 4/8 → 9/10). №3 hit 3 rungs in
-4m, then beached smelting: both picks spent all 4 sticks, 7 planks in pack
-(new `_race_sticks_check` 9/10 + arena slack 10/4/4 in drill-rb2.mjs). Every
-defect frozen as a replay rung (`chain`/`stonechain`/`smeltstuck`) — offline
-regression in seconds. 21 unit tests green. Hot-reload validated both halves;
-tsx needed `CHOKIDAR_USEPOLLING` (see gotchas). Work sits on `rb2-fast-cycle`
-(off merged main). Stray 0-byte `llm/prompts.py` needs manual delete
-(classifier-blocked; real module is `brain/prompts.py`).
+**Last checkpoint:** RB-2 EXIT PASSED — first 3v3 race WON (session eighth,
+`docs/HANDOFF.md`). Attempt `019f7337`, label `rb2-exit-2`: **red/Elara iron
+pickaxe in 6m0s**, honest CLEAN, zero intervention; ladder coal 2m → iron ore
+4m → furnace 5m → ingot+pickaxe 6m; pure-main provenance (b3b0b3b, #43),
+proven by container grep. Take 1 face-planted on the stale-image trap (15m,
+0 rungs, 163 logs vs 1 stick fleet-wide; aborted `019f7325`) — gotcha
+extended below. Working tree holds a CONCURRENT session's uncommitted prompt
+tuning (`brain/prompts.py` + tests, exit-1-cited, 190 tests green, NOT in
+the winning image) — check `gh pr list` before touching it.
 
-**Drill №4 WON the full ladder in 8m** — first brain-driven iron pickaxe ever
-(0/5 honest start, zero harness commands). Progression №1→№4: 0, 1, 3, 5 rungs.
-
-**Next session:** merge `rb2-fast-cycle` (Parker's click); then the RB-2 exit
-race: `node scripts/race-rb2.mjs --label rb2-exit-1` — the brain that just
-soloed the ladder now races 3v3. Plan: `docs/architecture/10-red-vs-blue.md`,
-shots: `docs/demo-rb.md`.
+**Next session:** RB-3 filming (`docs/demo-rb.md` shot script), README hero,
+demo pulls from attempt `019f7337`'s ledger slice; then Normal difficulty
+per `docs/architecture/10-red-vs-blue.md`. Land the concurrent session's
+prompt tuning first if its PR appears.
 
 # AI Civilization Engine — project guide
 
@@ -174,7 +166,12 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   in `next.config.ts` (curl streams fine either way; that's the trap).
 - Service images bake their migrations and run `alembic upgrade head` on boot:
   after adding a migration, plain `up` reuses the stale image and exits with
-  "Can't locate revision" — restart that service with `up --build`.
+  "Can't locate revision" — restart that service with `up --build`. Same trap
+  for CODE, silently (2026-07-18): after a merge, plain `up` raced rb2-exit-1
+  on a pre-#43 brain — 163 logs, 29 plank crafts, 1 stick, 0 milestones in
+  15m. After ANY merge touching a service, deploy with `up -d --build
+  --no-deps <service>` and verify the fix is IN the container (grep a marker
+  symbol) before an attempt.
 - Compose commands naming individual services still need **both**
   `--profile infra --profile app`, or cross-profile `depends_on` fails with
   "depends on undefined service: invalid compose project". Exception: the

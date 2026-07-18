@@ -1,4 +1,54 @@
-# Session Handoff — fast cycle LIVE + chain defect fixed · next: RB-2 exit race (`node scripts/race-rb2.mjs`)
+# Session Handoff — RB-2 EXIT PASSED: first 3v3 race WON (rb2-exit-2, red/Elara, 6m) · next: RB-3 filming
+
+## Session 2026-07-18 (eighth) — RB-2 EXIT PASSED: the 3v3 race WON in 6 minutes (take 2)
+
+**The exit criterion is MET, on pure-main provenance.** Attempt
+`019f7337-977e-738e-8d5a-bf8e1db77439` (label `rb2-exit-2`): **WON by red in
+360.4s** — Elara crafted the iron pickaxe (win event `019f733d-14dd`), zero
+human intervention after attempt start, honest-race deltas CLEAN
+(budgetTripped 0, fakeProvider 0), full receipt under the Attempt aggregate.
+Ladder: red first_coal 2m → blue first_coal 3m → red first_iron_ore 4m →
+furnace_placed 5m → first_ingot (3 ingots) + **iron_pickaxe 6m**. The first
+brain-driven 3v3 ladder completion in the project; blue reached first_coal.
+The winning image was built from clean main at b3b0b3b (#43) — proven by
+grepping marker symbols in the container, see below.
+
+**Take 1 (rb2-exit-1) face-planted on the stale-image trap — 15m, ZERO
+rungs.** Cold-start `task up:all` reused an agent-service image built at
+23:42Z, two hours OLDER than #43's merge (01:47Z): the racing brain had #40's
+`_race_tool_check` but NO `_race_sticks_check` (container grep: 0 hits).
+Ledger autopsy of the 15 minutes: 163 logs gathered, 29 plank crafts vs
+**1 stick + 1 wooden pickaxe fleet-wide**, 232 TOOL_TIER_REQUIRED bare-hand
+ore gathers, Ansel bare-hand stone-tunneling for zero drops the whole take —
+the №1 chain-as-prose defect, resurrected by deployment, not regression.
+Aborted cleanly (attempt `019f7325`, outcome aborted), rebuilt with
+`up -d --build --no-deps agent-service`, verified BOTH check symbols in the
+container, re-ran. CLAUDE.md gotcha extended: after any merge touching a
+service, `--build` + grep a marker symbol of the new code IN the container
+before an attempt.
+
+**Found in the working tree at handoff time (NOT this session's work, NOT in
+the winning image):** uncommitted `brain/prompts.py` + `test_race_brain.py`
+edits from a concurrent session, tuning the prompts from take-1's ledger —
+bootstrap-first rung hint (coal talk had outshouted the chain step), tool
+check speaking on tooled packs, an ore-ban line, count-3 wood trips + count
+discipline, the furnace-rung cobble walk. Tests 184→190, verified green in
+this session. Container grep proves the WIN predates these edits. Left
+uncommitted for their session to land (the SV-2 two-sessions lesson — check
+`gh pr list` before claiming); if orphaned next session, they deserve a PR:
+every edit cites exit-1 measurements.
+
+**Ops notes:** cold-start `up:all` hit a transient memory-service crash-loop
+(DNS to postgres before infra was healthy) — the `--wait` retry cleared it,
+nothing to fix. Detached-race pattern (Start-Process + persistent log-tail
+monitor relaying milestones) worked twice; take 2's monitor caught the win
+live. The stray 0-byte `llm/prompts.py` is gone (deleted upstream).
+
+**Next:** RB-3 — the flagship filming pass (`docs/demo-rb.md` shot script;
+POV grid flag stays OFF mid-race), README hero, demo-shot pulls from attempt
+`019f7337`'s ledger slice. Then the difficulty ladder per
+`docs/architecture/10-red-vs-blue.md` (Easy is beaten; Normal next). Land
+the concurrent session's prompt tuning first if its PR appears.
 
 ## Session 2026-07-18 (seventh) — fast cycle smoked live; it caught and fixed a real brain defect
 

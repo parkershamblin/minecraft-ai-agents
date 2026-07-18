@@ -87,12 +87,26 @@ def test_race_section_renders_checklist_rivals_and_next_step():
     assert "Chat ONLY" in section
 
 
-def test_tool_check_silent_when_pack_has_a_pickaxe_or_no_snapshot():
+def test_tool_check_speaks_the_coal_move_when_the_pack_is_tooled():
+    # Exit-1 (2026-07-17): a silent check on a tooled pack let the rung hint's
+    # bootstrap prose re-teach `gather wood` — 265 wood trips to 6 coal digs.
+    # A pickaxe at the coal rung must hear the mining move and the wood ban.
     state = _state()
     view = state.snapshot(RED_1)
     with_pickaxe = [{"item": "wooden_pickaxe", "count": 1}]
-    assert "TOOL CHECK" not in _race_section(view, with_pickaxe)
+    section = _race_section(view, with_pickaxe)
+    assert "Your ONE next move: gather coal" in section
+    assert "do NOT gather wood" in section
+    # no snapshot -> no check; the rung hint carries the bootstrap fallback
     assert "TOOL CHECK" not in _race_section(view, None)
+
+
+def test_tool_check_bans_ore_gathers_while_bootstrapping():
+    # Exit-1: 267 pickaxe-less `gather coal`, every one rejected
+    # TOOL_TIER_REQUIRED — the ladder's coal talk outshouted the chain step.
+    state = _state()
+    section = _race_section(state.snapshot(RED_1), [])
+    assert "Never gather coal or iron_ore yet" in section
 
 
 def test_tool_check_stone_path_when_materials_are_in_the_pack():
@@ -154,7 +168,22 @@ def test_tool_check_upgrades_a_wooden_pickaxe_for_the_iron_rung():
     assert "Your ONE next move: craft sticks" in _race_section(state.snapshot(RED_1), no_sticks)
 
     upgraded = [{"item": "stone_pickaxe", "count": 1}]
-    assert "TOOL CHECK" not in _race_section(state.snapshot(RED_1), upgraded)
+    upgraded_section = _race_section(state.snapshot(RED_1), upgraded)
+    assert "Your ONE next move: gather iron_ore" in upgraded_section
+    assert "do NOT gather stone" in upgraded_section
+
+
+def test_tool_check_walks_a_tooled_pack_to_furnace_cobble():
+    # The banked-cobble silence (see the yields-to-the-furnace-hint test) left
+    # a gap: tooled pack, cobble short — the hint said "craft a furnace" and
+    # the craft failed. Name the stone trip instead.
+    state = _state()
+    state.milestone(_milestone("red", "first_coal"))
+    state.milestone(_milestone("red", "first_iron_ore"))
+    short = [{"item": "stone_pickaxe", "count": 1}, {"item": "cobblestone", "count": 3}]
+    section = _race_section(state.snapshot(RED_1), short)
+    assert "Your ONE next move: gather stone" in section
+    assert "you carry 3" in section
 
 
 def test_tool_check_yields_to_the_furnace_hint_once_cobble_is_banked():

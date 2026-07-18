@@ -189,12 +189,17 @@ _MILESTONE_PROSE = {
 # spelled out — llama reads these hints literally, and the wood→stone
 # bootstrap is where races stall.
 _RACE_NEXT_HINT = {
+    # Bootstrap prose FIRST: this hint only shows when the pack is unreadable
+    # (no snapshot yet — almost always a fresh spawn with no pickaxe), and
+    # exit-1 measured llama replaying the first recognizable step: coal-first
+    # wording drew 267 pickaxe-less `gather coal`, every one rejected
+    # TOOL_TIER_REQUIRED by the executor.
     "first_coal": (
-        "get a pickaxe and mine coal (gather coal). No pickaxe? Bootstrap: gather wood → craft planks → "
-        "sticks → crafting_table → wooden_pickaxe; then gather stone and craft a stone_pickaxe"
+        "no pickaxe? Bootstrap: gather wood (count 3) → craft planks → "
+        "sticks → crafting_table → wooden_pickaxe. Pickaxe in your pack? mine coal (gather coal, count 4)"
     ),
     "first_iron_ore": (
-        "mine iron ore (gather iron_ore) — it only drops to a stone pickaxe or better; "
+        "mine iron ore (gather iron_ore, count 3) — it only drops to a stone pickaxe or better; "
         "no stone_pickaxe yet? gather stone and craft one at a table"
     ),
     "furnace_placed": "craft a furnace (8 cobblestone at a table) and carry it — your body sets it up during the pickaxe craft",
@@ -208,8 +213,11 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
     59-use durability cap mid-dig — pathfinder tunnel digs wear tools too —
     and the brain, never told that tools break, chased the next rung
     bare-handed for 35 minutes. The hint is material-aware so the recovery is
-    the SHORTEST path back to mining, and it stays silent at the smelt/win
-    rungs, where a re-tool detour would cost the race."""
+    the SHORTEST path back to mining. On a TOOLED pack it speaks the mining
+    move itself (exit-1: silence here let stale bootstrap prose keep the
+    fleet chopping wood), and it stays silent only at the smelt/win rungs,
+    where a re-tool detour would cost the race, and at the banked-cobble
+    furnace rung, where the craft hint must speak alone."""
     if inventory is None or next_unmet not in ("first_coal", "first_iron_ore", "furnace_placed"):
         return None
     count: dict[str, int] = {}
@@ -224,21 +232,39 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
     has_stone_or_better = any(
         count.get(p, 0) > 0 for p in ("stone_pickaxe", "iron_pickaxe", "diamond_pickaxe", "netherite_pickaxe")
     )
-    if next_unmet in ("first_coal", "furnace_placed") and has_any_pickaxe:
-        return None
-    if next_unmet == "first_iron_ore" and has_stone_or_better:
-        return None
-    # At the furnace rung with the cobblestone already in the pack there is
-    # nothing left to MINE before the next milestone — a re-tool detour would
-    # bury the "craft a furnace" hint (the sweep caught 6/6 `gather wood`
-    # here). Stay silent and let the rung hint speak.
-    if next_unmet == "furnace_placed" and count.get("cobblestone", 0) >= 8:
-        return None
     cobble = count.get("cobblestone", 0)
     sticks = count.get("stick", 0)
     planks = sum(n for item, n in count.items() if item.endswith("_planks"))
     logs = sum(n for item, n in count.items() if item.endswith("_log"))
     table = count.get("crafting_table", 0)
+    # At the furnace rung with the cobblestone already in the pack there is
+    # nothing left to MINE before the next milestone — a re-tool detour would
+    # bury the "craft a furnace" hint (the sweep caught 6/6 `gather wood`
+    # here). Stay silent and let the rung hint speak.
+    if next_unmet == "furnace_placed" and cobble >= 8:
+        return None
+    # Tooled-up rungs speak a POSITIVE directive (exit-1 lesson, 2026-07-17:
+    # a silent check here let the rung hint's bootstrap prose re-teach
+    # `gather wood` to packs that were DONE with wood — 265 wood trips to 6
+    # coal digs in 25 minutes). The mining move is named with its trip count,
+    # and the dead verbs are banned by name, attempt-4 style.
+    if next_unmet == "first_coal" and has_any_pickaxe:
+        return (
+            "TOOL CHECK: your pickaxe is ready for coal. Your ONE next move: gather coal "
+            "(count 4 — one trip banks the rung and the smelt fuel). Wood is DONE — "
+            "do NOT gather wood, do NOT craft planks."
+        )
+    if next_unmet == "first_iron_ore" and has_stone_or_better:
+        return (
+            "TOOL CHECK: your stone pickaxe is ready for iron. Your ONE next move: gather iron_ore "
+            "(count 3 — the win craft needs 3 raw iron). Wood and stone are DONE — "
+            "do NOT gather wood, do NOT gather stone, do NOT craft planks."
+        )
+    if next_unmet == "furnace_placed" and has_any_pickaxe:
+        return (
+            f"TOOL CHECK: the furnace needs 8 cobblestone and you carry {cobble}. "
+            "Your ONE next move: gather stone (count 8). Do NOT gather wood."
+        )
     if next_unmet == "first_iron_ore" and has_any_pickaxe:
         # Wooden (or gold) pickaxe in hand — the upgrade path, one step at a
         # time. The table already stands from the wooden craft; the body finds
@@ -271,11 +297,15 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
         "TOOL CHECK: your pack holds NO pickaxe — tools wear out and BREAK as you dig; "
         "a pickaxe that vanished simply broke. "
     )
+    # Named ban (exit-1, 2026-07-17: 267 pickaxe-less `gather coal`, all
+    # rejected TOOL_TIER_REQUIRED — the ladder's coal talk outshouted the
+    # chain step until the dead verb was banned in the same breath).
+    ore_ban = " Never gather coal or iron_ore yet — with no pickaxe the mine FAILS and the turn is wasted."
     if cobble >= 3 and sticks >= 2:
         return why + (
             "Your ONE next move: craft stone_pickaxe — you already carry the cobblestone and sticks "
             "(no table standing near? craft crafting_table first, 4 planks)."
-        )
+        ) + ore_ban
     # The single computed next step (2026-07-18 drill lesson: given the whole
     # chain as prose, llama repeated the first step it recognized — four
     # `craft planks` with 16 planks already carried, never sticks, never a
@@ -288,7 +318,9 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
         if logs > 0:
             step = f"craft planks (each log makes 4; you need {need_planks} planks total for the tool chain)"
         else:
-            step = "gather wood"
+            # count 3: 3 logs = 12 planks, more than the 9-plank worst case —
+            # exit-1's single-log trips (127 of 265) re-walked the same trees.
+            step = "gather wood (count 3 — one trip covers the whole tool chain)"
     else:
         guard = " You have ALL the wood this chain needs — do NOT gather wood, do NOT craft more planks."
         if sticks < 2:
@@ -297,7 +329,7 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
             step = "craft crafting_table (4 planks)"
         else:
             step = "craft wooden_pickaxe (3 planks + 2 sticks — the table in your pack gets placed for you)"
-    return why + pack + " Your ONE next move: " + step + "." + guard
+    return why + pack + " Your ONE next move: " + step + "." + guard + ore_ban
 
 
 def _race_sticks_check(inventory: list[dict] | None, next_unmet: str | None) -> str | None:
@@ -366,6 +398,7 @@ def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
     lines.append(
         "RACE DISCIPLINE: choose gather or craft EVERY turn — both walk you to the target on "
         "their own, so never choose move unless your last gather failed with nothing-in-reach. "
+        "Always gather with a count of 3-8: a count-1 trip walks the same ground for one block. "
         "NEVER hunt, never idle, never follow: your body feeds itself from the pack and fights "
         "its own battles. Chat ONLY to report a handoff a teammate needs (one short line). "
         "Every turn not mining is a turn the rival team spent mining."
