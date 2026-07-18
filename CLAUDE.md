@@ -1,20 +1,22 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** RB-2 EXIT PASSED — first 3v3 race WON (session eighth,
-`docs/HANDOFF.md`). Attempt `019f7337`, label `rb2-exit-2`: **red/Elara iron
-pickaxe in 6m0s**, honest CLEAN, zero intervention; ladder coal 2m → iron ore
-4m → furnace 5m → ingot+pickaxe 6m; pure-main provenance (b3b0b3b, #43),
-proven by container grep. Take 1 face-planted on the stale-image trap (15m,
-0 rungs, 163 logs vs 1 stick fleet-wide; aborted `019f7325`) — gotcha
-extended below. A CONCURRENT session's prompt tuning (gather discipline,
-exit-1-cited, tests 184→190) rode #45's squash via its own commit `2283226`
-— on main now, NOT in the winning image (win predates it, container-grep
-proven). agent-service rebuilt from merged main post-#45.
+**Last checkpoint:** NORMAL BEATEN (session ninth, overnight autonomous —
+`docs/HANDOFF.md`). Attempt `019f7352`, label `rb2-normal-1`: **red/Wren
+iron pickaxe in 881s at Normal**, honest CLEAN — the ADR flagship tier, no
+fallback. Easy record stands at 360.4s (`019f7337`, red/Elara). Night PRs
+merged: #47 (watcher resilience + governance-rider mute), #48 (POV rig,
+flag-gated), #49 (README hero + shot docs). POV verdict: prismarine-viewer
+1.33.0 CANNOT parse 1.21.6 ("partial packet" on `trail` particle) and the
+crash is fleet-lethal — POV_VIEWER stays 0 on this MC version. Consumer
+group name is `minecraft-service.command-executor` (describing
+`minecraft-service` shows a phantom Dead group).
 
-**Next session:** RB-3 filming (`docs/demo-rb.md` shot script), README hero,
-demo pulls from attempt `019f7337`'s ledger slice; then Normal difficulty
-per `docs/architecture/10-red-vs-blue.md`. Land the concurrent session's
-prompt tuning first if its PR appears.
+**Next session:** Parker films per `docs/demo-rb.md`. Flagship realism
+PROVEN: `rb2-normal-mobs-1` won by blue/Petra in 760.8s (Normal + hostiles,
+105 threat episodes, zero deaths — full receipt in `docs/HANDOFF.md`).
+Night soak: 3-for-3 wins (Easy / Normal / Normal+mobs), zero stalls, zero
+deaths. Roadmap beyond T1 unchanged per
+`docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
 

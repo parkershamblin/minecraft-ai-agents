@@ -1,4 +1,64 @@
-# Session Handoff — RB-2 EXIT PASSED: first 3v3 race WON (rb2-exit-2, red/Elara, 6m) · next: RB-3 filming
+# Session Handoff — NORMAL BEATEN (881s, no fallback) · RB-3 artifacts landed · next: film
+
+## Session 2026-07-18 (ninth, overnight autonomous) — Normal falls, RB-3 ships its artifacts
+
+Parker slept 8h with merge-own-PRs authorization; the night ran on the
+between-takes loop: race → ledger-analyze → fix → PR → CI → merge →
+rebuild-with-marker-grep → next take.
+
+**NORMAL DIFFICULTY WON — the ADR's flagship tier, no fallback needed.**
+Attempt `019f7352-03ae-716b-b4df-1da76bb8c9d8` (label `rb2-normal-1`):
+**red/Wren in 881s**, honest `{0,0}`, zero intervention. Blue led the first
+two rungs (coal 1m53s, iron ore 4m15s); red converted furnace 8m31s →
+3 ingots + **iron_pickaxe 14m20s**. Decision mix at the 10s tick: zero
+hunt, 4 move, every gather count ≥3 — the gather-discipline + count
+teaching working live at Normal.
+
+**PRs merged tonight (all CI-green, authorized merges):**
+- **#47** — race watcher outlives service hiccups (per-poll try/catch +
+  retried end-phase; both exit-night watchers had died on one transient
+  fetch) + governance riders muted in race mode (schema description +
+  RACE DISCIPLINE line; riders now fire only in the pre-attempt seeding
+  window, zero during races).
+- **#48** — POV film rig: flag-gated prismarine-viewer per racer (fixed
+  port pool 3100-3105, lazy import, `canvas` stubbed via noop2 —
+  allow-scripts blocks native postinstalls), `film/pov-grid.html` grid,
+  3 new tests, OFF by default.
+- **#49** — README hero (both wins, receipt command) + demo-rb.md
+  reference takes with real attempt ids + the POV verdict.
+
+**POV verdict (live-verified, negative): prismarine-viewer 1.33.0 cannot
+speak MC 1.21.6** — "partial packet: world_particles" on the 1.21.2+
+`trail` particle, and the crash killed the whole minecraft-service process
+(fleet-lethal). Flag stays OFF; rig code stays for upstream catch-up; film
+the in-world shot with the vanilla spectator client. Do NOT set
+POV_VIEWER=1 on 1.21.6.
+
+**Ops lessons of the night:**
+- A minecraft-service RECREATE (vs restart) leaves the command consumer
+  group member lingering up to sessionTimeout (60s) — the "hung" boot
+  self-heals; don't panic-restart inside the window. Also: the consumer
+  group is `minecraft-service.command-executor`, NOT `minecraft-service` —
+  `rpk group describe` on the wrong name shows STATE Dead and cost 20
+  minutes of phantom debugging (the verify-frame-facts lesson, again).
+- The dashboard `/race` scoreboard verified live against the Normal take
+  (teams, feed, live badge) — the product shot is film-ready.
+
+**THE FLAGSHIP CONFIG WON TOO — Normal + hostiles, and it's the best
+story of the night.** Attempt `019f7366-cbb4-71cd-a225-c758df66aa0e`
+(label `rb2-normal-mobs-1`): **blue/Petra in 760.8s** — blue's first win,
+come-from-behind (red led 4/5 at 7m; blue swept iron ore 9m → furnace 11m
+→ ingots + pickaxe 13m), honest `{0,0}`. FASTER than the mob-free Normal
+take despite 105 threat episodes (48 zombie / 25 creeper / 22 skeleton /
+10 spider), only 36 SELF_DEFENSE_IN_PROGRESS stalls (attempt-4's mob
+experiment: 254 in 32m), and **zero deaths** — the survival-reflex stack
+(SV-6/8/12) carried a full race under fire. Soak line for the film call:
+3-for-3 wins tonight across Easy / Normal / Normal+mobs, zero stalls,
+zero deaths, every receipt honest.
+
+**Next:** Parker films per `docs/demo-rb.md` (scoreboard + spectator
+takes; best-of-N at Normal, mobs on for realism — proven raceable).
+Roadmap beyond T1 unchanged (ADR 10).
 
 ## Session 2026-07-18 (eighth) — RB-2 EXIT PASSED: the 3v3 race WON in 6 minutes (take 2)
 
