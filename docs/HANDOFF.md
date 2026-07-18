@@ -1,4 +1,159 @@
-# Session Handoff — RB-2 defects fixed + race lessons consolidated · next: RB-2 exit race (`node scripts/race-rb2.mjs`)
+# Session Handoff — fast cycle LIVE + chain defect fixed · next: RB-2 exit race (`node scripts/race-rb2.mjs`)
+
+## Session 2026-07-18 (seventh) — fast cycle smoked live; it caught and fixed a real brain defect
+
+**All three tiers ran live and the loop already paid for itself.** Drill №1
+(`task race:drill`, bot Elara) STALLED at 0/5 in 8m — and the diagnosis is the
+whole story of why the kit exists:
+
+- **The defect (brain, not body):** with coal tool-gated and 6 logs' worth of
+  wood in the pack, the brain crafted `planks` FOUR times (16 carried!) and
+  never chained to sticks → crafting_table → wooden_pickaxe. The prompt's
+  chain hint ("gather wood → craft planks → sticks → …") reads as prose;
+  llama3.1:8b replays the first step it recognizes instead of diffing the
+  chain against the pack. Meanwhile the body was blameless: `findBlocks` saw
+  every staged log (mc-service `gather target found` lines), the partial haul
+  (5/8, `stoppedEarly`) was honest, and TOOL_TIER_REQUIRED even spelled the
+  recipe out.
+- **Reproduced offline in ~90s:** new replay rung `chain`
+  (pack: 16 oak_planks + 2 oak_log, next: first_coal) — 12/12 `gather`, zero
+  craft, against the old prompt. The failing live state is now a permanent
+  seconds-fast regression case.
+- **The fix (`_race_tool_check` in `brain/prompts.py`):** compute the ONE next
+  craft from pack arithmetic (planks needed = table 4 + sticks 2 + pickaxe 3)
+  and name only it — "You carry 16 planks… Your ONE next move: craft sticks",
+  plus a do-not-gather guard once wood suffices. When the tool check fires it
+  now REPLACES the generic chain hint (one voice at a time). Sweep regression
+  caught by the sweep itself: at the `furnace` rung the new check buried the
+  craft-furnace hint under `gather wood` (6/6) — gated: tool check stays
+  silent at `furnace_placed` when cobblestone ≥ 8.
+- **Post-fix sweep (all offline, minutes):** bare 6/6 gather wood · chain 6/6
+  craft sticks · coal 6/6 gather coal · iron 6/6 gather iron_ore · furnace 8/8
+  craft furnace · ingot 4/6 craft iron_pickaxe · win 6/6 craft iron_pickaxe.
+
+**The drill ladder then peeled the NEXT two defects the same way (each drill
+reached one rung further):**
+- **Drill №2** (chain fix live): full wooden bootstrap in 97s — wood → planks
+  → sticks → crafting_table → wooden_pickaxe — and `first_coal` at 2m (№1
+  crossed nothing). Then STALLED at `first_iron_ore`: wooden pick in hand,
+  iron tool-gated, and the brain crafted a stone_AXE and looped gather-stone /
+  fail-iron for 8 minutes. Root cause: ANY pickaxe silenced `_race_tool_check`.
+  Fixed tier-aware (gold ≠ stone tier): at `first_iron_ore` a wooden/gold pick
+  now walks the pack to `stone_pickaxe` one computed step at a time, with the
+  explicit "gathering iron_ore NOW yields NOTHING" ban. Replay rung
+  `stonechain` froze the state: 4/8 correct before the wording pass, **9/10
+  after** (the ban line was worth +50 points).
+- **Drill №3** (tier fix live): `first_coal` 2m → `first_iron_ore` 3m →
+  `furnace_placed` 4m — one rung per minute — then beached at the smelt rung:
+  both pickaxe crafts had spent all 4 sticks, the win craft needs 2, and the
+  brain looped gather on an emptied pad while holding 7 planks. Two-sided fix:
+  **`_race_sticks_check`** (new; at `first_ingot`/`iron_pickaxe` rungs, names
+  `craft sticks` when the fix is one cheap craft away, silent on bare packs)
+  — replay rung `smeltstuck`: 9/10 craft sticks — and **arena slack** in
+  drill-rb2.mjs (10 logs / 4 coal / 4 iron, was 6/2/3): the exact-minimum pad
+  left zero margin for one wasted craft (a second furnace), and slack keeps
+  the drill measuring the BRAIN, not scavenging.
+- Also fixed in drill-rb2.mjs: the decision histogram silently printed `{}` —
+  the ledger caps `limit` at 100 and the 400 problem-json was swallowed.
+- **Drill №4: WON — the full ladder in 8 minutes.** first_coal 3m →
+  first_iron_ore 4m → furnace_placed 5m → first_ingot 8m → **iron_pickaxe 8m,
+  WIN recorded** (attempt 019f72c6, win event 019f72cd-d8c2). The first
+  brain-driven ladder completion in the project: wood → planks → sticks →
+  table → wooden pick → coal → stone pick → iron ×3 → furnace → smelt → IRON
+  PICKAXE, zero harness commands after attempt start, honest 0/5 checklist.
+  Drill progression №1→№4: 0 rungs, 1, 3, **5 (WIN)** — one defect peeled per
+  drill, each frozen as a replay rung.
+
+**Hot-reload gotchas found live (both fixed in the dev override):**
+- `tsx watch` NEVER reloads on Docker Desktop for Windows — host-side bind-
+  mount edits emit no inotify events in the container. uvicorn survives only
+  because StatReload POLLS. Fix shipped: `CHOKIDAR_USEPOLLING=1` +
+  `CHOKIDAR_INTERVAL=1000` env on minecraft-service in
+  `docker-compose.dev.yml` (tsx bundles chokidar, which honors them) —
+  verified: touch on the host, tsx rerun in the container.
+- **Never edit agent-service src MID-drill/attempt:** uvicorn reload restarts
+  the worker, RaceState is in-memory, and the AttemptStarted offset is
+  committed — the brain forgets the race while the attempt keeps running
+  (documented limitation in `brain/race.py`). Edit between attempts only.
+
+**Debugging lesson (cost ~20 min of phantom-outage chasing):** the ledger's
+`GET /events` has NO `order` param — an `order=desc` query is silently ignored
+and pages OLDEST-first. Filter with `since`/`until` and read forward; "the
+newest AttemptStarted is from 15:50" was page-1-of-ascending, not reality.
+
+**Leftovers for Parker:**
+- `services/agent-service/src/agent_service/llm/prompts.py` — a 0-byte stray
+  (created by an errant `touch`; deletion was classifier-blocked). Delete it;
+  the real module is `brain/prompts.py`.
+- PR #42 merged (thanks!) — this session's work (replay `chain` rung, prompt
+  fix, dev-override chokidar fix, HANDOFF) is uncommitted on the now-stale
+  local `rb2-race-lessons`; branch off fresh from main when committing.
+- governanceAction riders still leak into race decisions (`vote`/
+  `declare_candidacy` with junk electionIds, dropped harmless but noisy in
+  every replay run) — cheap prompt cleanup, now verifiable in seconds.
+
+## Session 2026-07-17 (sixth) — a MUCH faster RB-2 iteration loop (branch `rb2-race-lessons`)
+
+**The problem:** the 3v3 race (`race-rb2.mjs`) takes 11–75 min to reach an
+outcome (six brains bootstrap from scattered forests at a 10s Ollama tick with
+long walks) — the WRONG feedback unit for tuning one prompt line or one rung.
+Parker interrupted a live race (`race-rb2-exit-6.log`, stalled at furnace_placed
+~11m in) and asked for a faster cycle. Built a three-tier loop, fastest first.
+
+**The feedback ladder (pick the cheapest tier that answers your question):**
+
+| Tier | Command | Wall time | What it measures | Docker? |
+|---|---|---|---|---|
+| **Replay** | `task race:replay RUNG=bare N=20` | seconds | pure brain: decision histogram at an EXACT rung vs real Ollama | none |
+| **Hot-reload** | `task dev:up` (once) | ~1s per edit | removes the rebuild tax in front of every live test | reload, no rebuild |
+| **Drill (live)** | `task race:drill` | single-digit min | honest full ladder, real brain+body, one isolated bot | live stack |
+| Body drill | `node scripts/drill-rb1.mjs` | ~2 min | body/chain machinery (raw commands, brain OUT) — pre-existing | live stack |
+| Flagship | `node scripts/race-rb2.mjs` | 11–75 min | the real 3v3 — unchanged, for the exit race only | live stack |
+
+**What each new piece is:**
+- **`services/agent-service/scripts/replay_race_brain.py`** — feeds the real
+  `system_prompt`/`user_prompt` at a chosen rung (bare/coal/iron/furnace/ingot/
+  win, each staged with a pack that CAN cross the next rung) to real Ollama N
+  times and prints the verb histogram + params + reasoning samples. No Minecraft,
+  no docker, no tick clock. This is where prompt tuning converges: if 15/20 `bare`
+  decisions are `move`/`hunt` instead of a craft, RACE DISCIPLINE failed — known
+  in 20s, not after a 45m wood age. `RUNG=all` sweeps every rung. Runs on the
+  HOST (`ollama_base_url` defaults to `localhost:11434`; Settings init-kwargs
+  override env, so no `.env` needed).
+- **`infrastructure/docker/docker-compose.dev.yml`** + `task dev:up` — bind-mounts
+  each service's `src` over the baked image and swaps the run command for a
+  watcher (agent-service `uvicorn --reload`, minecraft-service `tsx watch`). Edit
+  `prompts.py` or `attemptTracker.ts`, the service reloads in ~1s, NO `up --build`.
+  **DEV LEVER, not a deploy path** — provenance is the mounted worktree; rebuild
+  from main (`task up:all`) before any honest/filmed attempt.
+- **`scripts/drill-rb2.mjs`** + `task race:drill` — the live analog of replay:
+  despawns every OTHER racer (so only this bot's team crosses milestones AND its
+  ticks don't queue behind five deliberations at the LLM), stages a calm flat
+  pad with wood + coal + a stone slab + iron ALL within 8 blocks, starts a FRESH
+  attempt (brain sees a true 0/5 checklist — honest), lets the real brain climb
+  the whole ladder, and reports minutes-to-milestone + the bot's decision
+  histogram (a stall reads "40 moves, 0 gathers" at a glance). Short stall
+  watchdog (8m default). Leaves the fleet despawned — re-embody with
+  `node scripts/spawn-fleet.mjs`.
+
+**Why the drill can't do mid-ladder `--from`:** milestones cross ONLY from real
+world events at the producer choke point (`attemptTracker.ts`) — there is no
+milestone-injection endpoint, so a fresh attempt always shows the brain 0/5.
+Mid-ladder brain context is therefore replay-only (offline, where the checklist
+is trivially set); mid-ladder body/chain is `drill-rb1.mjs` (brain bypassed).
+The live drill stays HONEST by running the full ladder from scratch and buying
+its speed from isolation + density, not from faking state.
+
+**Max-speed knob (optional):** the despawned bots' brains still tick (burning a
+little Ollama). For the tightest drill loop, set `VILLAGER_COUNT=1` in `.env` and
+recreate agent-service, so only the drill bot deliberates. Restore to 6 before
+the flagship race.
+
+Syntax-verified: `node --check` on both scripts, `py_compile` on the replay.
+Not yet run against a live stack (the stack state at handoff is unknown — a race
+was interrupted). First live use: `task dev:up`, then `task race:drill`.
+
+## Session 2026-07-17 (fifth) — branch cleanup + the race-lessons consolidation (branch `rb2-race-lessons`)
 
 ## Session 2026-07-17 (fifth) — branch cleanup + the race-lessons consolidation (branch `rb2-race-lessons`)
 

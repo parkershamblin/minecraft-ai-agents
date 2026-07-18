@@ -1,8 +1,27 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** RB-2 defects SOLVED (#40 tool check, #41 executor lanes) + repo cleaned (5 stale branches deleted; PR #38 superseded — its unique attempt-4/5b/6 lessons consolidated on branch `rb2-race-lessons`: 75m stall window, mob-free race default, wanderer re-spread, furnace-rung routes, race-discipline re-tune, hunger/game muting). Race preset in `.env` (6 bots, 20s tick).
+**Last checkpoint:** fast cycle SMOKED LIVE — and the drill ladder peeled
+THREE brain defects in one evening, each drill reaching one rung further
+(session seventh, `docs/HANDOFF.md`). №1 stalled 0/5 (llama crafted planks 4×,
+never sticks/table/pickaxe → chain-as-prose fails; fixed with computed
+single-step `_race_tool_check`). №2 crossed first_coal at 2m, then crafted a
+stone_AXE and looped (ANY pickaxe silenced the check; fixed tier-aware +
+"iron drops NOTHING to your tool" ban — replay 4/8 → 9/10). №3 hit 3 rungs in
+4m, then beached smelting: both picks spent all 4 sticks, 7 planks in pack
+(new `_race_sticks_check` 9/10 + arena slack 10/4/4 in drill-rb2.mjs). Every
+defect frozen as a replay rung (`chain`/`stonechain`/`smeltstuck`) — offline
+regression in seconds. 21 unit tests green. Hot-reload validated both halves;
+tsx needed `CHOKIDAR_USEPOLLING` (see gotchas). Work sits on `rb2-fast-cycle`
+(off merged main). Stray 0-byte `llm/prompts.py` needs manual delete
+(classifier-blocked; real module is `brain/prompts.py`).
 
-**Next session:** merge `rb2-race-lessons` (Parker's click), close #38, then the RB-2 exit race: `node scripts/race-rb2.mjs --label rb2-exit-1` — one command per take. Plan: `docs/architecture/10-red-vs-blue.md`, shots: `docs/demo-rb.md`.
+**Drill №4 WON the full ladder in 8m** — first brain-driven iron pickaxe ever
+(0/5 honest start, zero harness commands). Progression №1→№4: 0, 1, 3, 5 rungs.
+
+**Next session:** merge `rb2-fast-cycle` (Parker's click); then the RB-2 exit
+race: `node scripts/race-rb2.mjs --label rb2-exit-1` — the brain that just
+soloed the ladder now races 3v3. Plan: `docs/architecture/10-red-vs-blue.md`,
+shots: `docs/demo-rb.md`.
 
 # AI Civilization Engine — project guide
 
@@ -232,6 +251,19 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   Related mineflayer flake: `placeBlock` can throw "blockUpdate did not fire
   within 5000ms" when the placement actually landed — placeCarried in
   BotSession verifies the world instead of trusting the throw.
+- Docker Desktop (Windows) bind mounts forward NO inotify events for host-side
+  edits: fs-event watchers inside containers (`tsx watch`, chokidar defaults)
+  never fire — only POLLING watchers see host edits (uvicorn's StatReload
+  polls, which is why agent-service hot-reload "just worked"). Fix for tsx:
+  `CHOKIDAR_USEPOLLING=1` + `CHOKIDAR_INTERVAL=1000` env (tsx bundles
+  chokidar; wired in `docker-compose.dev.yml`, verified 2026-07-18).
+  Corollary: NEVER edit agent-service src mid-attempt — the reload restarts
+  the worker and in-memory RaceState forgets the race (offsets committed, no
+  replay; `brain/race.py` docstring).
+- The ledger `GET /events` has NO `order` param (silently ignored) — pages are
+  ALWAYS oldest-first within the filter. "What happened recently" queries MUST
+  pass `since=` (ISO); reading page 1 as "newest" invents phantom outages
+  (cost 20 min on 2026-07-18).
 - RCON `data get` output is ELLIPSIZED server-side past ~150 chars (measured
   2026-07-09: a literal `...` mid-SNBT) — full-inventory reads are impossible;
   read per-slot (`Inventory[i].id` / `.count`, stop at "Found no elements").

@@ -216,23 +216,118 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
     for stack in inventory:
         item = str(stack.get("item", ""))
         count[item] = count.get(item, 0) + int(stack.get("count") or 0)
-    if any(item.endswith("_pickaxe") and n > 0 for item, n in count.items()):
+    # Tier-aware (drill №2 2026-07-18): iron ore ignores a wooden pickaxe, so
+    # merely OWNING a pickaxe must not silence the check at first_iron_ore —
+    # the live brain crafted a stone_AXE and looped gather-stone/fail-iron for
+    # 8 minutes. Gold counts for coal but not iron (tier 0).
+    has_any_pickaxe = any(item.endswith("_pickaxe") and n > 0 for item, n in count.items())
+    has_stone_or_better = any(
+        count.get(p, 0) > 0 for p in ("stone_pickaxe", "iron_pickaxe", "diamond_pickaxe", "netherite_pickaxe")
+    )
+    if next_unmet in ("first_coal", "furnace_placed") and has_any_pickaxe:
+        return None
+    if next_unmet == "first_iron_ore" and has_stone_or_better:
+        return None
+    # At the furnace rung with the cobblestone already in the pack there is
+    # nothing left to MINE before the next milestone — a re-tool detour would
+    # bury the "craft a furnace" hint (the sweep caught 6/6 `gather wood`
+    # here). Stay silent and let the rung hint speak.
+    if next_unmet == "furnace_placed" and count.get("cobblestone", 0) >= 8:
         return None
     cobble = count.get("cobblestone", 0)
     sticks = count.get("stick", 0)
-    wood = sum(n for item, n in count.items() if item.endswith(("_log", "_planks")))
+    planks = sum(n for item, n in count.items() if item.endswith("_planks"))
+    logs = sum(n for item, n in count.items() if item.endswith("_log"))
+    table = count.get("crafting_table", 0)
+    if next_unmet == "first_iron_ore" and has_any_pickaxe:
+        # Wooden (or gold) pickaxe in hand — the upgrade path, one step at a
+        # time. The table already stands from the wooden craft; the body finds
+        # it, so never spend 4 planks on a second one here.
+        why = (
+            "TOOL CHECK: iron ore only drops to a STONE pickaxe or better — the pickaxe "
+            f"you carry cannot mine it. You carry {cobble} cobblestone, {sticks} sticks. "
+        )
+        if cobble < 3:
+            step = "gather stone (3 cobblestone makes the pickaxe head)"
+        elif sticks >= 2:
+            step = (
+                "craft stone_pickaxe (3 cobblestone + 2 sticks) — you carry everything it needs. "
+                "ONLY a pickaxe mines ore: never craft an axe or shovel"
+            )
+        elif planks >= 2:
+            step = "craft sticks (2 planks make 4 sticks)"
+        elif logs > 0:
+            step = "craft planks (for sticks)"
+        else:
+            step = "gather wood (for sticks)"
+        return (
+            why
+            + "Your ONE next move: "
+            + step
+            + ". Gathering iron_ore NOW yields NOTHING — the ore breaks and drops no item to your tool. "
+            + "First the stone_pickaxe, THEN iron."
+        )
     why = (
         "TOOL CHECK: your pack holds NO pickaxe — tools wear out and BREAK as you dig; "
-        "a pickaxe that vanished simply broke. Re-craft it now: "
+        "a pickaxe that vanished simply broke. "
     )
     if cobble >= 3 and sticks >= 2:
         return why + (
-            "craft stone_pickaxe — you already carry the cobblestone and sticks "
+            "Your ONE next move: craft stone_pickaxe — you already carry the cobblestone and sticks "
             "(no table standing near? craft crafting_table first, 4 planks)."
         )
-    if cobble >= 3 and wood > 0:
-        return why + "craft planks → sticks, then stone_pickaxe at a table — you already carry the cobblestone."
-    return why + "gather wood → craft planks → sticks → crafting_table → wooden_pickaxe, then mine on."
+    # The single computed next step (2026-07-18 drill lesson: given the whole
+    # chain as prose, llama repeated the first step it recognized — four
+    # `craft planks` with 16 planks already carried, never sticks, never a
+    # table. State the arithmetic and name exactly ONE craft; never re-teach
+    # steps the pack proves are done.
+    pack = f"You carry {planks} planks, {logs} logs, {sticks} sticks{', a crafting_table' if table else ''}."
+    need_planks = (0 if table else 4) + (0 if sticks >= 2 else 2) + 3
+    guard = ""
+    if planks < need_planks:
+        if logs > 0:
+            step = f"craft planks (each log makes 4; you need {need_planks} planks total for the tool chain)"
+        else:
+            step = "gather wood"
+    else:
+        guard = " You have ALL the wood this chain needs — do NOT gather wood, do NOT craft more planks."
+        if sticks < 2:
+            step = "craft sticks (2 planks make 4 sticks)"
+        elif not table:
+            step = "craft crafting_table (4 planks)"
+        else:
+            step = "craft wooden_pickaxe (3 planks + 2 sticks — the table in your pack gets placed for you)"
+    return why + pack + " Your ONE next move: " + step + "." + guard
+
+
+def _race_sticks_check(inventory: list[dict] | None, next_unmet: str | None) -> str | None:
+    """Drill №3 (2026-07-18): both pickaxe crafts spent all 4 sticks, so the
+    win craft (3 ingots + 2 STICKS) sat unreachable while the brain looped
+    gather on an emptied arena — with 7 planks in the pack. At the smelt/win
+    rungs the ONLY tool detour worth naming is the two sticks the iron pickaxe
+    itself needs; fires only when the fix is one cheap craft away (a bare pack
+    stays silent — no wild goose chase at the win rung)."""
+    if inventory is None or next_unmet not in ("first_ingot", "iron_pickaxe"):
+        return None
+    count: dict[str, int] = {}
+    for stack in inventory:
+        item = str(stack.get("item", ""))
+        count[item] = count.get(item, 0) + int(stack.get("count") or 0)
+    if count.get("stick", 0) >= 2:
+        return None
+    planks = sum(n for item, n in count.items() if item.endswith("_planks"))
+    logs = sum(n for item, n in count.items() if item.endswith("_log"))
+    if planks >= 2:
+        return (
+            "STICKS CHECK: the iron_pickaxe craft needs 2 sticks and you carry none. "
+            f"Your ONE next move: craft sticks (2 planks make 4; you carry {planks} planks)."
+        )
+    if logs > 0:
+        return (
+            "STICKS CHECK: the iron_pickaxe craft needs 2 sticks and you carry none. "
+            "Your ONE next move: craft planks (then sticks)."
+        )
+    return None
 
 
 def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
@@ -254,10 +349,15 @@ def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
         f"Your team's ladder: {ladder}",
     ]
     if next_unmet:
-        lines.append(f"Your next step: {_RACE_NEXT_HINT[next_unmet]}.")
-        tool_check = _race_tool_check(inventory, next_unmet)
+        # When the tool check fires it computes the ONE next move from the
+        # pack — the generic chain prose would fight it for attention (the
+        # 2026-07-18 drill: llama replayed the chain's first recognizable
+        # step, craft planks x4, with 16 planks carried). One voice at a time.
+        tool_check = _race_tool_check(inventory, next_unmet) or _race_sticks_check(inventory, next_unmet)
         if tool_check:
             lines.append(tool_check)
+        else:
+            lines.append(f"Your next step: {_RACE_NEXT_HINT[next_unmet]}.")
     # Directive pressure, twice-tuned. Attempt-1 lesson: 107 chats to 1
     # gather — the friendly "split the work out loud" line licensed a debate
     # club. Attempt-4 lesson: HALF of all 1060 decisions were `move` (gather

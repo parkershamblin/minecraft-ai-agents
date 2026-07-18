@@ -1,0 +1,41 @@
+# Dev hot-reload override (ADR-10 fast cycle) — NEVER used for a filmed race.
+#
+# The base compose bakes source into the image, so every prompts.py or
+# attemptTracker.ts edit needs a `up --build` (minutes). This override
+# bind-mounts each service's src over the image copy and swaps the run command
+# for a watcher: edit a file, the service reloads in ~1s, no rebuild.
+#
+# Use:  docker compose -f docker-compose.yml -f docker-compose.dev.yml \
+#         --profile infra --profile app up -d
+#   or:  task dev:up   (wires both -f files)
+#
+# CAVEATS — this is a DEV lever, not a deploy path:
+#   - deployed provenance is the mounted worktree, not a built image. Rebuild
+#     from main (plain `up -d --build`) before any honest/filmed attempt.
+#   - agent-service reloads on src changes; the alembic migration in the base
+#     command still runs once at container start (reload re-imports, not reboots).
+#   - a syntax error in a watched file crashes the reloader — check
+#     `docker logs` if a service goes quiet after an edit.
+services:
+  agent-service:
+    volumes:
+      - ../../services/agent-service/src:/repo/services/agent-service/src
+    command:
+      - sh
+      - -c
+      - >-
+        uv run alembic upgrade head &&
+        uv run uvicorn agent_service.main:app --host 0.0.0.0 --port 8001
+        --log-level warning --reload --reload-dir src
+
+  minecraft-service:
+    volumes:
+      - ../../services/minecraft-service/src:/repo/services/minecraft-service/src
+    # Docker Desktop (Windows) bind mounts do NOT forward host-edit inotify
+    # events into the container, so tsx's default fs-event watcher never sees
+    # an edit (uvicorn survives because StatReload polls). tsx bundles
+    # chokidar, which honors these env vars — force stat-polling.
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "1000"
+    command: ["npx", "tsx", "watch", "src/index.ts"]

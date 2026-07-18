@@ -109,7 +109,65 @@ def test_tool_check_wood_bootstrap_when_the_pack_is_bare():
     state = _state()
     section = _race_section(state.snapshot(RED_1), [])
     assert "TOOL CHECK" in section
-    assert "gather wood → craft planks → sticks → crafting_table → wooden_pickaxe" in section
+    assert "Your ONE next move: gather wood" in section
+
+
+def test_tool_check_names_the_single_next_craft_from_the_pack():
+    # The 2026-07-18 drill defect: given the chain as prose, llama crafted
+    # planks 4x (16 carried) and never chained on. The check must diff the
+    # chain against the pack and name exactly ONE craft.
+    state = _state()
+    plank_rich = [{"item": "oak_planks", "count": 16}, {"item": "oak_log", "count": 2}]
+    section = _race_section(state.snapshot(RED_1), plank_rich)
+    assert "Your ONE next move: craft sticks" in section
+    assert "do NOT craft more planks" in section
+    # the generic chain prose stays out while the computed step speaks
+    assert "Bootstrap: gather wood" not in section
+
+    with_sticks = plank_rich + [{"item": "stick", "count": 2}]
+    assert "Your ONE next move: craft crafting_table" in _race_section(state.snapshot(RED_1), with_sticks)
+
+    with_table = with_sticks + [{"item": "crafting_table", "count": 1}]
+    assert "Your ONE next move: craft wooden_pickaxe" in _race_section(state.snapshot(RED_1), with_table)
+
+    short_on_planks = [{"item": "oak_log", "count": 3}]
+    assert "Your ONE next move: craft planks" in _race_section(state.snapshot(RED_1), short_on_planks)
+
+
+def test_tool_check_upgrades_a_wooden_pickaxe_for_the_iron_rung():
+    # Drill No.2 2026-07-18: wooden pick in hand, iron tool-gated, the brain
+    # crafted a stone_AXE and looped. A wooden pickaxe must not silence the
+    # check at first_iron_ore — it must walk the pack to stone_pickaxe.
+    state = _state()
+    state.milestone(_milestone("red", "first_coal"))
+    base = [{"item": "wooden_pickaxe", "count": 1}]
+
+    ready = base + [{"item": "cobblestone", "count": 8}, {"item": "stick", "count": 2}]
+    section = _race_section(state.snapshot(RED_1), ready)
+    assert "TOOL CHECK" in section
+    assert "Your ONE next move: craft stone_pickaxe" in section
+
+    no_cobble = base + [{"item": "stick", "count": 2}]
+    assert "Your ONE next move: gather stone" in _race_section(state.snapshot(RED_1), no_cobble)
+
+    no_sticks = base + [{"item": "cobblestone", "count": 8}, {"item": "oak_planks", "count": 7}]
+    assert "Your ONE next move: craft sticks" in _race_section(state.snapshot(RED_1), no_sticks)
+
+    upgraded = [{"item": "stone_pickaxe", "count": 1}]
+    assert "TOOL CHECK" not in _race_section(state.snapshot(RED_1), upgraded)
+
+
+def test_tool_check_yields_to_the_furnace_hint_once_cobble_is_banked():
+    # Sweep regression 2026-07-18: at furnace_placed with 8 cobblestone the
+    # check buried "craft a furnace" under gather wood. Nothing left to mine
+    # means no re-tool detour.
+    state = _state()
+    state.milestone(_milestone("red", "first_coal"))
+    state.milestone(_milestone("red", "first_iron_ore"))
+    banked = [{"item": "iron_ore", "count": 3}, {"item": "cobblestone", "count": 8}]
+    section = _race_section(state.snapshot(RED_1), banked)
+    assert "TOOL CHECK" not in section
+    assert "craft a furnace" in section
 
 
 def test_tool_check_stays_out_of_the_win_rungs():
@@ -120,6 +178,25 @@ def test_tool_check_stays_out_of_the_win_rungs():
         state.milestone(_milestone("red", milestone))
     section = _race_section(state.snapshot(RED_1), [])
     assert "TOOL CHECK" not in section
+
+
+def test_sticks_check_names_the_missing_sticks_at_the_smelt_rungs():
+    # Drill No.3 2026-07-18: both pickaxe crafts spent all four sticks; the win
+    # craft needs two and the brain looped gather on an emptied arena with 7
+    # planks carried. One cheap craft away -> say exactly that.
+    state = _state()
+    for milestone in MILESTONES[:3]:
+        state.milestone(_milestone("red", milestone))
+    beached = [{"item": "raw_iron", "count": 3}, {"item": "oak_planks", "count": 7}]
+    section = _race_section(state.snapshot(RED_1), beached)
+    assert "STICKS CHECK" in section
+    assert "Your ONE next move: craft sticks" in section
+
+    with_sticks = beached + [{"item": "stick", "count": 2}]
+    assert "STICKS CHECK" not in _race_section(state.snapshot(RED_1), with_sticks)
+
+    # bare pack at a win rung stays silent — no wild goose chase prose
+    assert "STICKS CHECK" not in _race_section(state.snapshot(RED_1), [])
 
 
 def test_race_section_win_rung_is_the_last_hint():

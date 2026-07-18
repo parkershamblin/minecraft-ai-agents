@@ -58,6 +58,24 @@ tasks:
     cmds:
       - curl -s -X POST http://localhost:8001/internal/seed
 
+  dev:up:
+    desc: "Fast cycle: infra + app with HOT-RELOAD (bind-mounted src; agent-service uvicorn --reload, minecraft-service tsx watch). Edit prompts.py/*.ts, service reloads in ~1s, no rebuild. NOT a deploy path — rebuild from main (task up:all) before any honest/filmed race"
+    cmds:
+      - "{{.COMPOSE}} --profile infra up -d --wait"
+      - node scripts/provision-topics.mjs
+      - "{{.COMPOSE}} -f infrastructure/docker/docker-compose.dev.yml --profile infra --profile app up -d"
+
+  race:replay:
+    desc: "Offline race-brain replay — seconds, NO world/docker/tick. Decision histogram at a rung against real Ollama. Args: RUNG=bare|coal|iron|furnace|ingot|win|all N=20"
+    dir: services/agent-service
+    cmds:
+      - 'uv run python scripts/replay_race_brain.py --rung {{.RUNG | default "bare"}} --n {{.N | default "20"}}'
+
+  race:drill:
+    desc: "Fast LIVE brain drill — one isolated bot, dense resource arena, honest full ladder in single-digit minutes (vs 11-75m for the 3v3). Args: BOT=Elara STALL=8"
+    cmds:
+      - 'node scripts/drill-rb2.mjs --bot {{.BOT | default "Elara"}} --stall-minutes {{.STALL | default "8"}}'
+
   test:
     desc: Run all test suites (contracts, minecraft, agent, memory, event, government)
     vars:
