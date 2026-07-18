@@ -81,8 +81,21 @@ const schema = z.object({
   // the away-vector (fleeing INTO the village is story). 0 disables.
   THREAT_FLEE_BUDDY_RADIUS: z.coerce.number().int().min(0).default(32),
   // Default stance until the brain's stance rider ships (SV-13): cautious =
-  // armed villagers still flee melee mobs; brave = they stand and fight.
-  THREAT_DEFAULT_STANCE: z.enum(['brave', 'cautious']).default('cautious'),
+  // armed villagers still flee melee mobs; brave = they stand and fight;
+  // guard (the guard arc) = brave's courage + the wider ranged window +
+  // the post tether. NEVER flip mid-race — stance is read live but the
+  // tether re-anchors only on spawn.
+  THREAT_DEFAULT_STANCE: z.enum(['brave', 'cautious', 'guard']).default('cautious'),
+  // Guard tether: beyond postRadius an idle guard walks home; 12 clears a
+  // flee hop's leftover drift and sits above the melee danger radius (10)
+  // so post-holding and episode-opening don't fight. repathMs re-sets a
+  // stalled homeward goal.
+  THREAT_GUARD_POST_RADIUS: z.coerce.number().int().min(4).default(12),
+  THREAT_GUARD_REPATH_MS: z.coerce.number().int().min(1000).default(15000),
+  // Armor auto-equip reflex (SV-14-lite): 0 disables entirely; the equip
+  // is raced against its timeout (never trust a mineflayer promise).
+  ARMOR_CHECK_INTERVAL_MS: z.coerce.number().int().min(0).default(5000),
+  ARMOR_EQUIP_TIMEOUT_MS: z.coerce.number().int().min(1000).default(5000),
   // Hunt (SV-8): the chase deadline must stay under hunt's per-verb timeout
   // (30s) minus a ~8s collection reserve.
   HUNT_CHASE_TIMEOUT_MS: z.coerce.number().int().min(1000).default(20000),

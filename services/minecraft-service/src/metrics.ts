@@ -68,6 +68,13 @@ export const threatFightsActive = new Gauge({
   registers: [registry],
 })
 
+export const armorEquips = new Counter({
+  name: 'civ_armor_equips_total',
+  help: 'Armor auto-equip reflex outcomes (equipped | failed | timeout) by slot',
+  labelNames: ['slot', 'outcome'] as const,
+  registers: [registry],
+})
+
 export const hunts = new Counter({
   name: 'civ_hunts_total',
   help: 'Hunt commands by family and outcome (killed | empty | escaped | not_found | aborted) — the herd depletion curve',

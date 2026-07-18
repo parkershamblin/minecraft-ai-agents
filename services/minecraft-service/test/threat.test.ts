@@ -67,6 +67,26 @@ describe('decideResponse (the fight-or-flee table)', () => {
     expect(decideResponse({ ...base, nearest: zombie({ name: 'warden' }) })).toBe('flee')
   })
 
+  it('guard fights melee like brave', () => {
+    expect(decideResponse({ ...base, stance: 'guard' })).toBe('fight')
+  })
+
+  it('guard widens the skeleton window to 8 — brave stays at 4', () => {
+    expect(decideResponse({ ...base, stance: 'guard', nearest: zombie({ name: 'skeleton', distance: 7 }) })).toBe('fight')
+    expect(decideResponse({ ...base, stance: 'guard', nearest: zombie({ name: 'skeleton', distance: 9 }) })).toBe('flee')
+    expect(decideResponse({ ...base, stance: 'brave', nearest: zombie({ name: 'skeleton', distance: 7 }) })).toBe('flee')
+  })
+
+  it('every safety floor holds under guard', () => {
+    const guard = { ...base, stance: 'guard' as const }
+    expect(decideResponse({ ...guard, nearest: zombie({ name: 'creeper', distance: 3 }) })).toBe('flee')
+    expect(decideResponse({ ...guard, health: 10 })).toBe('flee')
+    expect(decideResponse({ ...guard, armed: false })).toBe('flee')
+    expect(decideResponse({ ...guard, count: 3 })).toBe('flee')
+    expect(decideResponse({ ...guard, failedFights: 2 })).toBe('flee')
+    expect(decideResponse({ ...guard, nearest: zombie({ name: 'warden' }) })).toBe('flee')
+  })
+
   it('danger radii carry the per-mob overrides', () => {
     expect(dangerRadius('creeper')).toBe(12)
     expect(dangerRadius('skeleton')).toBe(16)
@@ -106,7 +126,7 @@ interface Harness {
 function harness(over: {
   health?: number
   armed?: boolean
-  stance?: 'brave' | 'cautious'
+  stance?: 'brave' | 'cautious' | 'guard'
   fightOutcome?: 'killed' | 'lost' | 'abandoned' | null
   fleeOutcome?: 'escaped' | 'cornered' | 'abandoned'
   maneuverCooldownMs?: number
@@ -212,6 +232,20 @@ describe('ThreatWatcher episodes', () => {
     const phases = h.emitted.map((e) => e.phase)
     expect(phases).toEqual(['spotted', 'engaged', 'killed'])
     expect(h.episodes).toEqual(['killed'])
+    expect(h.busy.value).toBeNull()
+  })
+
+  it('a guard fights a zombie through the same episode machinery', async () => {
+    const h = harness({ stance: 'guard', fightOutcome: 'killed' })
+    h.hostiles.push(zombie({ distance: 8 }))
+    await pass(h) // spotted
+    await pass(h) // fight maneuver (killed)
+    h.hostiles.length = 0
+    await pass(h)
+    await pass(h)
+    await pass(h)
+    expect(h.emitted.map((e) => e.phase)).toEqual(['spotted', 'engaged', 'killed'])
+    expect(h.fight).toHaveBeenCalledTimes(1)
     expect(h.busy.value).toBeNull()
   })
 

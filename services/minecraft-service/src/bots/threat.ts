@@ -15,7 +15,10 @@ import type { BusyState } from './hazard.ts'
 
 export type ThreatPhase = 'spotted' | 'engaged' | 'killed' | 'escaped' | 'overwhelmed'
 export type ThreatResponse = 'fight' | 'flee'
-export type Stance = 'brave' | 'cautious'
+/** guard (the guard arc): brave's melee courage + a wider ranged-engage
+ *  window + the post tether (guardTether.ts). Every safety floor below
+ *  applies to all three stances. */
+export type Stance = 'brave' | 'cautious' | 'guard'
 
 /** Explicit classification — "unknown" means genuinely unmapped, and unknown
  *  hostiles flee (the safe default for mobs this table has never met). */
@@ -34,6 +37,9 @@ const CLOSE_HYSTERESIS = 4
 const CLEAR_PASSES_TO_CLOSE = 3
 const HITS_TO_OPEN = 2
 const OVERWHELMED_MIN_INTERVAL_MS = 60_000
+/** ranged engage windows: "already on top of it" vs the guard's post math */
+const RANGED_ENGAGE_DISTANCE = 4
+const GUARD_RANGED_ENGAGE_DISTANCE = 8
 
 export function dangerRadius(name: string): number {
   return DANGER_RADIUS_OVERRIDES[name] ?? DANGER_RADIUS_DEFAULT
@@ -79,11 +85,15 @@ export function decideResponse(input: ThreatDecisionInput): ThreatResponse {
   }
   if (RANGED.has(nearest.name)) {
     // Closing on a bow under fire is how villagers die — fight only when
-    // already on top of it.
-    return nearest.distance <= 4 ? 'fight' : 'flee'
+    // already on top of it. A guard holds a post: fleeing a skeleton inside
+    // ~8 eats back-shots for the whole turn-and-run AND abandons the post
+    // while still in bow range; at ≤8 the closing sprint is ~1s ≈ one arrow.
+    // Beyond 8, closing costs more than running — every stance flees.
+    const engageAt = input.stance === 'guard' ? GUARD_RANGED_ENGAGE_DISTANCE : RANGED_ENGAGE_DISTANCE
+    return nearest.distance <= engageAt ? 'fight' : 'flee'
   }
   if (MELEE.has(nearest.name)) {
-    return input.stance === 'brave' ? 'fight' : 'flee'
+    return input.stance === 'brave' || input.stance === 'guard' ? 'fight' : 'flee'
   }
   return 'flee' // unknown hostile — never met, never trusted
 }

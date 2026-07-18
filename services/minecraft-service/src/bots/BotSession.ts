@@ -4,7 +4,16 @@ import mineflayerPathfinder from 'mineflayer-pathfinder'
 import type Redis from 'ioredis'
 import type { Config } from '../config.ts'
 import { logger } from '../logging.ts'
-import { botSessions, eatReflex, hazardEscapes, hunts, reconnects, threatEpisodes, threatResponses } from '../metrics.ts'
+import {
+  armorEquips,
+  botSessions,
+  eatReflex,
+  hazardEscapes,
+  hunts,
+  reconnects,
+  threatEpisodes,
+  threatResponses,
+} from '../metrics.ts'
 import { buildEnvelope } from '../events/envelope.ts'
 import {
   type BusyState,
@@ -15,6 +24,8 @@ import {
   hazardPayload,
 } from './hazard.ts'
 import { type EatBot, EatWatcher } from './eat.ts'
+import { ArmorWatcher } from './armor.ts'
+import { GuardTether } from './guardTether.ts'
 import {
   THREAT_ALERT_RADIUS,
   type ThreatBot,
@@ -131,6 +142,11 @@ export class BotSession {
   private eatWatcher: EatWatcher | null = null
   private threatTimer: NodeJS.Timeout | null = null
   private threatWatcher: ThreatWatcher | null = null
+  private guardTether: GuardTether | null = null
+  private armorTimer: NodeJS.Timeout | null = null
+  private armorWatcher: ArmorWatcher | null = null
+  /** the guard tether's post — captured on every 'spawn' */
+  private anchor: Position | null = null
   /** Action planner (digs) and reflex planner (canDig=false) — rebuilt per
    *  bot instance in onSpawn; maneuvers swap in reflex, clearGoal restores. */
   private defaultMovements: InstanceType<typeof Movements> | null = null
@@ -215,6 +231,11 @@ export class BotSession {
     // (and the respawn sync race) as fabricated hauls.
     bot.on('spawn', () => {
       this.spawnGeneration = ++nextSpawnGeneration
+      // Guard-arc anchor: every spawn (connect AND death-respawn) re-posts
+      // the tether where the body stands — the race harness anchors
+      // spawnpoints at team posts, so a respawn re-anchors correctly.
+      const at = bot.entity?.position
+      this.anchor = at ? { x: at.x, y: at.y, z: at.z } : null
     })
     bot.once('spawn', () => this.onSpawn())
     bot.on('death', () => {
@@ -283,6 +304,7 @@ export class BotSession {
     this.startHazardWatch()
     this.startThreatWatch()
     this.startEatWatch()
+    this.startArmorWatch()
 
     for (const waiter of this.spawnWaiters.splice(0)) {
       waiter(reason)
@@ -383,6 +405,10 @@ export class BotSession {
       clearInterval(this.threatTimer)
       this.threatTimer = null
     }
+    if (this.armorTimer) {
+      clearInterval(this.armorTimer)
+      this.armorTimer = null
+    }
     // A reconnect respawns somewhere else — forget the trap along with the
     // survey. (An in-flight escape attempt still owns `busy` until its race
     // settles; its own finally releases it.) Same for the hunger crisis and
@@ -390,6 +416,8 @@ export class BotSession {
     this.hazardWatcher = null
     this.eatWatcher = null
     this.threatWatcher = null
+    this.guardTether = null
+    this.armorWatcher = null
     // A reconnect respawns somewhere else — don't carry a stale survey there.
     this.nearbyResources = null
     this.lastScan = null
@@ -552,7 +580,77 @@ export class BotSession {
       log: this.log,
       config: { alertRadius: THREAT_ALERT_RADIUS, maneuverCooldownMs: config.THREAT_MANEUVER_COOLDOWN_MS },
     })
-    this.threatTimer = setInterval(() => this.threatWatcher?.check(), config.THREAT_WATCH_INTERVAL_MS)
+    // The guard tether rides the threat interval (no timer of its own): the
+    // watcher senses, then the tether walks an idle displaced guard home.
+    this.guardTether = new GuardTether({
+      bot: () => {
+        const bot = this.bot
+        if (!bot?.entity) {
+          return null
+        }
+        return {
+          alive: true,
+          position: () => this.position,
+          setGoalNear: (pos, range) => {
+            this.engageReflexMovements()
+            bot.pathfinder.setGoal(new goals.GoalNear(pos.x, pos.y, pos.z, range))
+          },
+          clearGoal: () => {
+            bot.pathfinder.setGoal(null)
+            this.restoreDefaultMovements()
+          },
+        }
+      },
+      anchor: () => this.anchor,
+      stance: () => config.THREAT_DEFAULT_STANCE,
+      getBusy: () => this.busy,
+      threatOpen: () => this.threatWatcher?.episodeOpen ?? false,
+      hazardOpen: () => this.hazardWatcher?.trapped ?? false,
+      config: {
+        postRadius: config.THREAT_GUARD_POST_RADIUS,
+        repathMs: config.THREAT_GUARD_REPATH_MS,
+      },
+    })
+    this.threatTimer = setInterval(() => {
+      this.threatWatcher?.check()
+      this.guardTether?.check()
+    }, config.THREAT_WATCH_INTERVAL_MS)
+  }
+
+  /** Armor auto-equip reflex (SV-14-lite) — the 6th sibling interval. */
+  private startArmorWatch(): void {
+    const { config } = this.deps
+    if (config.ARMOR_CHECK_INTERVAL_MS === 0) {
+      return // disabled entirely
+    }
+    this.armorWatcher = new ArmorWatcher({
+      bot: () => {
+        const bot = this.bot
+        if (!bot?.entity) {
+          return null
+        }
+        return {
+          alive: true,
+          carried: () => bot.inventory.items().map((item) => item.name),
+          equipped: (slot) => bot.inventory.slots[bot.getEquipmentDestSlot(slot)]?.name ?? null,
+          equip: async (item, destination) => {
+            const stack = bot.inventory.items().find((s) => s.name === item)
+            if (!stack) {
+              throw new Error(`${item} vanished from the pack before the equip`)
+            }
+            await bot.equip(stack, destination)
+          },
+        }
+      },
+      getBusy: () => this.busy,
+      threatOpen: () => this.threatWatcher?.episodeOpen ?? false,
+      hazardOpen: () => this.hazardWatcher?.trapped ?? false,
+      generation: () => this.spawnGeneration,
+      recordEquip: (slot, outcome) => armorEquips.inc({ slot, outcome }),
+      log: this.log,
+      config: { equipTimeoutMs: config.ARMOR_EQUIP_TIMEOUT_MS },
+    })
+    this.armorTimer = setInterval(() => this.armorWatcher?.check(), config.ARMOR_CHECK_INTERVAL_MS)
   }
 
   /** How far above/below a hostile still counts as a threat. The alert
