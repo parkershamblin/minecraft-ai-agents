@@ -606,6 +606,7 @@ export class BotSession {
       getBusy: () => this.busy,
       threatOpen: () => this.threatWatcher?.episodeOpen ?? false,
       hazardOpen: () => this.hazardWatcher?.trapped ?? false,
+      log: this.log,
       config: {
         postRadius: config.THREAT_GUARD_POST_RADIUS,
         repathMs: config.THREAT_GUARD_REPATH_MS,
@@ -643,14 +644,13 @@ export class BotSession {
         }
       },
       getBusy: () => this.busy,
-      threatOpen: () => this.threatWatcher?.episodeOpen ?? false,
-      hazardOpen: () => this.hazardWatcher?.trapped ?? false,
       generation: () => this.spawnGeneration,
       recordEquip: (slot, outcome) => armorEquips.inc({ slot, outcome }),
       log: this.log,
       config: { equipTimeoutMs: config.ARMOR_EQUIP_TIMEOUT_MS },
     })
     this.armorTimer = setInterval(() => this.armorWatcher?.check(), config.ARMOR_CHECK_INTERVAL_MS)
+    this.log.info({ intervalMs: config.ARMOR_CHECK_INTERVAL_MS }, 'armor watch started')
   }
 
   /** How far above/below a hostile still counts as a threat. The alert

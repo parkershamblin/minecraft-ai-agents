@@ -58,8 +58,6 @@ describe('ArmorWatcher (the reflex)', () => {
       carried: string[]
       equipped: Map<ArmorSlot, string>
       busy: string | null
-      threatOpen: boolean
-      hazardOpen: boolean
       generation: number
       equips: Array<{ item: string; dest: string }>
       equipBehavior: 'ok' | 'throw' | 'hang'
@@ -72,8 +70,6 @@ describe('ArmorWatcher (the reflex)', () => {
       carried: [],
       equipped: new Map(),
       busy: null,
-      threatOpen: false,
-      hazardOpen: false,
       generation: 1,
       equips: [],
       equipBehavior: 'ok',
@@ -98,8 +94,6 @@ describe('ArmorWatcher (the reflex)', () => {
     const deps: ArmorWatcherDeps = {
       bot: () => bot,
       getBusy: () => state.busy,
-      threatOpen: () => state.threatOpen,
-      hazardOpen: () => state.hazardOpen,
       generation: () => state.generation,
       recordEquip: (slot, outcome) => state.recorded.push({ slot, outcome }),
       log: { info: () => {}, warn: () => {} },
@@ -126,13 +120,24 @@ describe('ArmorWatcher (the reflex)', () => {
     expect(state.equips).toHaveLength(2) // the boots follow on the next pass
   })
 
-  it('stays out of a spoken-for body', async () => {
-    for (const over of [{ busy: 'action' as const }, { threatOpen: true }, { hazardOpen: true }]) {
-      const { watcher, state } = rig({ carried: ['iron_helmet'], ...over })
-      watcher.check()
-      await vi.advanceTimersByTimeAsync(0)
-      expect(state.equips).toEqual([])
-    }
+  it('stays out of a claimed body but dresses through open episodes', async () => {
+    // Busy-gate ONLY (drill lesson: a 17-minute siege held the old
+    // threatOpen gate closed at 1 HP with a helmet in the bag — an open
+    // episode is exactly when armor matters; maneuvers hold busy='combat').
+    const claimed = rig({ carried: ['iron_helmet'], busy: 'action' })
+    claimed.watcher.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(claimed.state.equips).toEqual([])
+
+    const fighting = rig({ carried: ['iron_helmet'], busy: 'combat' })
+    fighting.watcher.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fighting.state.equips).toEqual([]) // a maneuver owns the body
+
+    const betweenManeuvers = rig({ carried: ['iron_helmet'] }) // episode open, busy null
+    betweenManeuvers.watcher.check()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(betweenManeuvers.state.equips).toEqual([{ item: 'iron_helmet', dest: 'head' }])
   })
 
   it('a hung equip times out, records timeout, and blacklists the piece', async () => {

@@ -88,8 +88,6 @@ export interface ArmorBot {
 export interface ArmorWatcherDeps {
   bot(): ArmorBot | null
   getBusy(): string | null
-  threatOpen(): boolean
-  hazardOpen(): boolean
   generation(): number
   recordEquip(slot: ArmorSlot, outcome: 'equipped' | 'failed' | 'timeout'): void
   log: { info(obj: object, msg: string): void; warn(obj: object, msg: string): void }
@@ -108,7 +106,13 @@ export class ArmorWatcher {
       if (!bot?.alive || this.attemptInFlight) {
         return
       }
-      if (this.deps.getBusy() !== null || this.deps.threatOpen() || this.deps.hazardOpen()) {
+      // Busy-gate ONLY (drill lesson, 2026-07-18: a 17-minute siege held the
+      // old threatOpen gate closed while Elara stood at 1 HP with a helmet
+      // in her bag — an open episode is exactly when armor matters most).
+      // Maneuvers hold busy='combat', so the equip still never races the
+      // fight's own hand-equip; between maneuvers the body is free for a
+      // sub-second inventory transaction.
+      if (this.deps.getBusy() !== null) {
         return
       }
       const upgrade = planArmorUpgrade(bot.carried(), (slot) => bot.equipped(slot), this.failureBlacklist, Date.now())
@@ -119,8 +123,11 @@ export class ArmorWatcher {
       void this.attempt(bot, upgrade).finally(() => {
         this.attemptInFlight = false
       })
-    } catch {
-      // a reflex never throws into its interval
+    } catch (err) {
+      // A reflex never throws into its interval — but silence is not
+      // success (the exit-night lesson): a persistent throw here would be
+      // an invisible dead reflex. Say what broke; the interval carries on.
+      this.deps.log.warn({ err: String(err) }, 'armor check crashed')
     }
   }
 

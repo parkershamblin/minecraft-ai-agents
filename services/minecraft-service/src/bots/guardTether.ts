@@ -32,6 +32,7 @@ export interface GuardTetherDeps {
   getBusy(): string | null
   threatOpen(): boolean
   hazardOpen(): boolean
+  log: { info(obj: object, msg: string): void }
   config: {
     postRadius: number
     repathMs: number
@@ -77,6 +78,7 @@ export class GuardTether {
       // Hysteresis band (ARRIVE..postRadius): a bot already walking home
       // keeps its goal; a stalled one re-paths on the throttle.
       if (!this.goalActive || now - this.lastSetAt >= this.deps.config.repathMs) {
+        this.deps.log.info({ fromPost: Math.round(fromPost) }, 'guard tether: walking home')
         bot.setGoalNear(anchor, 2)
         this.goalActive = true
         this.lastSetAt = now

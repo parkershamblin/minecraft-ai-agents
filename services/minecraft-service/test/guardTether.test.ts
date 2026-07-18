@@ -36,6 +36,7 @@ function rig(over: Partial<State> = {}) {
     getBusy: () => state.busy,
     threatOpen: () => state.threatOpen,
     hazardOpen: () => state.hazardOpen,
+    log: { info: () => {} },
     config: { postRadius: 12, repathMs: 15000 },
   }
   return { state, tether: new GuardTether(deps) }
