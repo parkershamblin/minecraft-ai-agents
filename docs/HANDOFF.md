@@ -27,16 +27,17 @@ container, re-ran. CLAUDE.md gotcha extended: after any merge touching a
 service, `--build` + grep a marker symbol of the new code IN the container
 before an attempt.
 
-**Found in the working tree at handoff time (NOT this session's work, NOT in
-the winning image):** uncommitted `brain/prompts.py` + `test_race_brain.py`
-edits from a concurrent session, tuning the prompts from take-1's ledger —
-bootstrap-first rung hint (coal talk had outshouted the chain step), tool
-check speaking on tooled packs, an ore-ban line, count-3 wood trips + count
-discipline, the furnace-rung cobble walk. Tests 184→190, verified green in
-this session. Container grep proves the WIN predates these edits. Left
-uncommitted for their session to land (the SV-2 two-sessions lesson — check
-`gh pr list` before claiming); if orphaned next session, they deserve a PR:
-every edit cites exit-1 measurements.
+**A concurrent session tuned the prompts from take-1's ledger — landed in
+#45's squash (its commit `2283226`), NOT in the winning image:** bootstrap-
+first rung hint (coal talk had outshouted the chain step — 267 pickaxe-less
+`gather coal`), tool check speaking on tooled packs, an ore-ban line,
+count-3 wood trips + count discipline, the furnace-rung cobble walk. Tests
+184→190, verified green in this session. Container grep proves the WIN
+predates these edits (pure #43). Resolution of the SV-2 two-sessions risk,
+benign this time: the concurrent session pushed onto this session's PR
+branch pre-merge instead of opening its own — the squash carries both.
+agent-service REBUILT from merged main immediately post-#45 (the new gotcha
+applied), so the deployed brain includes the tuning for the next attempt.
 
 **Ops notes:** cold-start `up:all` hit a transient memory-service crash-loop
 (DNS to postgres before infra was healthy) — the `--wait` retry cleared it,

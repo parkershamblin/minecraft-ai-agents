@@ -6,9 +6,10 @@ pickaxe in 6m0s**, honest CLEAN, zero intervention; ladder coal 2m → iron ore
 4m → furnace 5m → ingot+pickaxe 6m; pure-main provenance (b3b0b3b, #43),
 proven by container grep. Take 1 face-planted on the stale-image trap (15m,
 0 rungs, 163 logs vs 1 stick fleet-wide; aborted `019f7325`) — gotcha
-extended below. Working tree holds a CONCURRENT session's uncommitted prompt
-tuning (`brain/prompts.py` + tests, exit-1-cited, 190 tests green, NOT in
-the winning image) — check `gh pr list` before touching it.
+extended below. A CONCURRENT session's prompt tuning (gather discipline,
+exit-1-cited, tests 184→190) rode #45's squash via its own commit `2283226`
+— on main now, NOT in the winning image (win predates it, container-grep
+proven). agent-service rebuilt from merged main post-#45.
 
 **Next session:** RB-3 filming (`docs/demo-rb.md` shot script), README hero,
 demo pulls from attempt `019f7337`'s ledger slice; then Normal difficulty
