@@ -69,8 +69,23 @@ retries the receipt (#47).
 - Honest-race deltas: read from Prometheus by the harness, recorded in
   `AttemptEnded` — never asserted by hand.
 
+## The ledger-rendered replay (exists today)
+
+`film/rb-flagship-replay.mp4` — a 2m24s captioned film of the flagship win
+(`rb2-normal-mobs-1`, blue/Petra, Normal + hostiles), rendered ENTIRELY from
+the attempt's ledger slice: animated team ladders, the milestone feed with
+real race-clock timestamps, the caption beats above, and the win card with
+the receipt ids. No screen capture, no editing — regenerate for any attempt:
+
+```sh
+curl "localhost:8081/events?aggregate-type=Attempt&aggregate-id=<id>&limit=50" > slice.json
+uv run --with pillow --with imageio --with imageio-ffmpeg --with numpy \
+  python scripts/render-race-film.py slice.json film/out.mp4
+```
+
 ## Post
 
-Parker cuts; captions from this table. Practice takes on easy/peaceful knobs;
-flagship at the ADR-pinned difficulty (or the pre-authorized fallback with
-soak numbers cited).
+The replay film IS the honest-race artifact. Parker's cinematic cut (OBS
+scoreboard + spectator footage, captions from this table) layers on top when
+wanted; practice takes on easy/peaceful knobs, flagship at Normal + mobs
+(proven raceable, 3-for-3 on 2026-07-18).
