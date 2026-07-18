@@ -1,21 +1,25 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** NORMAL BEATEN (session ninth, overnight autonomous —
-`docs/HANDOFF.md`). Attempt `019f7352`, label `rb2-normal-1`: **red/Wren
-iron pickaxe in 881s at Normal**, honest CLEAN — the ADR flagship tier, no
-fallback. Easy record stands at 360.4s (`019f7337`, red/Elara). Night PRs
-merged: #47 (watcher resilience + governance-rider mute), #48 (POV rig,
-flag-gated), #49 (README hero + shot docs). POV verdict: prismarine-viewer
-1.33.0 CANNOT parse 1.21.6 ("partial packet" on `trail` particle) and the
-crash is fleet-lethal — POV_VIEWER stays 0 on this MC version. Consumer
-group name is `minecraft-service.command-executor` (describing
-`minecraft-service` shows a phantom Dead group).
+**Last checkpoint:** GUARD ARC SHIPPED (session tenth — `docs/HANDOFF.md`).
+Parker's redirect (defense over first_diamond, which is parked on
+`rb-t2-diamond-wip`): stance `guard` (fight melee, skeletons ≤8, post
+tether) + armor auto-equip reflex + `iron_sword` in the craft enum, PRs
+#53-#56, all live-drilled. Regression race PASSED: `guard-regression-1`
+(Normal+mobs, guard fleet) won by blue/Fen in 841.5s, honest `{0,0}`,
+zero deaths, 163 episodes, fights 3-killed/1-lost. `.env` runs
+`THREAT_DEFAULT_STANCE=guard` (revert to cautious for speed records; the
+guard tax ≈80s). Filming remains (`docs/demo-rb.md`). Records: Easy
+360.4s (`019f7337`), Normal 881s (`019f7352`), Normal+mobs 660.6s
+(`019f744d`, filmed take). POV_VIEWER stays 0 on 1.21.6 (fleet-lethal
+parse crash). Drill hygiene: clear packs before staged gives (full packs
+drop items silently); mute doMobSpawning between takes (an idle fleet
+under Normal spawning accumulates a 200-mob siege); consumer group is
+`minecraft-service.command-executor`.
 
-**Next session:** Parker films per `docs/demo-rb.md`. Flagship realism
-PROVEN: `rb2-normal-mobs-1` won by blue/Petra in 760.8s (Normal + hostiles,
-105 threat episodes, zero deaths — full receipt in `docs/HANDOFF.md`).
-Night soak: 3-for-3 wins (Easy / Normal / Normal+mobs), zero stalls, zero
-deaths. Roadmap beyond T1 unchanged per
+**Next session:** Parker films per `docs/demo-rb.md` — the guard fleet
+fights its way up the ladder now, arguably the better footage. Open
+follow-ups in the SV-14 row (leather craft enum, per-villager stance,
+persisted posts). Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide

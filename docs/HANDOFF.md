@@ -1,4 +1,72 @@
-# Session Handoff — NORMAL BEATEN (881s, no fallback) · RB-3 artifacts landed · next: film
+# Session Handoff — GUARD ARC SHIPPED (stance+tether+armor+iron_sword, 4 PRs, regression-raced) · film when ready
+
+## Session 2026-07-18 (tenth) — the guard arc: Parker's redirect, shipped end-to-end in one session
+
+**Parker's brief: instead of first_diamond, make the bots defend themselves
+against mobs (mineflayer "guard" behavior), keep crafting iron tools, keep
+hunting.** First_diamond WIP found uncommitted in the tree was parked
+verbatim on `rb-t2-diamond-wip` (not for merge; resume there when T2
+reopens). The arc shipped as four PRs, each CI-green and self-merged with
+Parker's per-arc authorization, plan-mode approved up front:
+
+- **#53 contract** — CraftParams += `iron_sword` (rides the existing
+  generic SMELTABLES chain-resolution: 2 in-craft-smelted ingots + 1 stick
+  at a table; body cost was the enum entry). Fixture, gen, FakeProvider
+  row, prompt prose.
+- **#54 body** — `Stance` += `guard` (mineflayer-pvp stays NO-GO; built on
+  FightDriver): MELEE fights under guard, RANGED engages ≤8 (named consts,
+  brave stays ≤4), every safety floor untouched. `guardTether.ts`:
+  return-to-post riding the threat interval, never claims busy, forfeits
+  ownership without clearGoal (pathfinder single-goal arbitration), anchor
+  re-captured at every 'spawn'. `armor.ts` (SV-14-lite): pure
+  planArmorUpgrade + EatWatcher-pattern reflex, one piece per 5s pass,
+  equip raced vs timeout, 60s blacklist, `civ_armor_equips_total`.
+- **#55 brain** — SYSTEM_TEMPLATE body-autonomy line (armor, walk-back,
+  iron_sword nudge), deploy-ordered AFTER the body. SV-14 row updated.
+- **#56 the drill's lesson** — armor now dresses THROUGH sieges: the
+  threatOpen gate had held the reflex closed for a 17-minute siege while
+  Elara stood at 1 HP with a helmet in her bag (busy-gate only now;
+  maneuvers hold busy='combat' so no race with the fight's hand-equip).
+  Plus: the reflex's silent catch now WARNS (invisible dead reflex
+  otherwise), boot breadcrumb, tether 'walking home' log.
+
+**Live drill, all beats green:** zombie engaged{fight}→killed 6s · skeleton
+6→fight / 12→flee (window respected) · creeper always-flee · floors held
+(pack>2, unarmed, witch/unknown) · full armor set equipped one-piece-per-
+pass · tether: tp'd 25 out → walked home to post · iron_sword one-command
+chain `{crafted:1, smelted:2, tablePlaced, furnacePlaced}` (Bram).
+
+**Regression race PASSED — the guard fleet still races.** Attempt
+`019f76be-ab8a-71ed-8049-13a14619efb4` (label `guard-regression-1`, Normal
++ hostiles, stance=guard fleet-wide): **blue/Fen in 841.5s**, honest
+`{0,0}`, **zero deaths**, 163 threat episodes, fights 3 killed / 1 lost
+(the predicted skeleton-kiting bleed, bounded by the failedFights
+blacklist). ~80s guard tax vs the pre-guard mob takes (760.8s) — the
+fleet fights its way up the ladder now instead of pure fleeing.
+
+**Drill-day operational lessons:**
+- `/give` to a FULL pack silently drops items at the bot's feet — hours of
+  peacetime hoarding (401 logs!) ate two armor gives before diagnosis.
+  Clear packs before staged drills (the RB-1 rig lesson, re-learned).
+- An idle fleet + doMobSpawning true + Normal accumulates a SIEGE (206
+  hostiles purged in one sweep — 60 zombies / 62 skeletons / 69 creepers /
+  15 spiders). Mute spawning between takes; race preflights re-decide it.
+- The env-name gotcha class again: my drill kill-list omitted `witch` —
+  one surviving witch held Elara's threat episode (and therefore the old
+  armor gate) open for 17 minutes of "mystery."
+- Harness note: backgrounded shells IGNORE the Bash timeout param — bound
+  polls INSIDE the script (`for i in $(seq 1 N)`), never bare until-loops.
+
+**Stance state:** `.env` has `THREAT_DEFAULT_STANCE=guard` (fleet-wide).
+Revert to `cautious` for pure-speed record attempts; the ~80s tax is the
+price of the fleet fighting back. Open follow-ups live in the SV-14 row:
+leather-armor craft enum, per-villager stance, `set_post`/persisted
+anchors.
+
+**Next:** filming unchanged (`docs/demo-rb.md`); the guard fleet is
+arguably the better film — fights on the ladder instead of pure flight.
+
+# Prior handoff — NORMAL BEATEN (881s, no fallback) · RB-3 artifacts landed
 
 ## Session 2026-07-18 (ninth, overnight autonomous) — Normal falls, RB-3 ships its artifacts
 
