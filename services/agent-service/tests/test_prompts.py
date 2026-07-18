@@ -152,6 +152,15 @@ def test_system_prompt_omits_quirks_line_when_none():
     assert "Quirks:" not in prompt
 
 
+def test_system_prompt_teaches_the_guard_arc_body_autonomy():
+    # PR 3 of the guard arc — the brain may only advertise what the body
+    # ships (armor reflex, guard tether, iron_sword in the craft enum).
+    prompt = system_prompt("Elara", {"traits": ["warm"]}, None)
+    assert "wears any armor you carry" in prompt
+    assert "walks back to their post" in prompt
+    assert "iron_sword" in prompt
+
+
 def test_resources_in_sight_render_from_snapshot():
     snapshot = _snapshot()
     snapshot["nearbyResources"] = [
