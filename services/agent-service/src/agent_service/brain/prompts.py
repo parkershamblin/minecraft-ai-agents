@@ -397,7 +397,9 @@ def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
     # nothing) — the verbs must be named and banned, not implied away.
     lines.append(
         "RACE DISCIPLINE: choose gather or craft EVERY turn — both walk you to the target on "
-        "their own, so never choose move unless your last gather failed with nothing-in-reach. "
+        "their own, so never choose move unless your last gather FAILED or TIMED OUT — then "
+        "move somewhere new first (a trip that keeps timing out means this spot cannot be "
+        "worked; standing still and retrying loses the race). "
         "Always gather with a count of 3-8: a count-1 trip walks the same ground for one block. "
         "NEVER hunt, never idle, never follow: your body feeds itself from the pack and fights "
         "its own battles. Chat ONLY to report a handoff a teammate needs (one short line). "
