@@ -10,7 +10,7 @@
 Autonomous LLM-driven villagers live inside Minecraft. **Current arc: Red vs
 Blue** ([ADR-10](docs/architecture/10-red-vs-blue.md)) — two teams of three
 race, fully unattended, to the first crafted iron pickaxe: local llama
-deliberates every 20 seconds, the body executes survival reflexes and tool
+deliberates every 10–20 seconds, the body executes survival reflexes and tool
 chains, and every milestone is judged from an append-only event ledger (the
 win is a ledger event with a causation chain, not a screenshot). The earlier
 civilization arc — personalities, memories, relationships, elections — is
@@ -18,6 +18,23 @@ intact and mothballed behind a compose profile. Every action is an immutable
 event; the event stream is the integration seam between services, the source
 of truth for analytics, and the raw material for the video series.
 Live scoreboard: `http://localhost:3000/race`.
+
+**The race has been won — on Easy and on Normal.** First honest 3v3
+completion 2026-07-18: red's Elara crafted the iron pickaxe in **6 minutes
+0.4 seconds** (Easy). Same day, the ADR's flagship difficulty fell: red's
+Wren won at **Normal in 14m41s** (attempt `019f7352-03ae…`, blue led the
+first two rungs). Six llama3.1:8b-driven villagers, zero human intervention
+after the starting gun, every rung a ledger event, honest-race assertion
+clean both times (zero token-budget trips, zero fake-provider decisions).
+Replay the first win's receipt:
+
+```sh
+curl "localhost:8081/events?aggregate-type=Attempt&aggregate-id=019f7337-977e-738e-8d5a-bf8e1db77439"
+```
+
+One command runs a fresh race end-to-end, preflight checklist included:
+`node scripts/race-rb2.mjs --label my-race` (add `--difficulty normal`,
+`--mobs` for hostiles). Film rig: `film/pov-grid.html` + `POV_VIEWER=1`.
 
 **The architecture package lives in [docs/architecture/](docs/architecture/00-system-overview.md)** —
 system overview, DDD domain model, database DDL, Kafka/event design, API design,

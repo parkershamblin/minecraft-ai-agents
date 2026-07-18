@@ -16,7 +16,19 @@ The harness executes and VERIFIES the whole checklist (gamerules, difficulty,
 throttle, budget, tick, rosters, far forest posts, cleared packs, anchored
 spawnpoints), stamps `AttemptStarted`, and narrates milestones as they land.
 Exit 0 = won. Best-of-N is cheap: each take is one command and ends itself
-(win or 45-minute stall watchdog).
+(win or 75-minute stall watchdog). The watcher survives service hiccups and
+retries the receipt (#47).
+
+**The reference takes** (both 2026-07-18, honest `{0,0}`, zero intervention):
+
+- **Easy, mob-free** — attempt `019f7337-977e-738e-8d5a-bf8e1db77439`,
+  red/Elara, **360.4s**: coal 2m → blue coal 3m → iron ore 4m → furnace 5m
+  → ingot + pickaxe 6m.
+- **Normal, mob-free** — attempt `019f7352-03ae-716b-b4df-1da76bb8c9d8`,
+  red/Wren, **881s**: BLUE led coal (1m53s) and iron ore (4m15s); red
+  converted furnace 8m31s → 3 ingots + pickaxe 14m20s. The flagship
+  difficulty, no fallback needed. Decision mix at the 10s race tick:
+  zero hunt, 4 move, every gather count ≥3 (the #47-era discipline).
 
 ## Screens to capture (separate takes are fine — the ledger is the sync track)
 
@@ -25,6 +37,12 @@ Exit 0 = won. Best-of-N is cheap: each take is one command and ends itself
 2. **In-world POV** — spectate in the vanilla client (`/gamemode spectator`),
    shadowing whichever villager the feed says is moving. The milestone feed
    timestamps tell you exactly when/where the beats happened for the cut.
+2b. **The POV grid** — `film/pov-grid.html` + `POV_VIEWER=1`: **DO NOT USE
+   on MC 1.21.6.** Live-verified 2026-07-18: prismarine-viewer 1.33.0's
+   bundled protocol data predates 1.21.6 ("partial packet: world_particles"
+   on the `trail` particle) and the crash takes the whole minecraft-service
+   process — fleet-lethal. The rig code stays (flag-off, tested) for when
+   upstream catches up; film shot 2 with the vanilla spectator client.
 3. **The ledger receipt** — terminal shot of the harness output ending in
    `RACE WON — honest-race assertion: CLEAN`, or:
    ```
