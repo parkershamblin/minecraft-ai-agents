@@ -1,0 +1,19 @@
+{
+  "eventId": "019fb100-0060-7000-8000-00000000c060",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-18T09:20:00.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000d0002",
+  "correlationId": "019fb100-0061-7000-8000-c0de00000016",
+  "causationId": "019fb100-005f-7000-8000-00000000c05f",
+  "payload": {
+    "commandId": "019fb100-0060-7000-8000-00000000c060",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0002",
+    "action": "craft",
+    "params": { "item": "iron_sword" },
+    "priority": 5,
+    "timeoutMs": 60000
+  }
+}

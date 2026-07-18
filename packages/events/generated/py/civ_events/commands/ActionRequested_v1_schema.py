@@ -150,6 +150,7 @@ class Item(StrEnum):
     stone_sword = 'stone_sword'
     furnace = 'furnace'
     iron_pickaxe = 'iron_pickaxe'
+    iron_sword = 'iron_sword'
 
 
 class CraftParams(BaseModel):
@@ -158,5 +159,5 @@ class CraftParams(BaseModel):
     )
     item: Item = Field(
         ...,
-        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). Leather armor joins the enum with contract commit C (SV-11).",
+        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11).",
     )

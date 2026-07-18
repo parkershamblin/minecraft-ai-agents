@@ -26,6 +26,7 @@ export const CRAFTABLE_ITEMS = [
   'stone_sword',
   'furnace',
   'iron_pickaxe',
+  'iron_sword',
 ] as const
 
 /** log → plank family map, derived from the gather families so the two verbs

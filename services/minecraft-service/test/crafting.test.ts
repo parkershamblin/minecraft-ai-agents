@@ -578,6 +578,27 @@ describe('runCraftFlow chain-resolution (mine→smelt→craft inside one action)
     ])
   })
 
+  it('iron_sword rides the same smelt-inside-craft chain (2 ingots + 1 stick)', async () => {
+    let ingots = 0
+    const smelts: ChainHarness['smelts'] = []
+    const h = chainHarness({
+      craftableNow: (_name, allowTable) => allowTable && ingots >= 2,
+      ingredientGaps: () => [
+        { name: 'iron_ingot', required: 2, have: ingots },
+        { name: 'stick', required: 1, have: 2 },
+      ],
+      smelt: async (step) => {
+        smelts.push({ input: step.input, count: step.count, fuel: step.fuel })
+        ingots += step.count
+        return step.count
+      },
+    })
+    const result = await runCraftFlow('iron_sword', h.deps)
+    expect(smelts).toEqual([{ input: 'raw_iron', count: 2, fuel: { name: 'coal', count: 1 } }])
+    expect(h.crafts).toEqual([{ name: 'iron_sword', table: { x: 1, y: 64, z: 0 } }])
+    expect(result).toMatchObject({ crafted: 1, smelted: 2, furnaceUsed: true, tableUsed: true })
+  })
+
   it('a standing furnace is walked to, not re-placed', async () => {
     const furnace = { x: 9, y: 64, z: 9 }
     const h = chainHarness({ findFurnace: () => furnace })

@@ -112,6 +112,15 @@ class FakeProvider:
             "relationshipUpdates": None,
             "governanceAction": None,
         },
+        {
+            "action": "craft",
+            "params": {"item": "iron_sword"},
+            "reasoning": "A guard without a blade is a scarecrow; the same furnace owes me a sword.",
+            "importance": 4.0,
+            "sentiment": 0.4,
+            "relationshipUpdates": None,
+            "governanceAction": None,
+        },
     ]
 
     def __init__(self) -> None:

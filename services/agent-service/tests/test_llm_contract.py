@@ -39,6 +39,11 @@ class TestValidDecisions:
         assert validate_decision(decision(action="idle", params={})).action == "idle"
         assert validate_decision(decision(action="gather", params={})).action == "gather"
 
+    def test_craft_iron_sword(self):
+        # The guard arc's blade (additive enum growth, same chain as the pickaxe).
+        parsed = validate_decision(decision(action="craft", params={"item": "iron_sword"}))
+        assert parsed.params["item"] == "iron_sword"
+
 
 class TestMalformedDecisions:
     def test_not_json(self):
