@@ -61,9 +61,13 @@ DECISION_SCHEMA: dict[str, Any] = {
         # before anything is published.
         "governanceAction": {
             "type": ["object", "null"],
+            "description": (
+                "null unless the prompt's VILLAGE AFFAIRS section names a live election "
+                "and its electionId — never invent one"
+            ),
             "properties": {
                 "action": {"type": "string", "enum": list(GOVERNANCE_ACTIONS)},
-                "electionId": {"type": "string"},
+                "electionId": {"type": "string", "description": "the exact electionId quoted in the prompt"},
                 "candidateVillagerId": {
                     "type": ["string", "null"],
                     "description": "vote: whom to vote for; null for declare_candidacy",

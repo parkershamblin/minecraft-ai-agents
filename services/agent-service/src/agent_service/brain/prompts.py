@@ -401,6 +401,7 @@ def _race_section(race: RaceView, inventory: list[dict] | None = None) -> str:
         "Always gather with a count of 3-8: a count-1 trip walks the same ground for one block. "
         "NEVER hunt, never idle, never follow: your body feeds itself from the pack and fights "
         "its own battles. Chat ONLY to report a handoff a teammate needs (one short line). "
+        "There are no elections during the race — governanceAction is always null. "
         "Every turn not mining is a turn the rival team spent mining."
     )
     return "\n".join(lines)

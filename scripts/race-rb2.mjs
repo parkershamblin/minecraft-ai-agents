@@ -34,6 +34,25 @@ const stallMinutes = Number(flag('stall-minutes', '75'))
 const practice = has('practice')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+// Exit-night lesson (2026-07-18): both watcher processes died mid-attempt on
+// a single transient fetch failure (one during an agent-service recreate),
+// orphaning a LIVE attempt — no AttemptEnded, no receipt, watchdog lost. The
+// watch loop must outlive brief service restarts; the end-phase must retry
+// so a take's receipt survives one.
+const errCode = (err) => err?.cause?.code ?? err?.code ?? err?.message ?? String(err)
+async function withRetries(what, fn, tries = 3, delayMs = 5_000) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      if (attempt >= tries) {
+        throw err
+      }
+      console.log(`  ${what} hiccup (${errCode(err)}) — retry ${attempt}/${tries - 1} in ${delayMs / 1000}s`)
+      await sleep(delayMs)
+    }
+  }
+}
 const rcon = (cmd) =>
   execFileSync('docker', ['exec', 'ai-civilization-engine-minecraft-1', 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
 const inContainer = (container, ...cmd) =>
@@ -299,8 +318,17 @@ let outcome = null
 
 while (true) {
   await sleep(20_000)
-  const status = await (await fetch(`${MC}/internal/attempt`)).json()
-  const tripped = await metricValue(`${AGENT}/metrics`, 'civ_llm_budget_tripped')
+  let status
+  let tripped
+  try {
+    status = await (await fetch(`${MC}/internal/attempt`)).json()
+    tripped = await metricValue(`${AGENT}/metrics`, 'civ_llm_budget_tripped')
+  } catch (err) {
+    // The attempt lives server-side; a poll that dies must not kill the take.
+    // Hiccup time still counts toward the stall window (lastMilestoneAt).
+    console.log(`  watch hiccup (${errCode(err)}) — retrying next poll`)
+    continue
+  }
   if (tripped > 0) {
     budgetTrippedSeen = 1
   }
@@ -328,20 +356,24 @@ while (true) {
   }
 }
 
-const fakeAfter = await metricValue(`${AGENT}/metrics`, 'civ_llm_latency_seconds_count', 'provider="fake"')
+const fakeAfter = await withRetries('honesty metrics read', () =>
+  metricValue(`${AGENT}/metrics`, 'civ_llm_latency_seconds_count', 'provider="fake"'),
+)
 const honestRace = { budgetTrippedDelta: budgetTrippedSeen, fakeProviderDelta: Math.max(0, fakeAfter - fakeBefore) }
-const endRes = await fetch(`${MC}/internal/attempt/end`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json' },
-  body: JSON.stringify({ outcome, honestRace }),
+const ended = await withRetries('attempt/end', async () => {
+  const endRes = await fetch(`${MC}/internal/attempt/end`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ outcome, honestRace }),
+  })
+  return endRes.json()
 })
-const ended = await endRes.json()
 console.log(`attempt ENDED: ${JSON.stringify(ended.payload ?? ended)}`)
 
 // --------------------------------------------------------------- the receipt
-const page = await (
-  await fetch(`${LEDGER}/events?aggregate-type=Attempt&aggregate-id=${started.attemptId}&limit=50`)
-).json()
+const page = await withRetries('ledger receipt read', async () =>
+  (await fetch(`${LEDGER}/events?aggregate-type=Attempt&aggregate-id=${started.attemptId}&limit=50`)).json(),
+)
 console.log(`ledger slice (${page.data.length} events):`)
 for (const e of page.data) {
   const p = e.payload
