@@ -31,6 +31,14 @@ const schema = z.object({
   // deliberation (30s+ cadence), not reflexes — 15s staleness is free.
   RESOURCE_SCAN_MIN_SWEEP_MS: z.coerce.number().int().min(0).default(15000),
   MOVE_THROTTLE_MS: z.coerce.number().int().min(500).default(5000),
+  // POV film rig (RB-3, ADR 10): first-person prismarine-viewer per bot on a
+  // fixed port pool. OFF by default — a per-bot three.js worldview is a real
+  // cost and the viewer trails MC releases; the flag is the rollback. NEVER
+  // flip mid-race: it only takes effect on spawn, and deploys kill the fleet.
+  POV_VIEWER: z.coerce.number().int().min(0).max(1).default(0),
+  POV_PORT_BASE: z.coerce.number().int().min(1024).default(3100),
+  POV_VIEWER_COUNT: z.coerce.number().int().min(1).max(16).default(6),
+  POV_VIEW_DISTANCE: z.coerce.number().int().min(1).max(8).default(4),
   // Powder-snow hazard watch (post-M2): per-bot O(1) probe — two blockAt
   // reads, never a sweep. 0 disables the reflex entirely.
   HAZARD_WATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(1500),

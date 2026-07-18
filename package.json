@@ -9,5 +9,8 @@
   "scripts": {
     "gen": "npm run gen --workspace @civ/events",
     "test:contracts": "npm test --workspace @civ/events"
+  },
+  "overrides": {
+    "canvas": "npm:noop2@2.0.0"
   }
 }

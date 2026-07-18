@@ -142,11 +142,14 @@ services:
     # the command consumer exits(1) on an unrecoverable Kafka crash — restart
     # LOUDLY (visible in restart counts) instead of zombie-idling the world
     restart: on-failure
-    ports: ["8003:8003"]
+    # 3100-3105: the POV film-rig port pool (inert unless POV_VIEWER=1)
+    ports: ["8003:8003", "3100-3105:3100-3105"]
     environment:
       MC_HOST: ${MC_HOST:-host.docker.internal}
       MC_PORT: ${MC_PORT:-25565}
       MC_VERSION: ${MC_VERSION:-1.21.6}
+      POV_VIEWER: ${POV_VIEWER:-0}
+      POV_VIEW_DISTANCE: ${POV_VIEW_DISTANCE:-4}
       KAFKA_BROKERS: redpanda:29092
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: ${LOG_LEVEL:-info}
