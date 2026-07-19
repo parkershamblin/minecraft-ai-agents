@@ -60,14 +60,30 @@ retries the receipt (#47).
 | "One craft: the body places the furnace, smelts, and finishes the pickaxe" | the winning `ActionCompleted{crafted:1, smelted:3}` — three milestones, one causationId |
 | "Verified honest: zero scripted decisions, judged from an append-only ledger" | `AttemptEnded{honestRace: {0,0}, winningEventId}` |
 
-## Numbers for the resume bullets (each with its reproducing command)
+## Numbers for the resume bullets (final, each with its reproducing command)
 
-- End-to-end drill + race machinery: `node scripts/drill-rb1.mjs` (T1 ladder
-  in the ledger, replayable by attemptId).
-- Ollama throughput at race cadence: 6 bots × 20s tick, ~1.7s mean
-  deliberation latency (`civ_llm_latency_seconds` sum/count), zero tick errors.
-- Honest-race deltas: read from Prometheus by the harness, recorded in
-  `AttemptEnded` — never asserted by hand.
+- **Three difficulty tiers beaten in one day (2026-07-18), all honest,
+  zero deaths**: Easy **360.4s** (`019f7337`), Normal **881s**
+  (`019f7352`), Normal + hostiles **660.6s** (`019f744d`, filmed live).
+  Reproduce any: `node scripts/race-rb2.mjs --difficulty <d> [--mobs]`;
+  verify any: `curl "localhost:8081/events?aggregate-type=Attempt&aggregate-id=<id>"`.
+- **Fully unattended**: zero human commands after `AttemptStarted` in every
+  win — the enumerated preflight is executed AND verified by the harness,
+  never assumed.
+- **Honest-race assertion machine-recorded**: `AttemptEnded.honestRace =
+  {budgetTrippedDelta: 0, fakeProviderDelta: 0}` read from Prometheus by
+  the harness — zero scripted decisions across all wins.
+- **Survival under fire**: 105 threat episodes in the first mobs win, 163
+  in the guard-fleet win (`guard-regression-1`, `019f76be`, 841.5s) —
+  zero deaths across every take; the guard fleet won 3 of 4 fights it
+  chose (`civ_threat_responses_total`).
+- Ollama throughput at race cadence: 6 bots × 10s tick, llama3.1:8b,
+  ~1.7–4s deliberations (`civ_llm_latency_seconds`), zero tick errors.
+- **The artifact exists in-repo**: `film/rb-flagship-take-1-replay.mp4` —
+  2m24s, captioned, live team ladders, rendered entirely from the ledger
+  of the filmed take; `film/flagship-take-1.srt` + beat sheet cover the
+  OBS polish pass (Parker's, scheduled). **RB-3 exit ("video exists;
+  resume updated"): met.**
 
 ## The ledger-rendered replay (exists today)
 
