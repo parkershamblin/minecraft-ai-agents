@@ -1,0 +1,17 @@
+diff --git a/node_modules/minecraft-data/minecraft-data/data/pc/1.21.6/protocol.json b/node_modules/minecraft-data/minecraft-data/data/pc/1.21.6/protocol.json
+index 4397a4e..572f511 100644
+--- a/node_modules/minecraft-data/minecraft-data/data/pc/1.21.6/protocol.json
++++ b/node_modules/minecraft-data/minecraft-data/data/pc/1.21.6/protocol.json
+@@ -2344,7 +2344,11 @@
+                     },
+                     {
+                       "name": "color",
+-                      "type": "u8"
++                      "type": "i32"
++                    },
++                    {
++                      "name": "duration",
++                      "type": "varint"
+                     }
+                   ]
+                 ],

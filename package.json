@@ -8,9 +8,13 @@
   ],
   "scripts": {
     "gen": "npm run gen --workspace @civ/events",
-    "test:contracts": "npm test --workspace @civ/events"
+    "test:contracts": "npm test --workspace @civ/events",
+    "postinstall": "patch-package"
   },
   "overrides": {
     "canvas": "npm:noop2@2.0.0"
+  },
+  "devDependencies": {
+    "patch-package": "8.0.0"
   }
 }

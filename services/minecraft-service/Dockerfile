@@ -5,7 +5,10 @@ FROM node:22-slim
 WORKDIR /repo
 
 # Dependency layer: manifests only, cached until a dependency actually changes.
+# patches/ must land before npm ci — the root postinstall runs patch-package
+# (minecraft-data trail def; test/trailParticleParse.test.ts is the canary).
 COPY package.json package-lock.json ./
+COPY patches/ patches/
 COPY packages/events/package.json packages/events/
 COPY services/minecraft-service/package.json services/minecraft-service/
 RUN npm ci --no-audit --no-fund
