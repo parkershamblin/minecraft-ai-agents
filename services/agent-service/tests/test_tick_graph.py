@@ -77,13 +77,28 @@ class Collected:
         return [e for _, e in self.envelopes if e["eventType"] == event_type]
 
 
-def deps(world=None, memory=None, publish=None):
+def deps(world=None, memory=None, publish=None, llm=None, llm_for=None):
     return TickDeps(
         world=world or FakeWorld(SNAPSHOT),
         memory=memory or FakeMemory(),
-        llm=FakeProvider(),  # first scripted decision is a chat
+        llm=llm or FakeProvider(),  # first scripted decision is a chat
+        llm_for=llm_for,
         publish=publish or Collected(),
     )
+
+
+async def test_deliberate_routes_through_llm_for_when_wired():
+    """Per-team brains (RB filming): with llm_for present, deliberation uses
+    the routed provider and never touches the default one."""
+    routed, unrouted = FakeProvider(), FakeProvider()
+    graph = build_tick_graph(
+        deps(llm=unrouted, llm_for=lambda villager_id: routed if villager_id == str(ELARA.id) else unrouted)
+    )
+
+    await run_tick(graph, ELARA)
+
+    assert routed._calls == 1
+    assert unrouted._calls == 0
 
 
 async def test_one_tick_produces_the_full_event_chain():

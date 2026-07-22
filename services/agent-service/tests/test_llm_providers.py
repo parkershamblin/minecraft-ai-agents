@@ -8,7 +8,10 @@ from agent_service.llm.providers import (
     FakeProvider,
     OllamaProvider,
     OpenAIProvider,
+    TeamRouter,
     build_llm_provider,
+    build_team_providers,
+    parse_team_models,
 )
 from agent_service.settings import Settings
 
@@ -67,8 +70,40 @@ class TestOllamaProvider:
 
         assert captured["format"]["properties"]["action"]["enum"]
         assert captured["stream"] is False
+        assert "num_ctx" not in captured["options"]  # unset -> server default rules
         assert response.tokens_in == 200
         assert response.tokens_out == 50
+
+    async def test_num_ctx_rides_every_call_including_warmup(self):
+        # Warmup MUST send the same options as completions: Ollama spins up a
+        # new runner per num_ctx, so a bare warmup would cold-load the model
+        # twice (once at server-default ctx, again on the first real tick).
+        options_seen = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            options_seen.append(json.loads(request.content).get("options"))
+            return httpx.Response(200, json={"message": {"content": "{}"}})
+
+        provider = OllamaProvider(
+            "http://ollama:11434", "llama3.1:8b", 0.7, _client(handler), num_ctx=8192
+        )
+        await provider.warmup()
+        await provider.complete("sys", "usr")
+
+        assert [o.get("num_ctx") for o in options_seen] == [8192, 8192]
+
+    async def test_instance_name_labels_metrics_per_team(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"message": {"content": "{}"}})
+
+        provider = OllamaProvider(
+            "http://ollama:11434", "gemma3:12b", 0.7, _client(handler), name="ollama/blue"
+        )
+        response = await provider.complete("sys", "usr")
+
+        assert provider.name == "ollama/blue"
+        assert response.provider == "ollama/blue"
+        assert OllamaProvider.name == "ollama"  # single-brain path keeps the class label
 
 
 class TestChain:
@@ -107,8 +142,92 @@ class TestChain:
         assert isinstance(provider, FakeProvider)
 
 
+class TestParseTeamModels:
+    def test_happy_path_with_spaces(self):
+        assert parse_team_models(" red = llama3.1:8b , blue = gemma3:12b ") == {
+            "red": "llama3.1:8b",
+            "blue": "gemma3:12b",
+        }
+
+    def test_blank_means_off(self):
+        assert parse_team_models("") == {}
+        assert parse_team_models(" , ") == {}
+
+    @pytest.mark.parametrize("spec", ["red", "red=", "=llama3.1:8b", "red=a,red=b"])
+    def test_malformed_or_duplicate_refuses_boot(self, spec):
+        with pytest.raises(ValueError):
+            parse_team_models(spec)
+
+
+class TestBuildTeamProviders:
+    def _settings(self, spec: str) -> Settings:
+        return Settings(llm_team_models=spec, ollama_num_ctx=8192)
+
+    async def test_blank_spec_is_off_and_never_calls_ollama(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            raise AssertionError("feature off must not touch the network")
+
+        assert await build_team_providers(self._settings(""), _client(handler)) == {}
+
+    async def test_builds_one_warmed_provider_per_team(self):
+        warmed = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/tags":
+                return httpx.Response(
+                    200, json={"models": [{"name": "llama3.1:8b"}, {"name": "gemma3:12b"}]}
+                )
+            if request.url.path == "/api/chat":  # warmup
+                warmed.append(json.loads(request.content)["model"])
+                return httpx.Response(200, json={"message": {"content": "ok"}})
+            raise AssertionError(request.url.path)
+
+        providers = await build_team_providers(
+            self._settings("red=llama3.1:8b,blue=gemma3:12b"), _client(handler)
+        )
+
+        assert set(providers) == {"red", "blue"}
+        assert providers["red"].model == "llama3.1:8b"
+        assert providers["blue"].model == "gemma3:12b"
+        assert providers["red"].name == "ollama/red"
+        assert providers["blue"].name == "ollama/blue"
+        assert sorted(warmed) == ["gemma3:12b", "llama3.1:8b"]  # both resident pre-race
+
+    async def test_unpulled_model_refuses_boot(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/tags":
+                return httpx.Response(200, json={"models": [{"name": "llama3.1:8b"}]})
+            raise AssertionError(request.url.path)
+
+        with pytest.raises(RuntimeError, match="ollama pull gemma3:12b"):
+            await build_team_providers(
+                self._settings("red=llama3.1:8b,blue=gemma3:12b"), _client(handler)
+            )
+
+    async def test_unreachable_ollama_refuses_boot(self):
+        def handler(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("refused")
+
+        with pytest.raises(httpx.HTTPError):
+            await build_team_providers(self._settings("red=llama3.1:8b"), _client(handler))
+
+
+class TestTeamRouter:
+    def test_routes_by_team_and_defaults_otherwise(self):
+        default, red, blue = FakeProvider(), FakeProvider(), FakeProvider()
+        roster = {"v-red": "red", "v-blue": "blue", "v-ghost": "green"}  # green has no provider
+        router = TeamRouter(default, {"red": red, "blue": blue}, roster.get)
+
+        assert router("v-red") is red
+        assert router("v-blue") is blue
+        assert router("v-ghost") is default  # team without a model -> default brain
+        assert router("v-none") is default  # pre-race / not racing -> default brain
+
+
 @pytest.fixture(autouse=True)
 def _no_env_leakage(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
+    monkeypatch.delenv("LLM_TEAM_MODELS", raising=False)
+    monkeypatch.delenv("OLLAMA_NUM_CTX", raising=False)

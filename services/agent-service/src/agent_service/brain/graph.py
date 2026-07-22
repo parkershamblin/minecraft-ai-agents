@@ -72,6 +72,7 @@ class TickDeps:
     awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
     civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
     race: Any = None  # RaceState-shaped: snapshot(villager_id) (None: feature off) — RB-2
+    llm_for: Any = None  # (villager_id) -> LLMProvider: per-team routing (None: everyone on `llm`)
     community_goal: str | None = None  # D2 filming lever: one system-prompt line
     percepts_max: int = 10
     memories_k: int = 6
@@ -123,8 +124,11 @@ def build_tick_graph(deps: TickDeps):
     async def deliberate(state: TickState) -> TickState:
         villager = state["villager"]
         feelings = await _nearby_feelings(state)
+        # Per-team routing (RB filming): resolved per tick, not per process —
+        # a villager's brain can change the moment RaceStarted lands.
+        llm = deps.llm_for(str(villager.id)) if deps.llm_for is not None else deps.llm
         outcome = await decide_safely(
-            deps.llm,
+            llm,
             system_prompt(villager.name, villager.personality, villager.backstory,
                           community_goal=deps.community_goal),
             user_prompt(

@@ -24,7 +24,7 @@ from agent_service.db import make_engine, make_session_factory
 from agent_service.kafka.percepts import PerceptConsumer
 from agent_service.kafka.producer import EventPublisher
 from agent_service.llm.budget import BudgetedProvider
-from agent_service.llm.providers import build_llm_provider
+from agent_service.llm.providers import TeamRouter, build_llm_provider, build_team_providers
 from agent_service.logging import configure_logging, logger
 from agent_service.memory_client import MemoryClient
 from agent_service.settings import Settings
@@ -66,6 +66,22 @@ async def lifespan(app: FastAPI):
     await publisher.start()
     civics = CivicState()
     race = RaceState()
+    # Per-team brains (RB filming): each race team on its own warmed Ollama
+    # model, routed per tick via the race roster. Every team provider gets its
+    # OWN budget breaker — sized like the main one, so a runaway team flips to
+    # fake alone instead of dragging the rival down with it.
+    team_providers = await build_team_providers(settings, http_client)
+    llm_for = None
+    if team_providers:
+        budgeted_teams = {
+            team: BudgetedProvider(provider, settings.llm_daily_token_budget)
+            for team, provider in team_providers.items()
+        }
+        llm_for = TeamRouter(llm, budgeted_teams, race.team_of)
+        logger.info(
+            "per-team llm routing ON",
+            teams={team: provider.model for team, provider in team_providers.items()},
+        )
     percepts = PerceptConsumer(settings.kafka_brokers, redis)
     percepts.civics = civics  # institutions -> working memory (M2-8)
     percepts.race = race  # the attempt scoreboard -> working memory (RB-2)
@@ -76,6 +92,7 @@ async def lifespan(app: FastAPI):
             world=WorldGateway(redis),
             memory=memory,
             llm=llm,
+            llm_for=llm_for,
             publish=publisher.publish,
             flush=publisher.flush,
             relationships=relationships,

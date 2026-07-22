@@ -221,11 +221,17 @@ services:
       REDIS_URL: redis://redis:6379
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      LLM_MODEL_OLLAMA: ${LLM_MODEL_OLLAMA:-llama3.1:8b}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-2000000}
       # Backpressure for the shared LLM backend: excess deliberations queue at
       # the provider instead of thrashing one GPU with 20 concurrent requests.
       LLM_MAX_CONCURRENT_REQUESTS: ${LLM_MAX_CONCURRENT_REQUESTS:-4}
+      # Per-team brains (RB filming): "red=llama3.1:8b,blue=gemma3:12b" routes
+      # each race team to its own local model. Blank = off (single brain).
+      LLM_TEAM_MODELS: ${LLM_TEAM_MODELS:-}
+      # KV-cache ceiling per request — keeps two team models resident on one GPU.
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
       TICK_INTERVAL_SECONDS: ${TICK_INTERVAL_SECONDS:-60}
       VILLAGER_COUNT: ${VILLAGER_COUNT:-1}
       # D2 filming lever (M2-10): one shared-aim line in every system prompt.

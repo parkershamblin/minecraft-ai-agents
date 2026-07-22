@@ -50,6 +50,17 @@ class Settings(BaseSettings):
     # Hard daily ceiling — hitting it flips deliberation to the fake provider
     # (circuit breaker) so a forgotten overnight run cannot burn the wallet.
     llm_daily_token_budget: int = 2_000_000
+    # --- Per-team brains (RB filming: rival teams on different local models) --
+    # "red=llama3.1:8b,blue=gemma3:12b" routes each race team's deliberation to
+    # its own warmed Ollama model (villagers outside a team, or pre-race, stay
+    # on the chain above). Blank = off. Strict at boot: malformed spec or a
+    # model missing from `ollama list` refuses to start — a silently degraded
+    # team brain would poison a filmed race.
+    llm_team_models: str = ""
+    # KV-cache ceiling per request. The Windows host default drifted to a
+    # 65536-token context (13 GB VRAM for an 8B model); prompts run 3-5k
+    # tokens, so 8192 keeps two team models resident together on one 24 GB GPU.
+    ollama_num_ctx: int = 8192
 
     log_level: str = "info"
 

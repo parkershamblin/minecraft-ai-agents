@@ -211,16 +211,33 @@ class OllamaProvider:
         temperature: float,
         client: httpx.AsyncClient,
         max_concurrent: int = 4,
+        name: str | None = None,
+        num_ctx: int | None = None,
     ):
         self.model = model
+        if name is not None:
+            # Per-team instances label metrics "ollama/<team>" so the Grafana
+            # wallet/latency panels split by team; the single-brain path keeps
+            # the class default and existing dashboards keep matching.
+            self.name = name
         self._url = f"{base_url.rstrip('/')}/api/chat"
         self._temperature = temperature
+        self._num_ctx = num_ctx
         self._client = client
         # Shared across all ticks (one provider instance per process). A single
         # local GPU thrashes under 20 parallel completions; queued ticks wait
         # here on purpose — the wait counts toward the deliberate node's
         # latency budget as backpressure, not as a bug.
         self._gate = asyncio.Semaphore(max_concurrent)
+
+    def _options(self) -> dict:
+        # num_ctx caps the KV-cache the server allocates per request. Without
+        # it the host default rules (observed drifted to 65536 = 13 GB VRAM
+        # for an 8B model); with it two team models fit resident on one GPU.
+        options: dict = {"temperature": self._temperature}
+        if self._num_ctx is not None:
+            options["num_ctx"] = self._num_ctx
+        return options
 
     async def complete(self, system: str, user: str) -> LLMResponse:
         async with self._gate:
@@ -234,7 +251,7 @@ class OllamaProvider:
                 "model": self.model,
                 "stream": False,
                 "format": DECISION_SCHEMA,  # Ollama structured outputs
-                "options": {"temperature": self._temperature},
+                "options": self._options(),
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
@@ -256,12 +273,26 @@ class OllamaProvider:
         )
 
     async def warmup(self) -> None:
-        """First call cold-loads the model into VRAM — pay it at boot."""
+        """First call cold-loads the model into VRAM — pay it at boot.
+
+        Must send the SAME options as real completions: Ollama spins up a new
+        runner when num_ctx changes, so a bare warmup would cold-load twice
+        (once at server-default ctx, again at ours on the first real tick).
+        """
         await self._client.post(
             self._url,
-            json={"model": self.model, "stream": False, "messages": [{"role": "user", "content": "ok"}]},
+            json={
+                "model": self.model,
+                "stream": False,
+                "options": self._options(),
+                "messages": [{"role": "user", "content": "ok"}],
+            },
             timeout=300.0,
         )
+
+
+def _model_pulled(wanted: str, available: list[str]) -> bool:
+    return any(m == wanted or m.split(":")[0] == wanted.split(":")[0] for m in available)
 
 
 async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> LLMProvider:
@@ -291,13 +322,14 @@ async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> L
         response.raise_for_status()
         models = [m["name"] for m in response.json().get("models", [])]
         wanted = settings.llm_model_ollama
-        if any(m == wanted or m.split(":")[0] == wanted.split(":")[0] for m in models):
+        if _model_pulled(wanted, models):
             provider = OllamaProvider(
                 settings.ollama_base_url,
                 wanted,
                 settings.llm_temperature,
                 client,
                 settings.llm_max_concurrent_requests,
+                num_ctx=settings.ollama_num_ctx,
             )
             await provider.warmup()
             logger.info("llm provider: ollama (warmed)", model=wanted)
@@ -311,3 +343,80 @@ async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> L
         logger.warning("ollama unreachable — falling back to FAKE deliberation", error=str(exc))
 
     return FakeProvider()
+
+
+def parse_team_models(spec: str) -> dict[str, str]:
+    """"red=llama3.1:8b,blue=gemma3:12b" -> {"red": "llama3.1:8b", ...}.
+
+    Malformed entries raise ValueError: LLM_TEAM_MODELS is opt-in filming
+    config, and a typo silently degrading one team to the default brain would
+    poison a filmed race (asymmetric without anyone noticing). Fail the boot,
+    not the take."""
+    teams: dict[str, str] = {}
+    for entry in filter(None, (part.strip() for part in spec.split(","))):
+        team, sep, model = entry.partition("=")
+        team, model = team.strip(), model.strip()
+        if not sep or not team or not model:
+            raise ValueError(f"LLM_TEAM_MODELS entry {entry!r} is not '<team>=<model>'")
+        if team in teams:
+            raise ValueError(f"LLM_TEAM_MODELS names team {team!r} twice")
+        teams[team] = model
+    return teams
+
+
+async def build_team_providers(settings: Settings, client: httpx.AsyncClient) -> dict[str, OllamaProvider]:
+    """One warmed OllamaProvider per race team (RB filming: rival teams on
+    different local models). {} when LLM_TEAM_MODELS is blank — feature off.
+
+    Strict by design, unlike the degrade-gracefully chain above: if the spec
+    is set, every named model must be pulled and Ollama must be reachable, or
+    boot fails loudly."""
+    teams = parse_team_models(settings.llm_team_models)
+    if not teams:
+        return {}
+
+    response = await client.get(f"{settings.ollama_base_url.rstrip('/')}/api/tags", timeout=5.0)
+    response.raise_for_status()
+    available = [m["name"] for m in response.json().get("models", [])]
+
+    # Validate the WHOLE roster before warming anything — one missing model
+    # must not leave the other team's brain half-loaded in VRAM.
+    missing = {team: model for team, model in teams.items() if not _model_pulled(model, available)}
+    if missing:
+        pulls = "; ".join(f"`ollama pull {model}`" for model in missing.values())
+        raise RuntimeError(
+            f"LLM_TEAM_MODELS wants {missing} but Ollama only has {available} — {pulls} first"
+        )
+
+    providers: dict[str, OllamaProvider] = {}
+    for team, model in teams.items():
+        provider = OllamaProvider(
+            settings.ollama_base_url,
+            model,
+            settings.llm_temperature,
+            client,
+            settings.llm_max_concurrent_requests,
+            name=f"ollama/{team}",
+            num_ctx=settings.ollama_num_ctx,
+        )
+        await provider.warmup()  # both models resident BEFORE the race starts
+        providers[team] = provider
+        logger.info("team llm warmed", team=team, model=model)
+    return providers
+
+
+class TeamRouter:
+    """villager_id -> provider, via the race roster. Villagers outside a team
+    (or before RaceStarted lands) deliberate on the default brain; during the
+    race each team locks to its own model."""
+
+    def __init__(self, default: LLMProvider, by_team: dict[str, LLMProvider], team_of):
+        self._default = default
+        self._by_team = by_team
+        self._team_of = team_of
+
+    def __call__(self, villager_id: str) -> LLMProvider:
+        team = self._team_of(str(villager_id))
+        if team is None:
+            return self._default
+        return self._by_team.get(team, self._default)
