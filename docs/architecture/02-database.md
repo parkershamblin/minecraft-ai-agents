@@ -378,8 +378,13 @@ CREATE TABLE memories (
         )
 );
 
--- Recency scans + reflection triggers ("sum of importance since last reflection").
+-- Recency scans: "most recent memories for this villager".
 CREATE INDEX idx_memories_villager_time ON memories (villager_id, occurred_at DESC);
+
+-- Reflection scan: "importance accrued since last reflection" (PR #37 — the
+-- scheduler's 300s sweep filters on (villager_id, memory_type, created_at),
+-- which the recency index above does not serve).
+CREATE INDEX idx_memories_villager_type_created ON memories (villager_id, memory_type, created_at);
 
 -- ANN index for the relevance term of retrieval (recency x importance x relevance).
 -- Cosine ops: safe for both providers regardless of normalization guarantees.
@@ -388,7 +393,7 @@ CREATE INDEX idx_memories_embedding_hnsw
     WITH (m = 16, ef_construction = 64);
 ```
 
-Retrieval queries filter `WHERE villager_id = $1` then rank by cosine similarity; pgvector's HNSW post-filters, which is fine at MVP scale (20 villagers × a few thousand memories) — at 100+ villagers, bump `ef_search` or enable `hnsw.iterative_scan` (pgvector 0.8+) rather than redesigning.
+Retrieval queries filter `WHERE villager_id = $1` then rank by cosine similarity; pgvector's HNSW walks one global graph and post-filters the villager predicate, so recall and latency degrade with **total** row count over time, not villager count — a long-running 20-villager world hits it just as surely as a 100-villager one. Since PR #37 every retrieval sizes the walk per query: a transaction-local `hnsw.ef_search = max(40, candidates × 4)` set on the same transaction as the ANN query (via `set_config(..., true)`; defaults land at 120 — see `docs/reports/bottleneck-report-2026-07-17.md`). Remaining open work: a periodic decay/archival job for low-importance, long-untouched memories; `hnsw.iterative_scan` (pgvector 0.8+) stays the next escalation rather than a redesign.
 
 ### `event_db` — events (append-only event store)
 
@@ -415,6 +420,8 @@ CREATE TABLE events (
 CREATE INDEX idx_events_aggregate ON events (aggregate_id, occurred_at);
 -- Type-sliced timelines: "all BetrayalRecorded events last week".
 CREATE INDEX idx_events_type      ON events (event_type, occurred_at);
+-- Aggregate-type filter (REST /events?aggregateType=...) — a full ledger scan until PR #37.
+CREATE INDEX idx_events_aggregate_type ON events (aggregate_type, occurred_at);
 -- Trace a causal chain across services (structured logs carry the same id).
 CREATE INDEX idx_events_correlation ON events (correlation_id);
 
@@ -441,7 +448,7 @@ CREATE TRIGGER trg_events_append_only
     FOR EACH ROW EXECUTE FUNCTION events_append_only();
 ```
 
-The consumer writes with `INSERT ... ON CONFLICT (event_id) DO NOTHING` — the UUIDv7 PK doubles as the dedupe key, making persistence safe under Kafka's at-least-once redelivery (interview concept: **idempotent consumer**).
+The consumer — a batch listener at concurrency 3 since PR #37 — writes each poll batch as one multi-row `INSERT ... ON CONFLICT (event_id) DO NOTHING`, and offsets commit only after the whole batch is stored — the UUIDv7 PK doubles as the dedupe key, making persistence safe under Kafka's at-least-once redelivery, per record and per batch (interview concept: **idempotent consumer**).
 
 **Partitioning scale path (deferred, deliberately):** at 20 villagers the event store grows slowly, but at 100+ villagers across multiple servers it becomes the largest table in the system by far. The migration is native Postgres declarative range partitioning: recreate `events` as `PARTITION BY RANGE (occurred_at)` with monthly partitions (`events_2026_07`, ...), pre-created by pg_partman or a scheduled job. The PK becomes composite `(event_id, occurred_at)` — Postgres requires the partition key in every unique constraint — which is harmless since `event_id` alone still dedupes within any realistic redelivery window. Timeline queries get partition pruning for free, and old months can be detached and archived to cheap storage without touching hot data. It is a mechanical migration (replay-refill from Kafka or `INSERT SELECT`), which is exactly why it is not built in Phase 1.
 

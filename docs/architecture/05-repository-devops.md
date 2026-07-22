@@ -132,9 +132,9 @@ All `depends_on` entries use `condition: service_healthy` — startup ordering i
 
 | Service | Image | Ports (host) | Healthcheck | depends_on |
 |---|---|---|---|---|
-| redpanda | `redpandadata/redpanda:v24.2` (started with `--smp 1 --memory 1G --mode dev-container`) | 9092, 9644 | `rpk cluster health` | — |
+| redpanda | `redpandadata/redpanda:v24.2` (started with `--smp 1 --memory 1G --mode dev-container` and `--set redpanda.auto_create_topics_enabled=false` — a producer that beats topic provisioning fails loud instead of silently auto-creating a 1-partition topic; topics are provisioned by `scripts/provision-topics.mjs` inside `task up`; container capped at `mem_limit: 1536m`) | 9092, 9644 | `rpk cluster health` | — |
 | redpanda-console | `redpandadata/console:v2.7` | 8085→8080 | `GET /admin/health` | redpanda |
-| postgres | `pgvector/pgvector:pg16` | 5432 | `pg_isready -U civ` | — |
+| postgres | `pgvector/pgvector:pg16` (tuned via `command:` flags — `shared_buffers=512MB`, `effective_cache_size=1536MB`, `work_mem=16MB`, `maintenance_work_mem=128MB` — sized for its `mem_limit: 2g`, because one instance hosts all five logical DBs and HNSW search, ledger appends, and relationship writes share its page cache) | 5432 | `pg_isready -U civ` | — |
 | redis | `redis:7-alpine` | 6379 | `redis-cli ping` | — |
 | opensearch *(M2+ — commented out until the timeline search milestone)* | `opensearchproject/opensearch:2.17` (single-node, `OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m`, security plugin disabled locally) | 9200 | `curl -f localhost:9200/_cluster/health` | — |
 | prometheus | `prom/prometheus:v2.54` | 9090 | `GET /-/healthy` | — |
@@ -165,7 +165,7 @@ Ports follow the canonical table in the API design doc: Java services on `808x`,
 
 | Service | Image | Ports | Healthcheck | depends_on |
 |---|---|---|---|---|
-| minecraft | `itzg/minecraft-server` with `TYPE=PAPER`, `VERSION=${MC_VERSION}`, `ONLINE_MODE=FALSE`, `MEMORY=3G` | 25565 | built-in `mc-health` | — |
+| minecraft | `itzg/minecraft-server` with `TYPE=PAPER`, `VERSION=${MC_VERSION}`, `ONLINE_MODE=FALSE`, `MEMORY=3G` (JVM heap; the container carries a compose `mem_limit: 4g` — heap plus JVM/native overhead — so a Paper leak can't starve the rest of the stack) | 25565 | built-in `mc-health` | — |
 
 **Host-server vs container:** `minecraft-service` resolves its target purely from env: `MC_HOST` / `MC_PORT`. Default in `.env.example` is `MC_HOST=host.docker.internal`, `MC_PORT=25565` — i.e., the user's existing host-run 1.21.6 vanilla server, with the `minecraft` profile left off. Switching to the containerized PaperMC is `MC_HOST=minecraft` plus `--profile minecraft`. PaperMC is recommended for the containerized path because it handles 20+ concurrent connections with far better tick performance than vanilla, and `itzg/minecraft-server` gives declarative, version-pinned, restartable server config.
 
@@ -178,7 +178,7 @@ Ports follow the canonical table in the API design doc: Java services on `808x`,
 | Full M2+ stack (add OpenSearch 1.2G, Loki/Promtail 0.4, 3 more JVMs ~1.5, memory-service 0.2) | +~3.5 GB |
 | Containerized PaperMC (20 bots loading chunks) | ~3.5 GB |
 
-**This box is a verified 32 GB / RTX 4090 machine — everything fits, including Ollama on the GPU.** Still write a `~/.wslconfig` cap (`memory=16GB`, `swap=8GB`) so Docker/WSL2 can never starve the host Minecraft server + OBS during a filming session. The two levers that matter regardless of RAM: (1) every `createBot` call sets `viewDistance: 'tiny'` — bots navigate by pathfinder, not by seeing far, and default view distance is where a naive 20-bot deployment burns 1.5 GB; (2) set `view-distance=4` and `simulation-distance=4` in the server's `server.properties` — 20 connections at the default 10 forces the single-threaded server to load ~440 chunks per player, which is what would actually lag the film shoot (and is also the argument for moving to the Paper container at M1).
+**This box is a verified 32 GB / RTX 4090 machine — everything fits, including Ollama on the GPU.** Still write a `~/.wslconfig` cap (`memory=16GB`, `swap=8GB`) so Docker/WSL2 can never starve the host Minecraft server + OBS during a filming session — that's the outer bound; inside the VM, the three biggest containers carry their own compose `mem_limit`s (postgres 2g, redpanda 1536m, minecraft 4g — added in PR #37; see `docs/reports/bottleneck-report-2026-07-17.md`), so none of the heavyweights can starve the rest of the stack either (the lighter services remain uncapped). The two levers that matter regardless of RAM: (1) every `createBot` call sets `viewDistance: 'tiny'` — bots navigate by pathfinder, not by seeing far, and default view distance is where a naive 20-bot deployment burns 1.5 GB; (2) set `view-distance=4` and `simulation-distance=4` in the server's `server.properties` — 20 connections at the default 10 forces the single-threaded server to load ~440 chunks per player, which is what would actually lag the film shoot (and is also the argument for moving to the Paper container at M1).
 
 ## 3. Version Pinning — the #1 Breakage Risk
 
@@ -194,8 +194,9 @@ Setup is two commands: `cp .env.example .env` (fill in `OPENAI_API_KEY` or leave
 
 | Task | What it does |
 |---|---|
-| `task up` | `docker compose --profile infra up -d --wait` — infra only, healthcheck-gated |
-| `task up:all` | infra + app profiles (add `MC=container` to include the `minecraft` profile) |
+| `task up` | `docker compose --profile infra up -d --wait` — infra only, healthcheck-gated — then provisions the Kafka topic map (`scripts/provision-topics.mjs`) |
+| `task up:all` | infra, then topics, then the app profile (add `MC=container` to include the `minecraft` profile) |
+| `task topics` | provision the Kafka topic map on its own — broker auto-create is disabled, so provisioning must precede any producer on a fresh cluster (partition changes go through `docs/runbooks/kafka-topic-migration.md`) |
 | `task dev` | infra in Docker; prints per-service hot-reload commands (`uvicorn --reload`, `gradle bootRun`, `tsx watch`, `next dev`) and starts the ones you name: `task dev -- agent-service dashboard` |
 | `task gen` | regenerate TS/Python/Java types from `packages/events/schemas` (fails CI if output is dirty — drift guard) |
 | `task seed` | create the 20 named villagers with personalities/goals via agent-service's seed endpoint |

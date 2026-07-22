@@ -52,13 +52,19 @@ flowchart LR
 | `commands.minecraft` | agent-service | `minecraft-service.command-executor`, `event-service.event-store` | 6 | 24 hours | `aggregateId` (villagerId) |
 | `commands.government` | agent-service (M2-7+) | `government-service.command-executor` (M2-6+), `event-service.event-store` | 6 | 24 hours | `aggregateId` (villagerId — the acting villager; per-villager civic ordering, same guarantee as `commands.minecraft`) |
 
-Retention can stay short because Kafka is transport, not storage — anything older than the topic window lives forever in the event store (see §5). Partition counts are sized for 20 villagers with headroom to demonstrate parallel consumption; scaling to 100+ villagers is a partition-count and consumer-instance change, not a redesign.
+Retention can stay short because Kafka is transport, not storage — anything older than the topic window lives forever in the event store (see §5). Partition counts are sized for 20 villagers, and partitions only buy parallelism when the consumer side matches: event-service spreads the six topics' partitions across listener concurrency 3 (since PR #37), and minecraft-service consumes all 6 command partitions concurrently, handing each action to a per-villager dispatch lane so one slow gather never blocks partition-mates. Scaling to 100+ villagers is a partition-count change (via the migration runbook below) plus matching consumer concurrency, not a redesign.
 
 **This table is provisioned, not aspirational (since M2-4):** `task topics`
 (`scripts/provision-topics.mjs` — the executable copy of this table) creates
 every topic explicitly and converges retention; `task up`/`up:all` run it
-before the app profile starts, so auto-creation-at-default-1 never decides a
-topic's shape. Changing a partition count on a live cluster requires the
+before the app profile starts. Broker auto-creation is disabled outright
+(Redpanda's `auto_create_topics_enabled=false`, plus
+`allowAutoTopicCreation: false` on the minecraft-service producer — both
+since PR #37; see `docs/reports/bottleneck-report-2026-07-17.md`), so a
+producer that races provisioning on a fresh cluster fails loud instead of
+silently recreating its topic at the broker default of 1 partition —
+provisioning is the only path by which a topic gets its shape. Changing a
+partition count on a live cluster requires the
 drain → recreate → offset-reset procedure in
 `docs/runbooks/kafka-topic-migration.md`. Keep table and script in step —
 review checks both when either changes.
@@ -210,7 +216,7 @@ Example — a `VillagerTalked` fact on `social.events`, caused by the `DecisionM
 ## 4. Ordering & Delivery
 
 - **Partition key = `aggregateId`.** Usually the villagerId, so every villager's history (moves, decisions, conversations, commands) is totally ordered within its partition — a villager can never be observed acting before it spawned. Government aggregates key on `electionId`/`lawId`/`factionId`, so all votes in one election are ordered. There is deliberately **no global ordering across partitions**; nothing in the domain requires it, and demanding it would serialize the whole system. *(Interview concept: partition-level ordering guarantees, and knowing when global order is not a requirement.)*
-- **At-least-once delivery.** Producers use `acks=all` with idempotent producer enabled and retries; consumers commit offsets only after successful processing. Duplicates are therefore possible by design. *(Interview concept: at-least-once + idempotent consumer = effectively-once processing, without paying for Kafka transactions.)*
+- **At-least-once delivery.** Consumers commit offsets only after successful processing; producer settings are per-stream since PR #37. agent-service's sends are fire-and-forget with one confirmed flush per tick (delivery failures surface via a logging callback) instead of serial awaited sends. minecraft-service's world-event producer runs `acks=1` — a deliberate durability/throughput trade for the high-volume world-fact stream (on single-replica local Redpanda the leader *is* the full ISR, so durability matches `acks=all` minus a round-trip; a loss window opens only once replication exists), and downstream `eventId` dedup keeps any redelivery a no-op. Duplicates are therefore possible by design. *(Interview concept: at-least-once + idempotent consumer = effectively-once processing, without paying for Kafka transactions.)*
 - **Consumer idempotency:**
   - **event-service**: `events.event_id` has a unique constraint; persistence is `INSERT ... ON CONFLICT (event_id) DO NOTHING`. A redelivered event is a silent no-op — the event store deduplicates the entire system downstream of it.
   - **analytics-service**: every projection handler is an idempotent upsert keyed by a natural key (`(villager_id)` for `villager_stats` rows, `(subject_type, subject_id, window_start)` for `approval_ratings` snapshots), and each projection table carries a `last_event_id uuid` high-water mark; handlers skip events whose UUIDv7 `eventId` is ≤ the mark for that row. Reprocessing a batch converges to the same state. *(Interview concept: idempotent consumers / dedup keys.)*

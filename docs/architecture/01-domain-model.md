@@ -11,7 +11,7 @@ flowchart TB
     WORLD["World Context<br/>minecraft-service (TS)"]
     COG["Cognition Context<br/>agent-service (Python)"]
     MEM["Memory Context<br/>memory-service (Python)"]
-    GOV["Governance Context<br/>government-service (Java, P2+)"]
+    GOV["Governance Context<br/>government-service (Java)"]
     CHRON["Chronicle / Analytics Context<br/>event-service + analytics-service (Java)"]
 
     WORLD -->|"world.events — Upstream; Cognition translates via Perception ACL"| COG
@@ -73,14 +73,14 @@ Reading the map:
 | **Emits** | `ReflectionCreated` (on `agent.events`, aggregateId = villagerId) |
 | **Invariants** | Memory content and scores are immutable after write — never edited or deleted; only access metadata (`last_accessed_at`, `access_count`) mutates, feeding the recency term. Every memory belongs to exactly one villager's stream. Retrieval ranking is always `recency × importance × relevance` — the formula is domain logic, not an implementation detail. A `Reflection` must cite ≥ 1 source memory. Embedding dimensionality is fixed per configured model. |
 
-### Governance Context (government-service) — "the rules villagers made for themselves" (P2–P4; schema now, code later)
+### Governance Context (government-service) — "the rules villagers made for themselves" (implemented: election state machine + idempotent ballot box, REST-driven since M2-6, Kafka contracts from M2-7)
 
 | | |
 |---|---|
 | **Aggregates** | `Election` (root; entities `Candidate`, `Vote`), `Government` (root), `Law` (root), `Faction` (root; entity `FactionMember`) |
 | **Value objects** | `BallotChoice`, `Term`, `Penalty`, `Platform` |
 | **Emits** (`government.events`) | `ElectionStarted`, `CandidateNominated`, `VoteCast`, `ElectionDecided`, `LawProposed`, `LawEnacted`, `LawBroken`, `LawRepealed`, `ViolationPunished`, `FactionCreated`, `FactionJoined`, `RebellionStarted` |
-| **Invariants** | One vote per (electionId, voterId) — duplicate `VoteCast` is rejected, making vote submission **idempotent** (the interview example for at-least-once delivery). Election follows a strict state machine: `scheduled → nominating → voting → decided` (with `annulled` as the exceptional terminal state). A `Law` can only be enacted by a seated `Government`. A villager belongs to ≤ 1 faction per civilization. |
+| **Invariants** | One vote per (electionId, voterId) — duplicate `VoteCast` is rejected, making vote submission **idempotent** (the interview example for at-least-once delivery). Election follows a strict state machine: `scheduled → nominating → voting → decided` (with `annulled` as the exceptional terminal state). A `Law` can only be enacted by a seated `Government`. A villager belongs to ≤ 1 faction per civilization. Known open limitation: vote casting currently serializes on a pessimistic per-election row lock (`SELECT … FOR UPDATE`); its removal is ranked open work in `docs/reports/bottleneck-report-2026-07-17.md`. |
 
 ### Chronicle/Analytics Context (event-service + analytics-service) — "what history says happened"
 
@@ -115,7 +115,7 @@ Reading the map:
 | **Faction** | A named allegiance group of villagers; the unit of parties and rebellions. |
 | **Event Envelope** | The mandatory wrapper on every event: eventId, eventType, schemaVersion, occurredAt, source, aggregate refs, correlation/causation ids, payload. |
 | **Correlation Id** | The thread linking one causal chain (percept → decision → command → world outcome → memory) across all services and logs. |
-| **Timeline** | The Chronicle's queryable, ordered history of everything that happened; Postgres-backed in P1, indexed in OpenSearch from M2. |
+| **Timeline** | The Chronicle's queryable, ordered history of everything that happened; Postgres-backed — keyset-paginated reads with a GIN index for search plus an `(aggregate_type, occurred_at)` filter index (PR #37; see `docs/reports/bottleneck-report-2026-07-17.md`). Range-partitioning the ledger by `occurred_at` is the open scaling item. |
 | **Projection** | A Kafka-derived read model (leaderboard, approval rating) that is disposable and rebuildable by replay. |
 | **Episode** | An analytics-produced narrative report over a time window, used to script a YouTube video. |
 | **Clip** | A marked eventId range flagged as video-worthy (a betrayal, an election upset) for the editor. |

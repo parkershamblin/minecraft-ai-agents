@@ -68,7 +68,13 @@ written, and the baby-animal exclusion mechanism had to change).
    timeoutMs 30_000 becomes a per-verb timeout table (SV-4) with an explicit
    ceiling `TIMEOUT_TABLE_MAX_MS = 60_000`. The cap is load-bearing: every
    no-preemption safety argument in this cluster reads "a reflex is locked out
-   ≤ max(per-verb timeout) = 60s", NOT "≤30s"; raising any verb past the cap
+   ≤ max(per-verb timeout) = 60s", NOT "≤30s" — and the body enforces it
+   itself: the executor watchdog clamps payload.timeoutMs to
+   `COMMAND_TIMEOUT_MAX_MS` (default 60_000, matching the contract ceiling;
+   executor.ts — fixed in PR #37, see
+   docs/reports/bottleneck-report-2026-07-17.md), so an above-cap brain-table
+   entry is silently clamped on the wire and cannot extend the lockout.
+   Raising the executor ceiling itself (the cap, not a brain-table verb entry)
    triggers the PREEMPTED_BY_THREAT contingency review (risk register).
 3. **Beds/sleep: DEFERRED cluster+1; doInsomnia=false is a standing rule, not a
    removable wheel.** Sleeping needs a wool economy + bed placement + fleet-wide
@@ -299,11 +305,14 @@ overlapped, then adversarially reviewed against the code.
   attempted), success only when collected>0 (never announce a lie the village
   hears).
 - Snapshot additive optional **nearbyAnimals** [{family,nearestDistance,count}]
-  computed on the 1s snapshot pass UNGATED (animals move while bots stand still;
-  ~1000× cheaper than one findBlocks sweep; escape hatch = 5s survey cadence,
-  zero schema change). Prompt sibling `_animals_section`: "Game in sight (hunt
-  can reach these): …" / honest-empty "none — the herds keep to open grass;
-  hunting means walking first."
+  computed on every 1s snapshot pass — no scan gate (animals move while bots
+  stand still; ~1000× cheaper than one findBlocks sweep; escape hatch = 5s
+  survey cadence, zero schema change). Since PR #37 the pass dedupes the Redis
+  write when the snapshot body is unchanged (forced refresh at TTL/2 keeps the
+  key alive) — freshness holds here because animal movement changes the body.
+  Prompt sibling `_animals_section`: "Game in sight (hunt can reach these): …"
+  / honest-empty "none — the herds keep to open grass; hunting means walking
+  first."
 - Affordance line: param optional, raw-vs-cooked economics, "hunt when food runs
   low, not for sport: the herds are slow to return."
 - Ecology: local extinction is accepted narrative ("the herds thinned") — zero
@@ -490,7 +499,7 @@ neighbor about the night it died last week.
 | llama can't drive craft/hunt/stance | staged affordance prose (the 0/4→4/4 lesson); go/no-go smokes per arc: SV-4 (craft), SV-10 (hunt), SV-13 (set_stance); FakeProvider extended per contract commit |
 | Event-loop pinning at 20 bots (pursuit/scan) | spike measurement FIRST; THREAT_MAX_CONCURRENT_FIGHTS=4 cap (0 = flee-only stage); watcher = one entities-map filter per pass, no sweeps |
 | Reactive-cap starvation by threat wakes | caps unchanged; only spotted + overwhelmed wake; victim-only fanout |
-| Mid-action deaths while busy='action' blocks reflexes | v1 no-preemption is deliberate; SV-18 soak checklist tracks mid-action deaths; ≥1 blocked-reflex death OR any per-verb timeout > TIMEOUT_TABLE_MAX_MS triggers the reserved interruptAction()/PREEMPTED_BY_THREAT contingency; interim lever = lower per-verb timeouts |
+| Mid-action deaths while busy='action' blocks reflexes | v1 no-preemption is deliberate; the executor watchdog clamps payload.timeoutMs to COMMAND_TIMEOUT_MAX_MS=60s (PR #37) so a brain-table raise alone cannot extend the lockout; SV-18 soak checklist tracks mid-action deaths; ≥1 blocked-reflex death OR raising the executor ceiling (COMMAND_TIMEOUT_MAX_MS / TIMEOUT_TABLE_MAX_MS) itself triggers the reserved interruptAction()/PREEMPTED_BY_THREAT contingency; interim lever = lower per-verb timeouts |
 | Fleet churn breaks Episode 2 filming | film before Sprint 9 deploys (rollout §5, HANDOFF preconditions) |
 | level.dat difficulty/gamerule surprise | closed-loop procedures (set → save-all → restart → RCON verify) in the SV-5b/SV-18 runbook; no restart-revert assumptions |
 | Daytime windows still have cave mobs | accepted: keepInventory on, wheels on; windows gated on SV-6 deploy; deaths become story once SV-15/16 land |
