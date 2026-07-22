@@ -1,19 +1,23 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** GUARD ARC SHIPPED (session tenth — `docs/HANDOFF.md`).
-Parker's redirect (defense over first_diamond, which is parked on
-`rb-t2-diamond-wip`): stance `guard` (fight melee, skeletons ≤8, post
-tether) + armor auto-equip reflex + `iron_sword` in the craft enum, PRs
-#53-#56, all live-drilled. Regression race PASSED: `guard-regression-1`
-(Normal+mobs, guard fleet) won by blue/Fen in 841.5s, honest `{0,0}`,
-zero deaths, 163 episodes, fights 3-killed/1-lost. `.env` runs
-`THREAT_DEFAULT_STANCE=guard` (revert to cautious for speed records; the
-guard tax ≈80s). Filming remains (`docs/demo-rb.md`). Records: Easy
-360.4s (`019f7337`), Normal 881s (`019f7352`), Normal+mobs 660.6s
-(`019f744d`, filmed take). POV_VIEWER stays 0 on 1.21.6 (fleet-lethal
-parse crash). Drill hygiene: clear packs before staged gives (full packs
-drop items silently); mute doMobSpawning between takes (an idle fleet
-under Normal spawning accumulates a 200-mob siege); consumer group is
+**Last checkpoint:** DOCS ALIGNED (session eleventh — `docs/HANDOFF.md`).
+Architecture docs now match post-#37 code reality: PRs #60-#61 (merged)
+updated 01/02/03/05/09 against file-verified facts; 00/04/06/07/08/10
+verified clean. Still-open bottleneck work (verified ABSENT from code —
+never re-document as shipped): memory decay/archival job, partition
+raise beyond 6 (dispatch lanes make it non-urgent), government
+vote-lock removal, mem limits beyond postgres/redpanda/minecraft,
+ledger range-partitioning. Gotcha: PR #37's commit message claims
+`lingerMs` but its diff never added it — when writing docs from a PR,
+trust the diff, not the commit message. Guard-arc state unchanged
+(session tenth): `.env` runs `THREAT_DEFAULT_STANCE=guard` (revert to
+cautious for speed records; the guard tax ≈80s); first_diamond parked
+on `rb-t2-diamond-wip`. Records: Easy 360.4s (`019f7337`), Normal 881s
+(`019f7352`), Normal+mobs 660.6s (`019f744d`, filmed take). POV_VIEWER
+stays 0 on 1.21.6 (fleet-lethal parse crash). Drill hygiene: clear
+packs before staged gives (full packs drop items silently); mute
+doMobSpawning between takes (an idle fleet under Normal spawning
+accumulates a 200-mob siege); consumer group is
 `minecraft-service.command-executor`.
 
 **Next session:** Parker films per `docs/demo-rb.md` — the guard fleet

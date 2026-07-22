@@ -1,4 +1,69 @@
-# Session Handoff — GUARD ARC SHIPPED (stance+tether+armor+iron_sword, 4 PRs, regression-raced) · film when ready
+# Session Handoff — DOCS ALIGNED (architecture ↔ post-#37 reality, PRs #60-#61) · film when ready
+
+## Session 2026-07-22 (eleventh) — the docs catch up to the code: architecture ↔ bottleneck reality
+
+**Parker's brief: update docs/architecture to reflect the fixes described
+in docs/reports.** The only report is `bottleneck-report-2026-07-17.md`,
+which landed WITH its top-leverage fixes in PR #37 the same day. Method:
+22-agent workflow — 5 code verifiers (one per service area, file:line
+facts from the CURRENT tree, never the commit message) + 11 doc mappers
+ran concurrently; per-doc editors were gated on the verified facts; an
+adversarial diff-review pass then caught and fixed 3 editor overclaims
+before commit. Both PRs docs-only (CI skipped by path filters), merged by
+Parker.
+
+- **#60 — five docs updated against verified reality:**
+  - `01-domain-model`: governance context is implemented (REST-driven
+    since M2-6, Kafka contracts from M2-7), no longer "P2+; schema now,
+    code later"; Timeline glossary drops never-shipped OpenSearch and
+    lists the real ledger indexes incl. `(aggregate_type, occurred_at)`;
+    the vote-casting `FOR UPDATE` lock recorded as OPEN work.
+  - `02-database`: reflection-scan index `(villager_id, memory_type,
+    created_at)` added to the memory_db DDL; retrieval degradation
+    reframed — the driver is TOTAL row count over time, not "100+
+    villagers" — with the shipped per-query `hnsw.ef_search = max(40,
+    candidates × 4)` sizing; event_db aggregate-type index; consumer
+    described as the batch listener at concurrency 3 with multi-row
+    `INSERT … ON CONFLICT DO NOTHING`.
+  - `03-events-kafka`: scaling paragraph rewritten (per-villager dispatch
+    lanes ended cross-bot head-of-line blocking; partitions only buy
+    parallelism when consumers match); topic auto-create documented
+    disabled broker- AND producer-side (fail-loud); the blanket
+    "producers use acks=all" split per producer — minecraft-service
+    world events run acks=1 as a deliberate durability/throughput trade.
+  - `05-repository-devops`: Redpanda auto-create flag + `mem_limit:
+    1536m`; Postgres command-flag tuning (`shared_buffers=512MB` etc. —
+    flags, NOT a postgresql.conf mount) + `2g` cap; minecraft `4g`
+    container cap vs the `3G` heap; `task topics` row (provisioning must
+    precede any producer on a fresh cluster).
+  - `09-survival-plan`: the executor-side `Math.min(payload.timeoutMs,
+    COMMAND_TIMEOUT_MAX_MS)` clamp joins the timeout-cap safety argument
+    (a brain-table raise alone can no longer breach the ceiling); the 1s
+    snapshot pass documented as change-gated; risk-register trigger
+    reworded to "raising the ceiling itself".
+- **#61 — the flagged loose end:** SV-18's ticket AC still carried the
+  pre-clamp trigger phrasing ("any per-verb timeout raised above
+  TIMEOUT_TABLE_MAX_MS"); aligned with the risk-register wording.
+
+**Verified-absent list (documented as OPEN — never re-document as
+shipped):** memory decay/archival job (only read-side recency scoring
+exists); `commands.minecraft` partition raise beyond 6 (dispatch lanes
+make it non-urgent); government vote-lock removal (service is mothballed
+on the `gov` profile anyway); mem limits beyond
+postgres/redpanda/minecraft; ledger range-partitioning.
+
+**Provenance gotcha worth keeping:** PR #37's commit message claims
+`lingerMs` on the minecraft-service producer — its diff never added it
+(`git log -S lingerMs` returns nothing). The docs correctly omit it.
+When writing docs from a PR, trust the diff, not the commit message.
+
+**Docs verified CLEAN against the report (no edits needed):** 00, 04,
+06, 07, 08, 10.
+
+**Next:** unchanged — Parker films per `docs/demo-rb.md`; guard-arc
+follow-ups live in the SV-14 row.
+
+# Prior handoff — GUARD ARC SHIPPED (stance+tether+armor+iron_sword, 4 PRs, regression-raced) · film when ready
 
 ## Session 2026-07-18 (tenth) — the guard arc: Parker's redirect, shipped end-to-end in one session
 
