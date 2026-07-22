@@ -76,6 +76,21 @@ export class BotRegistry {
       .map((s) => ({ villagerId: s.villagerId, name: s.username, position: s.position }))
   }
 
+  /** Current coordinates of every active bot for /internal/positions —
+   *  sessions without a live body (inactive, or entity not yet spawned)
+   *  are omitted rather than reported with null coordinates. */
+  positionsSnapshot(): { username: string; x: number; y: number; z: number }[] {
+    const out: { username: string; x: number; y: number; z: number }[] = []
+    for (const session of this.sessions.values()) {
+      const p = session.position
+      if (!session.active || !p) {
+        continue
+      }
+      out.push({ username: session.username, x: p.x, y: p.y, z: p.z })
+    }
+    return out
+  }
+
   /** Live bot inventories for the metrics poller — cheap in-memory reads. */
   inventoryViews(): BotInventoryView[] {
     const views: BotInventoryView[] = []

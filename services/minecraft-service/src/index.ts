@@ -11,6 +11,7 @@ import { CommandDedupe } from './redis/dedupe.ts'
 import { BotRegistry } from './bots/BotRegistry.ts'
 import { AttemptTracker } from './attempt/attemptTracker.ts'
 import { handleAttemptRoute } from './attempt/attemptRoutes.ts'
+import { handlePositionsRoute } from './world/positionsRoute.ts'
 import { RconClient } from './rcon/rcon.ts'
 import { InventoryTracker } from './world/inventoryTracker.ts'
 import { InventoryPoller } from './world/inventoryPoller.ts'
@@ -53,7 +54,14 @@ const attempts = new AttemptTracker((envelope) => void producer.publish('world.e
 producer.onWorldEvent((envelope) => attempts.observe(envelope))
 
 const consumer = new CommandConsumer(config.KAFKA_BROKERS.split(','), executor)
-const admin = startAdminServer(config.PORT, (req, res) => handleAttemptRoute(req, res, attempts))
+// extraRoutes takes ONE callback — compose handlers; each returns true when
+// it owned the request.
+const admin = startAdminServer(
+  config.PORT,
+  async (req, res) =>
+    (await handleAttemptRoute(req, res, attempts)) ||
+    (await handlePositionsRoute(req, res, () => registry.positionsSnapshot())),
+)
 
 const inventoryPoller = new InventoryPoller({
   intervalMs: config.INVENTORY_POLL_INTERVAL_MS,
