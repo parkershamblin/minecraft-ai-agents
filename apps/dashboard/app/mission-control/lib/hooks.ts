@@ -161,17 +161,29 @@ export function useLiveRace(enabled: boolean): { race: LiveRace | null; checked:
 
 // One batched query per tab — every panel of a view updates atomically on the
 // 10 s cadence that the header chip advertises.
+//
+// Key discipline: the query key carries the window's IDENTITY (the attempt
+// anchor), never its size. While a race runs, computeWindow's end grows every
+// second — keying on R/bucket minted a fresh cache entry each second, whose
+// momentarily-undefined .data made mergeModel flash the demo dataset between
+// polls (the demo⇄live flicker across every Prom-fed panel) and turned the
+// 10 s cadence into a 1 s query storm. The queryFn closure is rebuilt each
+// render, and react-query always invokes the latest one on refetch, so the
+// growing R/step/window values stay fresh without ever entering the key.
+// placeholderData bridges the one real key change (attempt switch) so the
+// board never dips through the demo state mid-session.
 export function usePromView(tab: Tab, enabled: boolean, window: RangeWindow) {
   const R = rangeSelector(window)
   const step = stepFor(window)
-  const bucket = `${Math.round(window.start / 30)}-${Math.round(window.end / 30)}`
+  const anchor = window.anchor ?? 'rolling'
 
   const race = useQuery({
-    queryKey: ['mc-prom', 'race', bucket, R],
+    queryKey: ['mc-prom', 'race', anchor],
     enabled: enabled && tab === 'race',
     retry: 0,
     refetchInterval: 10_000,
     staleTime: 10_000,
+    placeholderData: (prev: PromRaceData | undefined) => prev,
     queryFn: async (): Promise<PromRaceData> => {
       const [trips, malformed, normalized, fake, collectors, rate, lane] = await Promise.all([
         promQuery('max(civ_llm_budget_tripped)'),
@@ -197,11 +209,12 @@ export function usePromView(tab: Tab, enabled: boolean, window: RangeWindow) {
   })
 
   const llm = useQuery({
-    queryKey: ['mc-prom', 'llm', bucket, R],
+    queryKey: ['mc-prom', 'llm', anchor],
     enabled: enabled && tab === 'llm',
     retry: 0,
     refetchInterval: 10_000,
     staleTime: 10_000,
+    placeholderData: (prev: PromLlmData | undefined) => prev,
     queryFn: async (): Promise<PromLlmData> => {
       const agent = '{job="agent-service"}'
       const [p95Now, lat, tok, tokTotal, spend, ticks, reactive, tickDur, trips, malformed, normalized, providers] =
@@ -258,11 +271,12 @@ export function usePromView(tab: Tab, enabled: boolean, window: RangeWindow) {
   })
 
   const pipe = useQuery({
-    queryKey: ['mc-prom', 'pipe', bucket, R],
+    queryKey: ['mc-prom', 'pipe', anchor],
     enabled: enabled && tab === 'pipe',
     retry: 0,
     refetchInterval: 10_000,
     staleTime: 10_000,
+    placeholderData: (prev: PromPipeData | undefined) => prev,
     queryFn: async (): Promise<PromPipeData> => {
       const [evTotal, byTopic, lag, mem, reflections, up, scrape, bots, reconnects, sse] = await Promise.all([
         promQuery(`sum(increase(civ_events_ingested_total[${R}]))`),
