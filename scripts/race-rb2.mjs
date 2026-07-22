@@ -171,6 +171,22 @@ for (let i = 0; i < 40; i++) {
 }
 console.log('all 6 racers online')
 
+// Gamemode is enforced, then VERIFIED, roster-only (never @a — the operator's
+// own player may be online spectating). A racer silently in creative would
+// fake an honest-race win (instant mining, no hunger, no mob threat); a
+// spectator reads as a stalled bot. Bit take team-llm-mobs-1 on 2026-07-22:
+// Ansel raced in the wrong mode and the checklist had no eye for it.
+// playerGameType: 0 survival · 1 creative · 2 adventure · 3 spectator.
+for (const v of villagers) {
+  rcon(`gamemode survival ${v.minecraftUsername}`)
+  const mode = rcon(`data get entity ${v.minecraftUsername} playerGameType`)
+  if (!mode.endsWith('entity data: 0')) {
+    console.error(`  ${v.minecraftUsername} is not in survival after enforcement: ${mode}`)
+    process.exit(3)
+  }
+}
+console.log('  gamemode survival enforced + verified for all racers')
+
 // Posts are explicit (--red/--blue) or auto-located: the nearest FOREST to a
 // symmetric anchor on each side of the origin. Attempt-1 lesson: blind
 // ±separation/2 posts landed both teams on treeless mountainside — "no wood
