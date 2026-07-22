@@ -5,6 +5,8 @@ import type { NextConfig } from 'next'
 const AGENT = process.env.AGENT_SERVICE_URL ?? 'http://localhost:8001'
 const EVENTS = process.env.EVENT_SERVICE_URL ?? 'http://localhost:8081'
 const GOVERNMENT = process.env.GOVERNMENT_SERVICE_URL ?? 'http://localhost:8082'
+const PROMETHEUS = process.env.PROMETHEUS_URL ?? 'http://localhost:9090'
+const MINECRAFT = process.env.MINECRAFT_SERVICE_URL ?? 'http://localhost:8003'
 
 const nextConfig: NextConfig = {
   // gzip buffers the proxied SSE stream for browser clients (curl, which
@@ -15,6 +17,8 @@ const nextConfig: NextConfig = {
       { source: '/api/agent/:path*', destination: `${AGENT}/:path*` },
       { source: '/api/events/:path*', destination: `${EVENTS}/:path*` },
       { source: '/api/government/:path*', destination: `${GOVERNMENT}/:path*` },
+      { source: '/api/prometheus/:path*', destination: `${PROMETHEUS}/:path*` },
+      { source: '/api/minecraft/:path*', destination: `${MINECRAFT}/:path*` },
     ]
   },
 }

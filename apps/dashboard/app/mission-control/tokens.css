@@ -1,0 +1,155 @@
+/* Mission Control design tokens — ported from the design handoff's Nocturne
+   sheet (design_handoff_mission_control/_ds/…/styles.css). Every rule is
+   scoped under .mc-root so the zinc styling of the other routes is never
+   touched; class names carry an mc- prefix because this file loads globally. */
+
+.mc-root {
+  --mc-bg: #161826;
+  --mc-surface: #232532;
+  --mc-text: #e9e9ed;
+  --mc-accent: #9184d9;
+  --mc-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  --mc-neutral-100: #f3f5fe;
+  --mc-neutral-800: #3f424d;
+  --mc-neutral-900: #292b31;
+
+  --mc-accent-100: #f5f4ff;
+  --mc-accent-200: #e7e5fe;
+  --mc-accent-300: #d2cefd;
+  --mc-accent-700: #5d5294;
+  --mc-accent-800: #423a6a;
+  --mc-accent-900: #2b2741;
+
+  --mc-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  background: var(--mc-bg);
+  color: var(--mc-text);
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 400;
+}
+
+.mc-root ::selection {
+  background: color-mix(in srgb, var(--mc-accent) 30%, transparent);
+}
+.mc-root :focus {
+  outline: none;
+}
+.mc-root :focus-visible {
+  outline: 2px solid var(--mc-accent);
+  outline-offset: 2px;
+}
+.mc-root a {
+  color: var(--mc-accent);
+  text-underline-offset: 3px;
+}
+.mc-root a:hover {
+  color: var(--mc-accent-300);
+}
+
+@keyframes mc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.mc-root .nocap .mc-cap {
+  display: none;
+}
+
+/* Panel card: surface + 1px ring, no drop shadow (Nocturne elevation-sm). */
+.mc-panel {
+  background: var(--mc-surface);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--mc-neutral-800);
+  min-width: 0;
+}
+
+/* Panel title — inherits Inter; the sheet's h3 base adds the tight leading
+   and negative tracking the inline sizes don't override. */
+.mc-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+
+.mc-cap {
+  font-size: 11px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--mc-text) 52%, transparent);
+  margin: 2px 0 0;
+}
+
+.mc-mono {
+  font-family: var(--mc-mono);
+}
+
+/* Verbatim ports of the Nocturne .btn / .btn-primary / .tag classes the
+   prototype markup leans on. */
+.mc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--mc-text);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 5.6px 10.08px;
+  border-radius: 8px;
+}
+.mc-btn-primary {
+  color: var(--mc-accent);
+  border-color: var(--mc-accent);
+}
+.mc-btn-primary:hover {
+  background: color-mix(in srgb, var(--mc-accent) 12%, transparent);
+  color: var(--mc-accent);
+}
+.mc-btn-primary:active {
+  background: color-mix(in srgb, var(--mc-accent) 22%, transparent);
+}
+.mc-btn-secondary {
+  border-color: var(--mc-divider);
+}
+.mc-btn-secondary:hover {
+  background: color-mix(in srgb, var(--mc-text) 7%, transparent);
+}
+.mc-btn-secondary:active {
+  background: color-mix(in srgb, var(--mc-text) 14%, transparent);
+}
+
+.mc-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+.mc-tag-neutral {
+  background: var(--mc-neutral-800);
+  color: var(--mc-neutral-100);
+}
+.mc-tag-accent {
+  background: var(--mc-accent-800);
+  color: var(--mc-accent-100);
+}
+
+.mc-root input[type='range'] {
+  accent-color: var(--mc-accent);
+}
+
+/* Tab hover tint — !important because the resting color is an inline style
+   (active/idle computed per render), and the prototype's hover must win. */
+.mc-root .mc-tab-btn:hover {
+  color: var(--mc-accent-200) !important;
+}
+

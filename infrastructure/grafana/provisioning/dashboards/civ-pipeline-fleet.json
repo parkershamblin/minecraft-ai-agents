@@ -1,0 +1,192 @@
+{
+  "uid": "civ-pipeline",
+  "title": "Event Pipeline & Fleet",
+  "tags": [
+    "ai-civilization-engine",
+    "recruiter-demo"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Event throughput (events/s by topic)",
+      "description": "Every action is an immutable event; the stream is the integration seam between services and the source of truth for analytics.",
+      "gridPos": {
+        "h": 9,
+        "w": 14,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (topic) (rate(civ_events_ingested_total[1m]))",
+          "legendFormat": "{{topic}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Kafka consumer lag (records)",
+      "description": "Flat at zero through a healthy race.",
+      "gridPos": {
+        "h": 9,
+        "w": 10,
+        "x": 14,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (client_id) (kafka_consumer_fetch_manager_records_lag)",
+          "legendFormat": "{{client_id}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Memory latency p95 (s)",
+      "description": "pgvector similarity search + embedding calls feeding each tick.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(civ_memory_retrieval_seconds_bucket[5m])))",
+          "legendFormat": "retrieval p95"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, provider) (rate(civ_embedding_seconds_bucket[5m])))",
+          "legendFormat": "embedding p95 {{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Reflections by outcome (range)",
+      "description": "memory-service distills episodic memory into insights.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (increase(civ_reflections_total[$__range]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Scrape targets up",
+      "description": "Five services, three languages, one JSON Schema contract package.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "max by (job) (up{job=~\".*-service\"})",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Fleet counters",
+      "description": "Mineflayer sessions under supervision.",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "civ_bot_sessions",
+          "legendFormat": "bot sessions"
+        },
+        {
+          "expr": "sum(increase(civ_bot_reconnects_total[$__range]))",
+          "legendFormat": "reconnects (range)"
+        },
+        {
+          "expr": "civ_sse_clients",
+          "legendFormat": "SSE clients"
+        },
+        {
+          "expr": "civ_threat_fights_active",
+          "legendFormat": "fights holding a slot"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Inventory polls by source",
+      "description": "bots = in-memory, rcon = human players.",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 17
+      },
+      "targets": [
+        {
+          "expr": "sum by (source, outcome) (rate(civ_inventory_polls_total[5m])) * 60",
+          "legendFormat": "{{source}} · {{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "SSE clients",
+      "description": "Live event feed subscribers (event-service → dashboard).",
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 17
+      },
+      "targets": [
+        {
+          "expr": "civ_sse_clients",
+          "legendFormat": "clients"
+        }
+      ]
+    }
+  ]
+}

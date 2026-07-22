@@ -13,6 +13,9 @@ export default function OverviewPage() {
           </p>
         </div>
         <nav className="flex gap-4 text-xs text-zinc-500">
+          <Link href="/mission-control" className="hover:text-zinc-300">
+            Mission Control →
+          </Link>
           <Link href="/race" className="hover:text-zinc-300">
             Race →
           </Link>

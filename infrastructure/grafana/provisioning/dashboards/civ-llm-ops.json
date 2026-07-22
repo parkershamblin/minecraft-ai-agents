@@ -1,0 +1,210 @@
+{
+  "uid": "civ-llm",
+  "title": "LLM Ops — brains, tokens, cost",
+  "tags": [
+    "ai-civilization-engine",
+    "recruiter-demo"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Decision latency p95 by provider",
+      "description": "Local llama3.1:8b deliberates every 10–20 s per villager; the body keeps executing reflexes while the brain thinks.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, provider) (rate(civ_llm_latency_seconds_bucket[5m])))",
+          "legendFormat": "{{provider}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Tokens per minute by direction",
+      "description": "Six brains thinking in parallel.",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (direction) (rate(civ_llm_tokens_total[5m])) * 60",
+          "legendFormat": "{{direction}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Ticks/min by outcome",
+      "description": "The perceive → deliberate → act → reflect loop.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 9
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(civ_ticks_total[5m])) * 60",
+          "legendFormat": "{{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Reactive tick ratio",
+      "description": "Cap arithmetic says < ~0.4 sustained.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 9
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(civ_ticks_total{trigger=\"reactive\"}[5m])) / sum(rate(civ_ticks_total[5m]))",
+          "legendFormat": "reactive / all ticks"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.4
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Cognitive tick duration p95",
+      "description": "One full tick, LLM call included.",
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(civ_tick_seconds_bucket[5m])))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "LLM spend (range, USD)",
+      "description": "Provider chain degrades openai → ollama → fake; a fully local race spends $0.",
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 0,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(civ_llm_cost_dollars_total[$__range]))",
+          "legendFormat": "spend"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Spend by service (range)",
+      "description": "",
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 6,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 4
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (job) (increase(civ_llm_cost_dollars_total[$__range]))",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Honest-race counters",
+      "description": "Budget breaker + reply hygiene: trips and fake-provider decisions must be zero for an honest attempt.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        }
+      },
+      "targets": [
+        {
+          "expr": "civ_llm_budget_tripped",
+          "legendFormat": "budget tripped"
+        },
+        {
+          "expr": "sum(increase(civ_llm_malformed_total[$__range]))",
+          "legendFormat": "malformed replies"
+        },
+        {
+          "expr": "sum(increase(civ_llm_normalized_total[$__range]))",
+          "legendFormat": "normalized decisions"
+        },
+        {
+          "expr": "sum(increase(civ_llm_governance_dropped_total[$__range]))",
+          "legendFormat": "dropped by governance"
+        }
+      ]
+    }
+  ]
+}
