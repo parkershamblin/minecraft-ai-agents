@@ -88,6 +88,7 @@ task seed      # provision villagers.json (first VILLAGER_COUNT) + spawn bots
                # (VILLAGER_COUNT=0 preset: use node scripts/spawn-fleet.mjs instead)
 task test      # all test suites   ·   task gen  # regen contract types (committed!)
 task down      # stop containers (volumes survive)  ·  task nuke  # fresh world
+task dashboard # Next.js dashboard dev server on :3000 (host-run by decision — #78)
 ```
 
 The Minecraft server is NOT in compose by default: run

@@ -87,8 +87,9 @@ curl -N localhost:8081/events/stream                           # live ledger fee
 `?since=<ISO timestamp>` for anything recent.)
 
 Consoles once `task up` is green: Redpanda console `:8085`, Grafana `:3001`
-(admin/admin), Prometheus `:9090`. The Next.js dashboard is host-run for now —
-`npm run dev --workspace apps/dashboard` on `:3000` — not yet in compose.
+(admin/admin), Prometheus `:9090`. The Next.js dashboard is host-run **by
+design** (#78): `task dashboard` serves it on `:3000` with fast HMR — compose
+stays backend-only.
 
 ## Layout
 

@@ -48,6 +48,11 @@ tasks:
     cmds:
       - node scripts/smoke.js
 
+  dashboard:
+    desc: "Next.js dashboard dev server on :3000 — host-run BY DECISION (#78): fast HMR wins over compose parity, and Windows bind mounts forward no inotify (containerized dev-watch would need polling). Needs root `npm install`; live data needs the app profile up"
+    cmds:
+      - npm run dev --workspace apps/dashboard
+
   gen:
     desc: Regenerate TS/Python types from packages/events schemas (output is committed; CI drift-checks it)
     cmds:
