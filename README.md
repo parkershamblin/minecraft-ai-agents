@@ -7,7 +7,12 @@
 [![government-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml)
 [![dashboard](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml)
 
-![Mission Control — Red vs Blue race telemetry](docs/media/mission-control.gif)
+
+https://github.com/user-attachments/assets/a3d88897-b511-492a-a945-c490e3a3feaa
+
+
+[![Mission Control — Red vs Blue race telemetry](docs/media/mission-control.gif)](film/mission-control-plus-rb-race-demo-1.mp4)
+
 
 Autonomous LLM-driven villagers live inside Minecraft. **Current arc: Red vs
 Blue** ([ADR-10](docs/architecture/10-red-vs-blue.md)) — two teams of three
