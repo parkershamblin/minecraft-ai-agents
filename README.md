@@ -19,15 +19,18 @@ civilization arc — personalities, memories, relationships, elections — is
 intact and mothballed behind a compose profile. Every action is an immutable
 event; the event stream is the integration seam between services, the source
 of truth for analytics, and the raw material for the video series.
-Live scoreboard: `http://localhost:3000/race`.
+Live scoreboard: `http://localhost:3000/race` · Mission Control:
+`http://localhost:3000/mission-control`.
 
-**The race has been won — on Easy and on Normal.** First honest 3v3
-completion 2026-07-18: red's Elara crafted the iron pickaxe in **6 minutes
-0.4 seconds** (Easy). Same day, the ADR's flagship difficulty fell: red's
-Wren won at **Normal in 14m41s** (attempt `019f7352-03ae…`, blue led the
-first two rungs). Six llama3.1:8b-driven villagers, zero human intervention
-after the starting gun, every rung a ledger event, honest-race assertion
-clean both times (zero token-budget trips, zero fake-provider decisions).
+**The race has been won — Easy, Normal, and Normal with hostile mobs.**
+First honest 3v3 completion 2026-07-18: red's Elara crafted the iron pickaxe
+in **6 minutes 0.4 seconds** (Easy). The ADR's flagship difficulty fell the
+same day: **Normal in 14m41s** (red's Wren, attempt `019f7352-03ae…`, blue
+led the first two rungs), then **Normal with mobs in 11m 0.6s** (attempt
+`019f744d…`, filmed) with threat reflexes holding — zero deaths. Six
+llama3.1:8b-driven villagers, zero human intervention after the starting
+gun, every rung a ledger event, honest-race assertion clean every time
+(zero token-budget trips, zero fake-provider decisions).
 Replay the first win's receipt:
 
 ```sh
@@ -76,7 +79,7 @@ services/              the microservices (see docs/architecture/00-system-overvi
 packages/events/       JSON Schema event contracts — single source of truth
 infrastructure/        docker compose, prometheus/grafana config
 experiments/           archived PoCs — the empirically-proven mineflayer version pin
-docs/architecture/     the full design package (00–09)
+docs/architecture/     the full design package (00–10)
 scripts/               repo-level utilities (smoke canary, fleet spawn/despawn)
 ```
 
@@ -94,11 +97,18 @@ nominate, campaign, and vote through the ledger. Mayor Bram is seated and the
 fleet is ticking ([M2 plan](docs/architecture/08-m2-plan.md),
 [M2 demo](docs/demo-m2.md)).
 
-**Survival cluster — in flight (not yet deployed).** Peaceful→easy survival:
-eat/craft/hunt/cook, fight-or-flee, death awareness, staged training-wheel
-removal. SV-1 (contract commit) and SV-2 (sustained gather sessions) are
-merged; SV-3/SV-4 (the craft verb + crafting brain) are next. The filming
-gate holds: Episode 2 must be filmed before the first Survival deploy
-([survival plan](docs/architecture/09-survival-plan.md)).
+**Survival + Red vs Blue ([ADR-10](docs/architecture/10-red-vs-blue.md)) —
+complete.** The survival verbs (gather/craft/smelt/eat), threat reflexes
+with a configurable stance (flee/guard), and the ledger-judged milestone
+ladder shipped across the SV/RB rows
+([survival plan](docs/architecture/09-survival-plan.md)). RB-2 exit passed
+2026-07-18: honest wins at every difficulty (records above), zero deaths.
+Per-team LLM routing (red llama3.1:8b vs blue gemma) has raced live.
+
+**Mission Control + POV film rig — live.** `/mission-control` renders a race
+from Prometheus and the ledger — milestone ladder, world-map villager tracks
+with a replay scrubber, per-team telemetry; a prismarine-viewer sidecar
+serves one first-person stream per racer (ports 3100–3105). What remains is
+filming ([demo script](docs/demo-rb.md)).
 
 See [docs/HANDOFF.md](docs/HANDOFF.md) for live session-to-session state.
