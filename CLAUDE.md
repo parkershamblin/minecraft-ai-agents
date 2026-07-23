@@ -1,42 +1,49 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** PERCEPTION HARDENED, RACE VALIDATED (session
-twelfth — `docs/HANDOFF.md`). The zero-milestone "brain regression" was
-never a prompting problem: one rpk-produced snappy batch on world.events
-(a Mission-Control test replay) killed agent-service's aiokafka consume
-loop silently on every boot since ~18:40Z (heartbeats kept the group
-Stable; brains blind, phantom elections from the COMMUNITY_GOAL line).
-PR #71 (merged, deployed from main): codec deps, exit(1) supervision +
-`restart: on-failure`, consumer starts after roster/hooks, RaceState
-boot rehydration from the ledger, governanceAction-null guard, race
-mode mutes COMMUNITY_GOAL. Validated live: throwaway `019f8c68` WON
-honest 768.5s easy (guard stance, mob-free), full ladder in 13m, mix
-gather 52/craft 46/idle 2, blue on gemma live, 0 phantom elections.
-Orphan attempt `019f8b48` closed (operator-cleanup AttemptEnded);
-prevention chip filed. DIAGNOSIS TRAPS: harness preflight runs ~20 min —
-decisions sampled before the ledger's AttemptStarted.occurredAt are
-village-mode ticks that look exactly like the regression; and `rpk
-group describe agent-service.perception` (Stable + frozen offsets =
-dead consumer) comes BEFORE blaming prompts. Deploy state: main built
-into agent-service AND minecraft-service (#68 in); **pov-rig container
-STOPPED** — its 3100-3105 pool clashes with main's minecraft-service
-mapping, and PR #70 was merged into `fix/trail-particle-def` (stacked
-base), never reached main — POV cams offline until the re-land chip
-runs. Fleet respawned: exactly 6 racers (spawn-fleet defaults to ALL
-20 — pass the count; despawn-fleet 6 trims). `.env` still sets
-COMMUNITY_GOAL (fine: race mode mutes it, village mode keeps it under
-the new guard) and THREAT_DEFAULT_STANCE=guard (revert to cautious for
-speed records; guard tax ≈80s). Records: Easy 360.4s (`019f7337`),
-Normal 881s (`019f7352`), Normal+mobs 660.6s (`019f744d`, filmed).
-Drill hygiene unchanged: clear packs before staged gives; mute
-doMobSpawning between takes; command group is
-`minecraft-service.command-executor`.
+**Last checkpoint:** FRESH-INSTALL AUDIT SHIPPED (session thirteenth —
+`docs/fresh-install-audit.md` is the full record). Tier-1 sim: fresh
+clone + `COMPOSE_PROJECT_NAME=fresh-sim` isolation (fresh volumes, live
+stack stopped first), README followed verbatim. The old Quickstart died
+at step 3 of 3 (smoke required the gitignored PoC node_modules) and
+ended before the product existed. 10 findings → 4 PRs MERGED: #74
+`.env.example` sync (COMMUNITY_GOAL + THREAT_DEFAULT_STANCE now in the
+template at code defaults), #75 smoke resolves mineflayer from the
+workspace pin (root `npm install` is now a smoke prerequisite;
+actionable failure if skipped), #76 README Quickstart rewrite
+(containerized-Paper default path paired with `MC_HOST=minecraft`, then
+up:all → seed → proof-of-life via rcon `list` + `/events/stream`), #80
+the audit record. Issues filed: #77 nine scripts hardcode
+`ai-civilization-engine-*` container names (REDPANDA_CONTAINER on
+provision-topics is the only escape hatch), #78 dashboard run story
+(not in compose, host-run only), #79 bake spawn-protection=0 +
+connection-throttle=-1 into the minecraft profile (any fresh volume
+reverts to Paper defaults). Sim verified end-to-end on empty volumes:
+seed → Elara deliberating on real ollama (llama3.1:8b, 1.1–1.3s,
+970–1469 tok), full causation chains, threat reflexes live. New traps:
+ledger read envelope is `{data, nextCursor}` (not `items`);
+`MC_HOST=host.docker.internal` reaches containerized Paper only via the
+25565 publish loopback — an accident, use `MC_HOST=minecraft`. STACK
+STATE: live stack was downed for the sim and restored from main
+2026-07-23 (10/10 healthy; sim volumes deleted, live volumes verified
+intact; the merges touch no service images — docs/template/host-script
+only, no rebuild needed). minecraft-service was RECREATED → in-memory
+fleet GONE (respawn commands required); host MC server STOPPED; paper
+profile not running; government-service (mothballed) and pov-rig left
+Exited as found — #72 landed the pov sidecar on main, verify the rig
+before POV footage. `.env` unchanged: COMMUNITY_GOAL set (race mode
+mutes it) and THREAT_DEFAULT_STANCE=guard (revert to cautious for speed
+records; guard tax ≈80s). Records: Easy 360.4s (`019f7337`), Normal
+881s (`019f7352`), Normal+mobs 660.6s (`019f744d`, filmed). Drill
+hygiene unchanged: clear packs before staged gives; mute doMobSpawning
+between takes; command group is `minecraft-service.command-executor`.
 
-**Next session:** Parker films per `docs/demo-rb.md` — fleet is
-record-attempt ready (post-fix throwaway won clean). Re-land #70
-(pov-rig) via the chip before any POV footage. Open follow-ups in the
-SV-14 row (leather craft enum, per-villager stance, persisted posts).
-Roadmap beyond T1 unchanged per `docs/architecture/10-red-vs-blue.md`.
+**Next session:** Parker films per `docs/demo-rb.md`. Pre-attempt
+sequence: start the host MC server (currently stopped; or paper profile
++ `MC_HOST=minecraft`), respawn exactly 6 racers (spawn-fleet defaults
+to ALL 20 — pass the count), verify pov-rig tiles. Open follow-ups:
+SV-14 row (leather craft enum, per-villager stance, persisted posts)
+and audit issues #77/#78/#79. Roadmap beyond T1 unchanged per
+`docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
 
