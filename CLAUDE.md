@@ -254,9 +254,14 @@ else fake), `OPENAI_API_KEY` (optional — never required).
 - Paper's `bukkit.yml` `connection-throttle: 4000` (per-IP) chokes the bot
   fleet after any server restart: all 20 bots share the minecraft-service
   container IP and reconnect in a synchronized 60s-backoff herd, so the
-  throttle admits **one bot per minute** (~20 min to full recovery). Set
-  `connection-throttle: -1` in `/data/bukkit.yml` — done Jul 2026; survives
-  restarts (volume) but NOT `task nuke`, so re-apply after a nuke.
+  throttle admits **one bot per minute** (~20 min to full recovery). Baked
+  into the compose profile since #79 (`PATCH_DEFINITIONS` patches bukkit.yml
+  to -1 every start; no first-boot hole — the image materializes
+  /data/bukkit.yml before patches run). Nuke-proof for the CONTAINERIZED
+  server; a host-run server's bukkit.yml is still manual. Patch-format trap:
+  a file in a PATCH_DEFINITIONS directory is a bare `{file, ops}` object —
+  the `{patches: [...]}` wrapper is for single-file mode, and the wrong shape
+  kills the boot (exit 2).
 - Worktree sessions vs the live stack (M2-6): worktrees don't carry `.env`
   (gitignored) — copy it from the main repo or compose's `--env-file .env`
   fails. Compose run from a worktree attaches to the SAME running project
@@ -288,8 +293,12 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   block breaks by non-op players within 16 blocks of WORLD spawn — the bot's
   client thinks the block broke, the server keeps it, and the dig "completes"
   with zero yield (the ghost-dig fingerprint, cost two RB-1 drill runs).
-  Set to 0 in `/data/server.properties` (done 2026-07-17; needs a server
-  restart; survives in the volume but NOT `task nuke` — re-apply after).
+  Baked into the compose profile since #79 (`SPAWN_PROTECTION: "0"` env,
+  re-applied every boot) — nuke-proof for the CONTAINERIZED server; a
+  host-run server's server.properties is still manual. Gotcha while
+  seeding configs: `/config` mount contents sync to `/data/config` (the
+  paper-global.yml land), NOT `/data` — bukkit.yml/server.properties can't
+  be seeded that way.
   Related mineflayer flake: `placeBlock` can throw "blockUpdate did not fire
   within 5000ms" when the placement actually landed — placeCarried in
   BotSession verifies the world instead of trusting the throw.

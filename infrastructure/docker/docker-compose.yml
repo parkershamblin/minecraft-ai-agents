@@ -385,8 +385,17 @@ services:
       # (flipped via RCON + save-all + restart-verify, the closed-loop
       # procedure). A nuked world boots easy with DEFAULT gamerules: run the
       # post-nuke re-apply checklist (training wheels keepInventory=true /
-      # doInsomnia=false / mobGriefing=false + connection-throttle -1).
+      # doInsomnia=false / mobGriefing=false). spawn-protection and
+      # connection-throttle are baked in below (#79) — off the checklist.
       DIFFICULTY: easy
+      # Ghost-dig killer (#79, audit F9): non-op bots near world spawn get
+      # silent zero-yield digs at the default 16. Re-applied every boot by
+      # the image (OVERRIDE_SERVER_PROPERTIES default) — nuke-proof.
+      SPAWN_PROTECTION: "0"
+      # Reconnect-herd killer (#79): patches bukkit.yml connection-throttle
+      # to -1 on every start. No first-boot hole — the image materializes
+      # /data/bukkit.yml (default-config download) before patches run.
+      PATCH_DEFINITIONS: /config/patches
       OPS: ParkerShamblin           # offline mode: helper derives the offline UUID
       MAX_PLAYERS: "30"             # 20 bot slots + room for Parker to spectate
       MEMORY: 3G
@@ -400,6 +409,12 @@ services:
     ports: ["25565:25565"]
     volumes:
       - minecraft-data:/data
+      # Patch definitions for PATCH_DEFINITIONS above. NOTE: /config CONTENTS
+      # sync to /data/config (paper-global.yml land), NOT /data — do not try
+      # to seed bukkit.yml/server.properties through it (learned empirically,
+      # #79). Bind resolves relative to THIS compose file (worktree gotcha
+      # in CLAUDE.md).
+      - ./minecraft-config:/config:ro
     # itzg ships mc-health; gate `up --wait` on the server actually accepting
     # logins (first-boot world-gen takes ~30-60s).
     healthcheck:
