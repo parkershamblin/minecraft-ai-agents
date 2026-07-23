@@ -6,7 +6,6 @@ import { buildEnvelope } from '../events/envelope.ts'
 import type { EventProducer } from '../kafka/producer.ts'
 import { BotSession } from './BotSession.ts'
 import { FightSlots } from './combat.ts'
-import { PovViewers } from './povViewer.ts'
 import { Roster } from '../redis/roster.ts'
 import { ChatRouter } from '../world/chatRouter.ts'
 import type { BotInventoryView } from '../world/inventoryPoller.ts'
@@ -23,8 +22,6 @@ export class BotRegistry {
   readonly roster: Roster
   /** the FLEET-wide fight cap — one instance, shared by every session */
   private readonly fightSlots: FightSlots
-  /** the RB-3 film rig — inert unless POV_VIEWER=1 */
-  readonly povViewers: PovViewers
 
   constructor(
     private readonly config: Config,
@@ -33,7 +30,6 @@ export class BotRegistry {
   ) {
     this.roster = new Roster(redis)
     this.fightSlots = new FightSlots(config.THREAT_MAX_CONCURRENT_FIGHTS, threatFightsActive)
-    this.povViewers = new PovViewers(config)
     this.chatRouter = new ChatRouter({
       rosterByUsername: (username) => this.roster.villagerIdFor(username),
       activeSessions: () =>
@@ -144,10 +140,6 @@ export class BotRegistry {
     session.connect()
     const spawnReason = await session.awaitSpawn(this.config.SPAWN_TIMEOUT_MS)
     await this.roster.set(username, villagerId)
-    // Fire-and-forget: the film rig must never fail or slow a spawn.
-    if (session.bot) {
-      void this.povViewers.start(villagerId, username, session.bot)
-    }
     return { alreadyActive: false, spawnReason }
   }
 
@@ -157,7 +149,6 @@ export class BotRegistry {
       return false
     }
     this.sessions.delete(villagerId)
-    this.povViewers.stop(villagerId)
     await session.despawn()
     await this.roster.remove(session.username)
     return true

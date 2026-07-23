@@ -31,14 +31,21 @@ const schema = z.object({
   // deliberation (30s+ cadence), not reflexes — 15s staleness is free.
   RESOURCE_SCAN_MIN_SWEEP_MS: z.coerce.number().int().min(0).default(15000),
   MOVE_THROTTLE_MS: z.coerce.number().int().min(500).default(5000),
-  // POV film rig (RB-3, ADR 10): first-person prismarine-viewer per bot on a
-  // fixed port pool. OFF by default — a per-bot three.js worldview is a real
-  // cost and the viewer trails MC releases; the flag is the rollback. NEVER
-  // flip mid-race: it only takes effect on spawn, and deploys kill the fleet.
+  // POV film rig (RB-3, ADR 10) — SIDECAR-ONLY since the pov-rig extraction:
+  // read exclusively by src/pov/sidecar.ts, which runs in its own container
+  // (compose profile `pov`) with its own spectator cam bots. The fleet
+  // process NEVER reads these and never loads any viewer code
+  // (test/noPovInFleet.test.ts enforces that). Enabling/disabling the rig
+  // is a pov-rig container start/stop — the fleet is never recreated for it.
   POV_VIEWER: z.coerce.number().int().min(0).max(1).default(0),
   POV_PORT_BASE: z.coerce.number().int().min(1024).default(3100),
   POV_VIEWER_COUNT: z.coerce.number().int().min(1).max(16).default(6),
   POV_VIEW_DISTANCE: z.coerce.number().int().min(1).max(8).default(4),
+  // Cam→racer assignment, in tile order (PovGrid.tsx / film/pov-grid.html
+  // hardcode 3100..3105 in villagers.json seed order). Deterministic: tile N
+  // always shows racer N, unlike the old spawn-order port pool.
+  POV_ROSTER: z.string().default('Elara,Bram,Wren,Ansel,Petra,Fen'),
+  POV_HEALTH_PORT: z.coerce.number().int().min(1024).default(8004),
   // Powder-snow hazard watch (post-M2): per-bot O(1) probe — two blockAt
   // reads, never a sweep. 0 disables the reflex entirely.
   HAZARD_WATCH_INTERVAL_MS: z.coerce.number().int().min(0).default(1500),

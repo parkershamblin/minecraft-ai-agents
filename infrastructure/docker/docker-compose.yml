@@ -142,14 +142,13 @@ services:
     # the command consumer exits(1) on an unrecoverable Kafka crash — restart
     # LOUDLY (visible in restart counts) instead of zombie-idling the world
     restart: on-failure
-    # 3100-3105: the POV film-rig port pool (inert unless POV_VIEWER=1)
-    ports: ["8003:8003", "3100-3105:3100-3105"]
+    # POV ports/env moved to the pov-rig sidecar below — the fleet process
+    # never loads viewer code (test/noPovInFleet.test.ts enforces it).
+    ports: ["8003:8003"]
     environment:
       MC_HOST: ${MC_HOST:-host.docker.internal}
       MC_PORT: ${MC_PORT:-25565}
       MC_VERSION: ${MC_VERSION:-1.21.6}
-      POV_VIEWER: ${POV_VIEWER:-0}
-      POV_VIEW_DISTANCE: ${POV_VIEW_DISTANCE:-4}
       KAFKA_BROKERS: redpanda:29092
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -181,6 +180,49 @@ services:
       timeout: 5s
       retries: 12
       start_period: 15s
+
+  # The POV film rig (RB-3): six spectator cam bots + prismarine-viewer
+  # tiles on :3100-3105, OUT OF PROCESS from the fleet. The profile is the
+  # operator switch — `--profile pov up -d --build pov-rig` to film,
+  # `stop pov-rig` to stop; the fleet is never recreated for it. Any rig
+  # crash (viewer throw, OOM, parse storm) kills only this container;
+  # restart: on-failure brings the tiles back. No depends_on by design:
+  # it needs only the MC server + RCON (retried internally), and this keeps
+  # it standalone across profiles like the `minecraft` service.
+  pov-rig:
+    build:
+      context: ../..
+      dockerfile: services/minecraft-service/Dockerfile
+    profiles: [pov]
+    restart: on-failure
+    command: ["npx", "tsx", "src/pov/sidecar.ts"]
+    ports: ["3100-3105:3100-3105", "8004:8004"]
+    environment:
+      # Profile activation IS the intent; the flag stays as the code gate so
+      # a stray sidecar launch elsewhere exits clean.
+      POV_VIEWER: "1"
+      MC_HOST: ${MC_HOST:-host.docker.internal}
+      MC_PORT: ${MC_PORT:-25565}
+      MC_VERSION: ${MC_VERSION:-1.21.6}
+      POV_VIEW_DISTANCE: ${POV_VIEW_DISTANCE:-4}
+      # Spectator enforcement is mandatory — the sidecar refuses to start
+      # without RCON (a survival cam body would interfere with a race).
+      RCON_HOST: ${RCON_HOST:-minecraft}
+      RCON_PORT: ${RCON_PORT:-25575}
+      RCON_PASSWORD: ${RCON_PASSWORD:-civ_rcon}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Six three.js worldviews are the rig's real cost: cap the heap so an
+      # OOM is a supervised rig restart, never host pressure near the fleet.
+      NODE_OPTIONS: "--max-old-space-size=1024"
+    mem_limit: 1536m
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8004/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
 
   memory-service:
     build: ../../services/memory-service

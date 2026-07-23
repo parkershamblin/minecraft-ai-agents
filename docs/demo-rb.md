@@ -37,12 +37,55 @@ retries the receipt (#47).
 2. **In-world POV** — spectate in the vanilla client (`/gamemode spectator`),
    shadowing whichever villager the feed says is moving. The milestone feed
    timestamps tell you exactly when/where the beats happened for the cut.
-2b. **The POV grid** — `film/pov-grid.html` + `POV_VIEWER=1`: **DO NOT USE
-   on MC 1.21.6.** Live-verified 2026-07-18: prismarine-viewer 1.33.0's
-   bundled protocol data predates 1.21.6 ("partial packet: world_particles"
-   on the `trail` particle) and the crash takes the whole minecraft-service
-   process — fleet-lethal. The rig code stays (flag-off, tested) for when
-   upstream catches up; film shot 2 with the vanilla spectator client.
+2b. **The POV grid** — `film/pov-grid.html` or `/mission-control?pov=1`:
+   **SAFE since the pov-rig sidecar** (PR: feat/pov-sidecar). The rig runs
+   in its own supervised container with six spectator cam bots; no viewer
+   failure can touch the fleet (fault-injected mid-race: sidecar SIGKILL +
+   SEGV + trail-particle storms — `civ_bot_sessions` held 6, zero
+   reconnects; results table below).
+
+   History, corrected: the 2026-07-18 "fleet-lethal" verdict blamed
+   prismarine-viewer's protocol data; the "partial packet:
+   world_particles" line was actually a fleet-wide minecraft-data 3.111.0
+   bug (trail particle def: color u8 instead of i32 + duration varint —
+   mineflayer parses world_particles in every bot, viewer or not; patched
+   in `patches/minecraft-data+3.111.0.patch`, sentinel test
+   `trailParticleParse.test.ts`). That misparse is non-fatal by itself,
+   so the film-day process death was never causally pinned — which is why
+   the rig is now isolated STRUCTURALLY instead of "fixed": worst case is
+   a dark tile rack that restarts, never a dead fleet.
+
+   **Enable** (containerized Paper only — the sidecar refuses without
+   RCON, because cams must be VERIFIED spectators before any tile serves):
+
+   ```
+   docker compose -f infrastructure/docker/docker-compose.yml --env-file .env --profile pov up -d --build pov-rig
+   ```
+
+   The fleet is untouched — no minecraft-service recreate, no re-seed, and
+   it works mid-session (though start it between races, not during one).
+   Tile order is deterministic: Elara:3100 … Fen:3105 (POV_ROSTER config,
+   matches PovGrid/pov-grid.html hardcoding).
+
+   **Verify**: `curl localhost:8004/status` → six tiles `tracking`; open
+   `/mission-control?pov=1`. **Disable**: `docker compose ... stop pov-rig`.
+   Cam view is a spectator ghost-cam at the racer's eyes (+0.6 forward),
+   not the bot's literal client stream — near-first-person footage.
+   Expect some wrong-looking blocks on 1.21.6 tiles: prismarine-viewer
+   1.33.0's assets stop at 1.21.4 (upstream #473) — cosmetic only.
+
+   | Fault (2026-07-22, throwaway attempt `019f8bec`, 58 min, ended honest) | Fleet effect |
+   |---|---|
+   | REAL V8 heap OOM abort in the rig (unplanned, mid-race) | none — 6/0; auto-restart by policy in 19s, cams re-verified, tiles back unattended |
+   | `docker kill` (SIGKILL), left dead 99s | none — 6/0, race kept ticking; manual `up -d` (kill = user stop, policy correctly silent) |
+   | 900 trail particles at all six cams, viewers live | none — 6/0, tiles tracking |
+   | 900 trail particles at all six racers, viewers live | none — 6/0; 0 partial-packet lines in BOTH processes; mspt avg 2.3 ms |
+
+   Whole-race totals: `civ_bot_sessions` flat 6, `civ_bot_reconnects_total` 0,
+   honest-race deltas 0/0, all six tiles live in `/mission-control?pov=1`.
+   Rig OOM cadence under 6-tile browsing was ~1 per 25 min at the 1024 MB
+   heap cap — a 19 s tile gap each time; raise `--max-old-space-size` in
+   compose if that annoys a shoot.
 3. **The ledger receipt** — terminal shot of the harness output ending in
    `RACE WON — honest-race assertion: CLEAN`, or:
    ```

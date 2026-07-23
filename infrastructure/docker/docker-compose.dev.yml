@@ -39,3 +39,12 @@ services:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "1000"
     command: ["npx", "tsx", "watch", "src/index.ts"]
+
+  pov-rig:
+    volumes:
+      - ../../services/minecraft-service/src:/repo/services/minecraft-service/src
+    # same Windows bind-mount polling story as minecraft-service above
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "1000"
+    command: ["npx", "tsx", "watch", "src/pov/sidecar.ts"]
