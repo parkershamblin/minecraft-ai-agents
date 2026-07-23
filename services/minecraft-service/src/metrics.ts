@@ -123,6 +123,13 @@ export const progressionMilestones = new Counter({
   registers: [registry],
 })
 
+// RB-2 orphan hardening: every increment is a restart that ate a live attempt.
+export const attemptOrphansSwept = new Counter({
+  name: 'civ_attempt_orphans_swept_total',
+  help: 'Orphaned attempts (AttemptStarted without AttemptEnded) closed by the sweep with AttemptEnded{aborted}',
+  registers: [registry],
+})
+
 // civ_player_inventory_items only has series for held items, so it undercounts
 // empty-handed players — this gauge is the honest "who is being watched" count.
 export const playersTracked = new Gauge({

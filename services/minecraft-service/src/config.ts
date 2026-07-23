@@ -121,6 +121,13 @@ const schema = z.object({
   // village is ~64 across. 16 made villagers deaf to neighbors in practice.
   CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(48),
   SPAWN_TIMEOUT_MS: z.coerce.number().int().default(30000),
+  // Orphan-attempt sweep (RB-2 hardening): the ledger the boot/pre-start
+  // sweeps read to close AttemptStarted left dangling by a mid-attempt
+  // restart. The window must cover agent-service's race-rehydration lookback
+  // (6h) or an orphan can still be resurrected as a live race; 0 disables
+  // the sweep entirely (the rollback lever).
+  EVENT_SERVICE_URL: z.string().default('http://localhost:8081'),
+  ATTEMPT_ORPHAN_WINDOW_HOURS: z.coerce.number().min(0).default(24),
   // Freshness guard on commands.minecraft (same failure class as the percept
   // guard): a stale committed offset must never replay the past into the world.
   COMMAND_MAX_AGE_SECONDS: z.coerce.number().int().min(1).default(600),

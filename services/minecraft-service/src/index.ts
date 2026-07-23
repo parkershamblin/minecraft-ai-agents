@@ -10,6 +10,7 @@ import { CommandExecutor } from './actions/executor.ts'
 import { CommandDedupe } from './redis/dedupe.ts'
 import { BotRegistry } from './bots/BotRegistry.ts'
 import { AttemptTracker } from './attempt/attemptTracker.ts'
+import { OrphanSweeper } from './attempt/orphanSweep.ts'
 import { handleAttemptRoute } from './attempt/attemptRoutes.ts'
 import { handlePositionsRoute } from './world/positionsRoute.ts'
 import { RconClient } from './rcon/rcon.ts'
@@ -49,9 +50,38 @@ const executor = new CommandExecutor({
 
 // RB-1 race machinery: the tracker watches every world.events publish and
 // maps outcomes to ProgressionMilestone; the harness drives the attempt
-// lifecycle over /internal/attempt.
-const attempts = new AttemptTracker((envelope) => void producer.publish('world.events', envelope))
+// lifecycle over /internal/attempt. The orphan sweep closes AttemptStarted
+// left dangling by a mid-attempt restart: eagerly at boot, and as the
+// tracker's pre-start guard so a new attempt is never stamped over one.
+const orphanSweeper = new OrphanSweeper({
+  eventServiceUrl: config.EVENT_SERVICE_URL,
+  windowHours: config.ATTEMPT_ORPHAN_WINDOW_HOURS,
+  publish: (envelope) => producer.publish('world.events', envelope),
+  isKnownLocally: (attemptId) => attempts.isCurrentOrClosed(attemptId),
+  noteClosed: (attemptId) => attempts.noteClosed(attemptId),
+  log: logger.child({ module: 'orphan-sweep' }),
+})
+const attempts = new AttemptTracker((envelope) => void producer.publish('world.events', envelope), {
+  preStartGuard: async () => {
+    await orphanSweeper.sweep('pre-start')
+  },
+})
 producer.onWorldEvent((envelope) => attempts.observe(envelope))
+
+// Boot cleanup, off the boot critical path: retry until the ledger answers
+// (event-service may still be starting) so Mission Control phantoms clear
+// without waiting for the next attempt. The pre-start guard stays the
+// blocking enforcement point either way.
+const BOOT_SWEEP_RETRY_MS = 60_000
+function runBootSweep(): void {
+  orphanSweeper.sweep('boot').catch((err: unknown) => {
+    logger.warn(
+      { err: err instanceof Error ? err.message : String(err), retryInMs: BOOT_SWEEP_RETRY_MS },
+      'boot orphan sweep failed — will retry',
+    )
+    setTimeout(runBootSweep, BOOT_SWEEP_RETRY_MS)
+  })
+}
 
 const consumer = new CommandConsumer(config.KAFKA_BROKERS.split(','), executor)
 // extraRoutes takes ONE callback — compose handlers; each returns true when
@@ -80,6 +110,7 @@ inventoryPoller.start()
 await redis.connect()
 await registry.roster.load()
 await producer.connect()
+runBootSweep()
 await consumer.start()
 logger.info('minecraft-service ready — awaiting spawn commands')
 

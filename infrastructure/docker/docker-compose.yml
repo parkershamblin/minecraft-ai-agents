@@ -153,6 +153,9 @@ services:
       KAFKA_BROKERS: redpanda:29092
       REDIS_URL: redis://redis:6379
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # RB-2 orphan hardening: the ledger the boot/pre-start sweeps read to
+      # close AttemptStarted left dangling by a mid-attempt restart.
+      EVENT_SERVICE_URL: http://event-service:8081
       # RCON to the Paper container (compose-internal, port never published) —
       # the inventory poller reads human players' inventories via per-slot
       # `data get`. Unreachable RCON (e.g. vanilla host-server fallback)

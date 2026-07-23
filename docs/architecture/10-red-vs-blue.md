@@ -24,6 +24,15 @@ minecraft-service ── the body
   + milestone mapper: own outcome events → ProgressionMilestone{teamId}
   + Attempt lifecycle: AttemptStarted/Ended (Ended carries honest-race
     assertion: civ_llm_budget_tripped==0, zero fake-provider delta)
+  + orphan sweep (2026-07-23, the 019f8b48 incident): the tracker is
+    in-memory, so a mid-attempt restart used to strand AttemptStarted open
+    in the ledger — phantom live attempts on Mission Control, resurrectable
+    by agent-service's boot rehydration. The sweep reads the ledger's
+    attempt lifecycle (window ATTEMPT_ORPHAN_WINDOW_HOURS=24 ≥ the 6h
+    rehydrate lookback) at boot (retried) and as /internal/attempt/start's
+    blocking guard (503 when the ledger is unreachable), publishing
+    AttemptEnded{aborted} for every unmatched start — orphans are closed
+    by the next boot or before any new attempt, whichever comes first.
         │ world facts + milestones ──▶ Kafka ──▶ event-service ledger
         ▼                                            │ SSE
 prismarine-viewer ×6 (exact-pin, POV_VIEWER off)     ▼

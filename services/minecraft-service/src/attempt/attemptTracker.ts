@@ -121,10 +121,34 @@ interface ActiveAttempt {
   win: { teamId: string; villagerId: string; eventId: string; occurredAt: string } | null
 }
 
+export interface AttemptTrackerOptions {
+  /** Orphan hardening (RB-2): awaited before any AttemptStarted is built.
+   *  The guard is the ledger orphan sweep — a guard that throws refuses the
+   *  start, so a new attempt can never be stamped over a dangling one. */
+  preStartGuard?: () => Promise<void>
+}
+
 export class AttemptTracker {
   private active: ActiveAttempt | null = null
+  /** attemptIds whose AttemptEnded this process published (ended or swept) —
+   *  the sweep consults this so a lagging ledger page never double-aborts. */
+  private closed = new Set<string>()
 
-  constructor(private readonly publish: (envelope: EventEnvelope) => void) {}
+  constructor(
+    private readonly publish: (envelope: EventEnvelope) => void,
+    private readonly options: AttemptTrackerOptions = {},
+  ) {}
+
+  /** True when this process already knows the attempt's fate: it is the one
+   *  running now, or one whose AttemptEnded this process published. */
+  isCurrentOrClosed(attemptId: string): boolean {
+    return this.active?.attemptId === attemptId || this.closed.has(attemptId)
+  }
+
+  /** Record an attempt closed outside end() — the orphan sweep's aborts. */
+  noteClosed(attemptId: string): void {
+    this.closed.add(attemptId)
+  }
 
   /** For GET /internal/attempt — the harness polls this to spot the win. */
   status(): Record<string, unknown> {
@@ -143,9 +167,16 @@ export class AttemptTracker {
     }
   }
 
-  start(input: StartAttemptInput): EventEnvelope {
+  async start(input: StartAttemptInput): Promise<EventEnvelope> {
     if (this.active) {
       throw new Error(`attempt ${this.active.attemptId} is already running — end it first`)
+    }
+    await this.options.preStartGuard?.()
+    // The guard await is an async gap — a concurrent start may have won it
+    // (the cast un-sticks TS's pre-await null narrowing).
+    const raced = this.active as ActiveAttempt | null
+    if (raced) {
+      throw new Error(`attempt ${raced.attemptId} is already running — end it first`)
     }
     const attemptId = uuidv7()
     this.active = {
@@ -244,6 +275,7 @@ export class AttemptTracker {
       },
     })
     this.active = null
+    this.closed.add(attempt.attemptId)
     this.publish(envelope)
     return envelope
   }

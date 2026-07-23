@@ -1,5 +1,6 @@
 import type http from 'node:http'
 import type { AttemptTracker, StartAttemptInput, EndAttemptInput, TeamRoster } from './attemptTracker.ts'
+import { OrphanSweepError } from './orphanSweep.ts'
 
 /**
  * The harness's control surface (RB-1): the attempt lifecycle is driven over
@@ -8,6 +9,7 @@ import type { AttemptTracker, StartAttemptInput, EndAttemptInput, TeamRoster } f
  * through the ledger; these routes only open, inspect, and close it.
  *
  *   POST /internal/attempt/start {label?, difficulty, teams:[{teamId,villagerIds}]}
+ *        — 503 when the pre-start orphan sweep cannot reach the ledger
  *   GET  /internal/attempt                     — status incl. recorded win
  *   POST /internal/attempt/end   {outcome, honestRace:{budgetTrippedDelta,fakeProviderDelta}}
  */
@@ -63,7 +65,7 @@ export async function handleAttemptRoute(
           difficulty: body.difficulty,
           teams,
         }
-        const envelope = tracker.start(input)
+        const envelope = await tracker.start(input)
         reply(201, { attemptId: (envelope.payload as { attemptId: string }).attemptId, eventId: envelope.eventId })
         return true
       }
@@ -94,6 +96,12 @@ export async function handleAttemptRoute(
       reply(200, { eventId: envelope.eventId, payload: envelope.payload })
       return true
     } catch (err) {
+      if (err instanceof OrphanSweepError) {
+        // The pre-start sweep could not clear (or even read) older attempts —
+        // refusing the start is the orphan guarantee, not an internal error.
+        reply(503, { error: `start refused — ${err.message}` })
+        return true
+      }
       reply(409, { error: err instanceof Error ? err.message : String(err) })
       return true
     }
