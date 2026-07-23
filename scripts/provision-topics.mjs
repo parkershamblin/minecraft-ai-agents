@@ -11,8 +11,9 @@
 // Source of truth mirrored here: docs/architecture/03-events-kafka.md §1.
 // Usage: node scripts/provision-topics.mjs   (or `task topics`)
 import { execFileSync } from 'node:child_process'
+import { containerName } from './lib/containers.mjs'
 
-const CONTAINER = process.env.REDPANDA_CONTAINER ?? 'ai-civilization-engine-redpanda-1'
+const CONTAINER = process.env.REDPANDA_CONTAINER ?? containerName('redpanda')
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const TOPICS = [

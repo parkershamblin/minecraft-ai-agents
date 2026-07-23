@@ -3,6 +3,7 @@
 //   node scripts/produce-cmd.mjs <villagerId> <action> <paramsJson> [timeoutMs] [commandId]
 import { execFileSync } from 'node:child_process'
 import { v7 as uuidv7 } from 'uuid'
+import { containerName } from './lib/containers.mjs'
 
 const [villagerId, action, paramsJson, timeoutArg, commandIdArg] = process.argv.slice(2)
 const commandId = commandIdArg ?? uuidv7()
@@ -26,7 +27,7 @@ const envelope = {
 }
 execFileSync(
   'docker',
-  ['exec', '-i', 'ai-civilization-engine-redpanda-1', 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', villagerId],
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', villagerId],
   { input: JSON.stringify(envelope) + '\n' },
 )
 console.log(`${action} command ${commandId} -> ${villagerId}`)

@@ -8,6 +8,7 @@
 // occurredAt override exists to exercise the freshness guard (STALE_COMMAND).
 import { execFileSync } from 'node:child_process'
 import { v7 as uuidv7 } from 'uuid'
+import { containerName } from './lib/containers.mjs'
 
 const [villagerId, action, paramsJson, commandIdArg, occurredAtArg] = process.argv.slice(2)
 // || not ??: '' means "generate one" (callers pass '' to reach occurredAt)
@@ -31,7 +32,7 @@ const envelope = {
 }
 execFileSync(
   'docker',
-  ['exec', '-i', 'ai-civilization-engine-redpanda-1', 'rpk', 'topic', 'produce', 'commands.government', '-k', villagerId],
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.government', '-k', villagerId],
   { input: JSON.stringify(envelope) + '\n' },
 )
 console.log(`${action} command ${commandId} -> ${villagerId}`)

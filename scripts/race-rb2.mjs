@@ -13,6 +13,7 @@
 // 0 won · 2 stalled · 3 aborted/failed preflight.
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { containerName } from './lib/containers.mjs'
 
 const MC = 'http://localhost:8003'
 const AGENT = 'http://localhost:8001'
@@ -54,9 +55,9 @@ async function withRetries(what, fn, tries = 3, delayMs = 5_000) {
   }
 }
 const rcon = (cmd) =>
-  execFileSync('docker', ['exec', 'ai-civilization-engine-minecraft-1', 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
+  execFileSync('docker', ['exec', containerName('minecraft'), 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
 const inContainer = (container, ...cmd) =>
-  execFileSync('docker', ['exec', `ai-civilization-engine-${container}-1`, ...cmd], { encoding: 'utf8' }).trim()
+  execFileSync('docker', ['exec', containerName(container), ...cmd], { encoding: 'utf8' }).trim()
 
 const failures = []
 const check = (ok, what, detail) => {

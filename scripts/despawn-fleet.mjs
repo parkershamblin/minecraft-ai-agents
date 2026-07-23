@@ -9,6 +9,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { v7 as uuidv7 } from 'uuid'
+import { containerName } from './lib/containers.mjs'
 
 const keep = Number(process.argv[2])
 if (!Number.isInteger(keep) || keep < 0) {
@@ -50,7 +51,7 @@ const lines = villagers.map((v) => {
 
 execFileSync(
   'docker',
-  ['exec', '-i', 'ai-civilization-engine-redpanda-1', 'rpk', 'topic', 'produce', 'commands.minecraft', '-f', '%k %v\\n'],
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-f', '%k %v\\n'],
   { input: lines.join('\n') + '\n', stdio: ['pipe', 'inherit', 'inherit'] },
 )
 console.log(`${lines.length} despawn commands published (keeping first ${keep}, keyed by villagerId)`)

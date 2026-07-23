@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { v7 as uuidv7 } from 'uuid'
+import { containerName } from './lib/containers.mjs'
 
 const villagers = JSON.parse(
   readFileSync(new URL('../services/agent-service/seed/villagers.json', import.meta.url), 'utf8'),
@@ -57,7 +58,7 @@ const lines = villagers.map((v) => {
 
 execFileSync(
   'docker',
-  ['exec', '-i', 'ai-civilization-engine-redpanda-1', 'rpk', 'topic', 'produce', 'commands.minecraft', '-f', '%k %v\\n'],
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-f', '%k %v\\n'],
   { input: lines.join('\n') + '\n', stdio: ['pipe', 'inherit', 'inherit'] },
 )
 const roster = villagers.map((v) => `${v.minecraftUsername}(${v.team})`).join(', ')
@@ -67,7 +68,7 @@ if (stations.size > 0) {
   // Give the herd a moment to connect before stationing (connection-throttle
   // should be -1; if bots are missing, rerun with --station only).
   const rcon = (cmd) =>
-    execFileSync('docker', ['exec', 'ai-civilization-engine-minecraft-1', 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
+    execFileSync('docker', ['exec', containerName('minecraft'), 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
   await new Promise((resolve) => setTimeout(resolve, 8_000))
   for (const v of villagers) {
     const post = stations.get(v.team)

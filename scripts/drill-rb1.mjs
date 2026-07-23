@@ -11,6 +11,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { v7 as uuidv7 } from 'uuid'
+import { containerName } from './lib/containers.mjs'
 
 const MC = 'http://localhost:8003'
 const LEDGER = 'http://localhost:8081'
@@ -30,7 +31,7 @@ const teams = ['red', 'blue'].map((teamId) => ({
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const rcon = (cmd) =>
-  execFileSync('docker', ['exec', 'ai-civilization-engine-minecraft-1', 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
+  execFileSync('docker', ['exec', containerName('minecraft'), 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
 
 function produce(action, params, timeoutMs) {
   const commandId = uuidv7()
@@ -48,7 +49,7 @@ function produce(action, params, timeoutMs) {
   }
   execFileSync(
     'docker',
-    ['exec', '-i', 'ai-civilization-engine-redpanda-1', 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', drill.id],
+    ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', drill.id],
     { input: JSON.stringify(envelope) + '\n', stdio: ['pipe', 'ignore', 'inherit'] },
   )
   console.log(`  -> ${action} ${JSON.stringify(params)} (command ${commandId})`)

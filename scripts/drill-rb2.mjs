@@ -21,6 +21,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { v7 as uuidv7 } from 'uuid'
+import { containerName } from './lib/containers.mjs'
 
 const MC = 'http://localhost:8003'
 const AGENT = 'http://localhost:8001'
@@ -37,7 +38,7 @@ const label = flag('label', 'rb2-drill')
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const rcon = (cmd) =>
-  execFileSync('docker', ['exec', 'ai-civilization-engine-minecraft-1', 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
+  execFileSync('docker', ['exec', containerName('minecraft'), 'rcon-cli', cmd], { encoding: 'utf8' }).trim()
 
 const villagers = JSON.parse(
   readFileSync(new URL('../services/agent-service/seed/villagers.json', import.meta.url), 'utf8'),
@@ -70,7 +71,7 @@ function produce(villagerId, action, params, timeoutMs = 30_000) {
   }
   execFileSync(
     'docker',
-    ['exec', '-i', 'ai-civilization-engine-redpanda-1', 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', villagerId],
+    ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', villagerId],
     { input: JSON.stringify(envelope) + '\n', stdio: ['pipe', 'ignore', 'inherit'] },
   )
 }
