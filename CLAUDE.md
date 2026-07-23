@@ -1,32 +1,31 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** FRESH-INSTALL AUDIT SHIPPED (session thirteenth —
-`docs/fresh-install-audit.md` is the full record). Tier-1 sim: fresh
-clone + `COMPOSE_PROJECT_NAME=fresh-sim` isolation (fresh volumes, live
-stack stopped first), README followed verbatim. The old Quickstart died
-at step 3 of 3 (smoke required the gitignored PoC node_modules) and
-ended before the product existed. 10 findings → 4 PRs MERGED: #74
-`.env.example` sync (COMMUNITY_GOAL + THREAT_DEFAULT_STANCE now in the
-template at code defaults), #75 smoke resolves mineflayer from the
-workspace pin (root `npm install` is now a smoke prerequisite;
-actionable failure if skipped), #76 README Quickstart rewrite
-(containerized-Paper default path paired with `MC_HOST=minecraft`, then
-up:all → seed → proof-of-life via rcon `list` + `/events/stream`), #80
-the audit record. Issues filed: #77 nine scripts hardcode
-`ai-civilization-engine-*` container names (REDPANDA_CONTAINER on
-provision-topics is the only escape hatch), #78 dashboard run story
-(not in compose, host-run only), #79 bake spawn-protection=0 +
-connection-throttle=-1 into the minecraft profile (any fresh volume
-reverts to Paper defaults). Sim verified end-to-end on empty volumes:
-seed → Elara deliberating on real ollama (llama3.1:8b, 1.1–1.3s,
-970–1469 tok), full causation chains, threat reflexes live. New traps:
-ledger read envelope is `{data, nextCursor}` (not `items`);
-`MC_HOST=host.docker.internal` reaches containerized Paper only via the
-25565 publish loopback — an accident, use `MC_HOST=minecraft`. STACK
-STATE: live stack was downed for the sim and restored from main
-2026-07-23 (10/10 healthy; sim volumes deleted, live volumes verified
-intact; the merges touch no service images — docs/template/host-script
-only, no rebuild needed). minecraft-service was RECREATED → in-memory
+**Last checkpoint:** FRESH-INSTALL AUDIT CLOSED OUT, ZERO DEBT (session
+thirteenth — `docs/fresh-install-audit.md` is the full record). Tier-1
+sim (fresh clone + `COMPOSE_PROJECT_NAME=fresh-sim` isolation, README
+verbatim) found 10 findings; ALL resolved same day across 9 merged PRs:
+#74 `.env.example` sync, #75 smoke resolves mineflayer from the
+workspace pin (root `npm install` is now a smoke prerequisite), #76
+README Quickstart rewrite (containerized-Paper default path +
+`MC_HOST=minecraft`, up:all → seed → proof-of-life), #80 audit record,
+#81 handoff, #82 container-name helper (`scripts/lib/containers.mjs`
+`containerName()` — every script derives `docker exec` names from
+`COMPOSE_PROJECT_NAME`; closed #77), #83 Paper defaults baked into the
+profile (`SPAWN_PROTECTION: "0"` env + `PATCH_DEFINITIONS` bukkit patch
+to connection-throttle -1; nuke-proof for the CONTAINERIZED server,
+host server stays manual; closed #79), #84 `task dashboard` (dashboard
+host-run BY DECISION, compose stays backend-only; closed #78). Sim
+verified end-to-end on empty volumes: seed → Elara deliberating on real
+ollama (llama3.1:8b, 1.1–1.3s, 970–1469 tok), full causation chains,
+threat reflexes live. New traps learned: ledger read envelope is
+`{data, nextCursor}` (not `items`); `MC_HOST=host.docker.internal`
+reaches containerized Paper only via the 25565 publish loopback — use
+`MC_HOST=minecraft`; itzg `/config` mount syncs to `/data/config` NOT
+`/data`; a PATCH_DEFINITIONS directory wants bare `{file, ops}` files
+(the `{patches:[...]}` wrapper exit(2)s the boot). STACK STATE: live
+stack restored from main 2026-07-23, 10/10 healthy; only #83/#84 among
+the merges touch runtime and neither needs a rebuild (compose env/config
++ Taskfile). minecraft-service was RECREATED during the sim → in-memory
 fleet GONE (respawn commands required); host MC server STOPPED; paper
 profile not running; government-service (mothballed) and pov-rig left
 Exited as found — #72 landed the pov sidecar on main, verify the rig
@@ -39,10 +38,11 @@ between takes; command group is `minecraft-service.command-executor`.
 
 **Next session:** Parker films per `docs/demo-rb.md`. Pre-attempt
 sequence: start the host MC server (currently stopped; or paper profile
-+ `MC_HOST=minecraft`), respawn exactly 6 racers (spawn-fleet defaults
-to ALL 20 — pass the count), verify pov-rig tiles. Open follow-ups:
-SV-14 row (leather craft enum, per-villager stance, persisted posts)
-and audit issues #77/#78/#79. Roadmap beyond T1 unchanged per
++ `MC_HOST=minecraft` — its next start applies the #83 patch, a no-op
+on the live volume), respawn exactly 6 racers (spawn-fleet defaults to
+ALL 20 — pass the count), verify pov-rig tiles. Open follow-ups: SV-14
+row only (leather craft enum, per-villager stance, persisted posts) —
+audit debt is zero. Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
