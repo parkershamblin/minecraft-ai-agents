@@ -50,21 +50,45 @@ repo/DevOps layout, and the milestone roadmap.
 Prerequisites:
 
 - **Docker Desktop** (WSL2 backend) — the whole backbone runs in Compose
-- **A local Minecraft 1.21.6 server** on `:25565` with `online-mode=false`
-  (this repo assumes the host-run server in `../Minecraft 1.21.6 Server`;
-  a containerized PaperMC profile exists as an alternative)
 - **Node 22+**, **go-task** (`winget install Task.Task`)
 - Optional: **Ollama** with `llama3.1:8b` + `nomic-embed-text` pulled
   (the LLM chain degrades openai → ollama → fake; blank API key is fine)
 
 ```sh
 cp .env.example .env        # fill OPENAI_API_KEY or leave blank for Ollama
+npm install                 # workspace deps — the smoke canary needs them
 task up                     # infra: Postgres+pgvector, Redis, Redpanda, Prometheus, Grafana
-task smoke                  # canary: one bot connects to the MC server and chats
 ```
 
+The bots need a Minecraft 1.21.6 server on `:25565`. Pick one:
+
+- **Containerized PaperMC (zero setup — the fresh-clone path):** set
+  `MC_HOST=minecraft` in `.env`, then
+  ```sh
+  docker compose -f infrastructure/docker/docker-compose.yml --env-file .env --profile minecraft up -d --wait minecraft
+  ```
+- **Your own host-run server** (`online-mode=false`): keep the
+  `MC_HOST=host.docker.internal` default and have it listening first.
+
+```sh
+task smoke                  # canary: one bot connects to the MC server and chats
+task up:all                 # + the app services: agent, memory, minecraft, event ledger
+task seed                   # provision the first VILLAGER_COUNT villagers, spawn bots, start tick loops
+```
+
+Proof of life (first deliberation lands within `TICK_INTERVAL_SECONDS`, default 60s):
+
+```sh
+docker exec ai-civilization-engine-minecraft-1 rcon-cli list   # the villager is embodied in-world
+curl -N localhost:8081/events/stream                           # live ledger feed: decisions, moves, chat
+```
+
+(For paged history, `GET :8081/events` always returns oldest-first — pass
+`?since=<ISO timestamp>` for anything recent.)
+
 Consoles once `task up` is green: Redpanda console `:8085`, Grafana `:3001`
-(admin/admin), Prometheus `:9090`.
+(admin/admin), Prometheus `:9090`. The Next.js dashboard is host-run for now —
+`npm run dev --workspace apps/dashboard` on `:3000` — not yet in compose.
 
 ## Layout
 
