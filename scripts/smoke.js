@@ -1,9 +1,18 @@
 // Version-pin canary (`task smoke`): proves the pinned mineflayer stack still
 // logs into the Minecraft server. Exits 0 on spawn+chat, 1 on error/timeout.
 //
-// Until minecraft-service exists (CIV-4), this borrows the archived PoC's
-// node_modules — exactly the empirically-proven versions (mineflayer 4.37.1).
-const mineflayer = require('../experiments/pathfinder-Bot/node_modules/mineflayer')
+// mineflayer resolves from the npm workspace install — the SAME exact pin
+// services/minecraft-service ships (populated by `npm install` at the repo
+// root). Never point this at the archived PoC copies under experiments/:
+// they are gitignored (absent on a fresh clone) and pinned with a caret,
+// so the canary would validate a version the service doesn't run.
+let mineflayer
+try {
+  mineflayer = require('mineflayer')
+} catch {
+  console.error('[smoke] FAIL: mineflayer not installed — run `npm install` at the repo root first')
+  process.exit(1)
+}
 
 const host = process.env.SMOKE_MC_HOST || 'localhost'
 const port = Number(process.env.MC_PORT || 25565)
