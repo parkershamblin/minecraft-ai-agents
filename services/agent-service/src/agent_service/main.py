@@ -18,6 +18,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from agent_service.brain.awareness import ActionAwareness
 from agent_service.brain.civics import CivicState
 from agent_service.brain.race import RaceState
+from agent_service.brain.race_rehydrate import rehydrate_race
 from agent_service.brain.graph import TickDeps, VillagerBrief, build_tick_graph
 from agent_service.brain.scheduler import TickScheduler
 from agent_service.db import make_engine, make_session_factory
@@ -85,7 +86,6 @@ async def lifespan(app: FastAPI):
     percepts = PerceptConsumer(settings.kafka_brokers, redis)
     percepts.civics = civics  # institutions -> working memory (M2-8)
     percepts.race = race  # the attempt scoreboard -> working memory (RB-2)
-    await percepts.start()
 
     graph = build_tick_graph(
         TickDeps(
@@ -117,6 +117,14 @@ async def lifespan(app: FastAPI):
     # Election news broadcasts to every alive villager; the same map resolves
     # candidate/mayor names for percepts (refreshed on seed).
     percepts.roster = {str(v.id): v.name for v in roster}
+    # A restart mid-attempt used to forget the race (in-memory state, committed
+    # offsets) — ask the ledger before consuming, so live news lands on a
+    # rehydrated scoreboard. Then start the consumer AFTER the hooks above are
+    # wired: the old order let early percepts arrive with no reactive-tick hook
+    # and an empty roster.
+    if settings.event_service_url:
+        await rehydrate_race(http_client, settings.event_service_url, race, percepts._name)
+    await percepts.start()
 
     app.state.repo = repo
     app.state.relationships = relationships

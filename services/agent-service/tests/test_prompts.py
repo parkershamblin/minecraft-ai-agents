@@ -388,3 +388,12 @@ def test_community_goal_line_is_off_by_default_and_on_when_set():
     )
     assert steered.startswith(base)  # additive: one line, nothing else moves
     assert "one shared aim: the village needs a proper granary before winter" in steered
+
+
+def test_system_prompt_carries_the_governance_null_guard():
+    """The 2026-07-22 regression: blind brains filled governanceAction from
+    the schema alone — 748 invented electionIds in one evening. The standing
+    rule lives in the system prompt so it holds even when no section renders."""
+    prompt = system_prompt("Elara", {"traits": ["warm"]}, None)
+    assert "governanceAction is null unless" in prompt
+    assert "an electionId is never a project, a race, or a plan" in prompt

@@ -237,7 +237,13 @@ services:
       # D2 filming lever (M2-10): one shared-aim line in every system prompt.
       # Blank = off; pulled only if the arc stalls (plan ruling).
       COMMUNITY_GOAL: ${COMMUNITY_GOAL:-}
+      # RB-2 race rehydration: where a booting brain asks "is an attempt live?"
+      EVENT_SERVICE_URL: http://event-service:8081
       LOG_LEVEL: ${LOG_LEVEL:-info}
+    # The M1-10 rule, python edition: the percept consumer exits(1) on an
+    # unrecoverable crash (silent death froze perception on 2026-07-22) —
+    # failure must show up in restart counts, not as silence.
+    restart: on-failure
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

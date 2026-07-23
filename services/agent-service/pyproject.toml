@@ -15,6 +15,12 @@ dependencies = [
     "uuid6>=2024.7.10",
     "jsonschema>=4.23",
     "aiokafka>=0.12",
+    # Codec completeness (the 2026-07-22 wedge): any legal peer may compress —
+    # rpk produces snappy BY DEFAULT, and one such batch on world.events killed
+    # perception on every boot. Mirror of minecraft-service's kafkajs-snappy.
+    "python-snappy>=0.7",
+    "lz4>=4.3",
+    "zstandard>=0.23",
     "redis>=5.2",
     "langgraph>=0.2.60",
     "fastapi>=0.115",

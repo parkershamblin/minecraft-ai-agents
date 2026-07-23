@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     agent_db_name: str = "agent_db"
 
     memory_service_url: str = "http://localhost:8002"
+    # The ledger read seam (RB-2 rehydration): where a booting brain asks
+    # "is an attempt live right now?". Blank disables rehydration (tests).
+    event_service_url: str = "http://localhost:8081"
 
     # --- Kafka / Redis -------------------------------------------------------
     kafka_brokers: str = "localhost:9092"

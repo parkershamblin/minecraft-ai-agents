@@ -81,6 +81,10 @@ class RaceState:
 
     # ----------------------------------------------------------- readers
 
+    @property
+    def live_attempt_id(self) -> str | None:
+        return self._attempt_id
+
     def team_of(self, villager_id: str) -> str | None:
         return (self._team_of or {}).get(str(villager_id))
 

@@ -16,7 +16,7 @@ the future, so the cache accepts it even when the percept freshness guard
 institutions age by their own clocks.
 """
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 
 # An election whose ends_at passed this long ago without an ElectionDecided

@@ -424,3 +424,66 @@ async def test_civic_events_without_wiring_are_safe():
     await consumer.handle(civic_envelope("ElectionDecided", {"winnerVillagerId": BRAM}))
 
     assert redis.store == {}  # nobody to tell, nothing to crash
+
+
+# ----------------------------------------------------- consumer supervision
+
+
+async def test_consumer_crash_calls_the_exit_hook():
+    """The 2026-07-22 wedge: an exception in the consume loop (live case: a
+    snappy batch without the codec) killed the task silently while heartbeats
+    kept the group Stable — perception dead, nothing logged, nothing restarted.
+    The done-callback must turn that death into a process exit."""
+    import asyncio
+
+    exits: list[int] = []
+    consumer = PerceptConsumer("broker:9092", FakeRedis(), exit_fn=exits.append)
+
+    async def doomed():
+        raise RuntimeError("UnsupportedCodecError: snappy")
+
+    task = asyncio.get_running_loop().create_task(doomed())
+    try:
+        await task
+    except RuntimeError:
+        pass
+    consumer._on_consumer_done(task)
+
+    assert exits == [1]
+
+
+async def test_clean_consumer_end_does_not_exit():
+    import asyncio
+
+    exits: list[int] = []
+    consumer = PerceptConsumer("broker:9092", FakeRedis(), exit_fn=exits.append)
+
+    async def clean():
+        return None
+
+    task = asyncio.get_running_loop().create_task(clean())
+    await task
+    consumer._on_consumer_done(task)
+
+    assert exits == []
+
+
+async def test_cancelled_consumer_does_not_exit():
+    """stop() cancels the task — orderly shutdown must not exit(1)."""
+    import asyncio
+
+    exits: list[int] = []
+    consumer = PerceptConsumer("broker:9092", FakeRedis(), exit_fn=exits.append)
+
+    async def forever():
+        await asyncio.sleep(3600)
+
+    task = asyncio.get_running_loop().create_task(forever())
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    consumer._on_consumer_done(task)
+
+    assert exits == []

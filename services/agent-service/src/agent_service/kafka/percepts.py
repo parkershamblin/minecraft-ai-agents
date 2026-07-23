@@ -26,6 +26,8 @@ and escape_failed just queue for the next scheduled turn.
 
 import asyncio
 import json
+import os
+import sys
 from datetime import UTC, datetime
 from typing import Callable
 
@@ -62,7 +64,7 @@ def _is_stale(occurred_at: str | None) -> bool:
 
 
 class PerceptConsumer:
-    def __init__(self, brokers: str, redis: aioredis.Redis):
+    def __init__(self, brokers: str, redis: aioredis.Redis, exit_fn: Callable[[int], None] = os._exit):
         self._consumer = AIOKafkaConsumer(
             "world.events",
             "government.events",
@@ -72,6 +74,7 @@ class PerceptConsumer:
             enable_auto_commit=True,
         )
         self._redis = redis
+        self._exit_fn = exit_fn
         self._task: asyncio.Task | None = None
         # Set after scheduler construction (main.py): (villager_id, cause_event_id) -> bool.
         self.on_chat_percept: Callable[[str, str], bool] | None = None
@@ -87,7 +90,29 @@ class PerceptConsumer:
     async def start(self) -> None:
         await self._consumer.start()
         self._task = asyncio.create_task(self._run(), name="percept-consumer")
+        # Supervision (the 2026-07-22 wedge): an exception in the consume loop
+        # — a snappy batch without the codec was the live case — used to kill
+        # this task SILENTLY. The consumer object's heartbeat tasks survive, so
+        # the group stays Stable while perception is dead: brains go blind,
+        # races run without race sections, and nothing logs. Same failure class
+        # as the M1-10 kafkajs silent death; same cure: die loudly, let the
+        # restart policy revive us, and let restart counts carry the signal.
+        self._task.add_done_callback(self._on_consumer_done)
         logger.info("percept consumer running", group="agent-service.perception")
+
+    def _on_consumer_done(self, task: asyncio.Task) -> None:
+        if task.cancelled():
+            return  # orderly shutdown (stop())
+        exc = task.exception()
+        if exc is None:
+            return  # consumer.stop() ended the iterator cleanly
+        logger.critical(
+            "percept consumer crashed — exiting so the restart policy revives perception",
+            error=repr(exc),
+        )
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self._exit_fn(1)
 
     async def stop(self) -> None:
         if self._task:

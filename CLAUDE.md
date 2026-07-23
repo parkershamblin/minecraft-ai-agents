@@ -129,6 +129,21 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   Docker volume mounts.
 - kafkajs has no built-in Snappy codec (rpk produces snappy by default) —
   minecraft-service registers `kafkajs-snappy`; keep that import first.
+  PYTHON EDITION (2026-07-22, cost a whole evening of races): aiokafka needs
+  `python-snappy` for the same reason, and without it ONE rpk-produced batch
+  on world.events (a Mission-Control test replayed old attempt events; rpk
+  compressed them snappy) killed agent-service's percept consumer with
+  `UnsupportedCodecError` AT that offset — on EVERY boot, deterministically,
+  while heartbeats kept the group Stable (lag frozen, brains blind: no
+  percepts, no race sections, gather discipline collapsed into move-spam and
+  748 phantom-election governanceActions fed by the COMMUNITY_GOAL line).
+  Codec deps (python-snappy/lz4/zstandard) are now pinned in agent-service,
+  the consume-loop has a done-callback that exits(1) (compose restarts it),
+  and RaceState rehydrates from the ledger at boot. Forensics that found it:
+  `rpk group describe` (frozen offsets, Stable state), then an assign+seek
+  probe at the committed offset inside the container venv. When you rpk
+  produce onto a topic a python service consumes, pass `-z none` — or just
+  don't hand-produce onto live consumer topics.
 - OpenAI strict structured outputs reject optional schema properties — new
   decision-contract fields must be **required-nullable** (`type: ["x","null"]`).
   Corollary (M2-7 structural audit): strict mode ALSO rejects free-form

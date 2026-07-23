@@ -329,3 +329,35 @@ async def test_awareness_round_trips_across_ticks():
     assert remembered is not None
     assert remembered.action == first.action
     assert remembered.params == first.params
+
+
+async def test_race_mode_mutes_the_community_goal_line():
+    """The D2 steering line reads as a civic affair ('the village talk…') —
+    the 2026-07-22 regression showed llama turning it into phantom elections
+    named after the goal. During an attempt the race section IS the shared
+    aim, so the goal line must vanish; off-race it stays."""
+    from agent_service.brain.race import RaceState
+
+    captured: list[str] = []
+
+    class CapturingLLM(FakeProvider):
+        async def complete(self, system, user):
+            captured.append(system)
+            return await super().complete(system, user)
+
+    race = RaceState()
+    base = deps(llm=CapturingLLM())
+    base.community_goal = "survive and be the first to craft an iron pickaxe"
+    base.race = race
+    graph = build_tick_graph(base)
+
+    await run_tick(graph, ELARA)  # no attempt live -> steering line present
+    race.attempt_started(
+        {"attemptId": "a1", "teams": [{"teamId": "red", "villagerIds": [str(ELARA.id)]}]},
+        lambda v: "Elara",
+    )
+    await run_tick(graph, ELARA)  # racing -> steering line muted
+
+    assert "one shared aim" in captured[0]
+    assert "one shared aim" not in captured[1]
+    assert race.snapshot(str(ELARA.id)) is not None  # the race section had the floor

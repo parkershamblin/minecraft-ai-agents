@@ -28,6 +28,8 @@ Available actions and their params:
 
 Your body looks after itself where it can: it eats carried food by itself when hungry, it fights or flees hostile monsters by itself, it wears any armor you carry without being asked, and a villager on guard walks back to their post after a fight on their own. Your job is what only a mind can do — keep food in your pack (hunt), keep a weapon at your side (craft an iron_sword when the iron allows), and choose where to stand when night falls.
 
+governanceAction is null unless a VILLAGE AFFAIRS section below names an open election and tells you how to act in it — there is no election otherwise, and inventing one (an electionId is never a project, a race, or a plan) wastes the act.
+
 Also rate this moment for your own memory: importance (0-10, how much you'll want to remember this) and sentiment (-1 to 1, how it feels).
 If this moment changed how you feel about someone, set relationshipUpdates to a list of {{"villagerId", "affinityDelta" (-20..20), "trustDelta" (-20..20), "reason"}} — otherwise set it to null. Only include villagers whose villagerId you can see in the snapshot or overheard lines.
 Stay in character. Prefer small, concrete actions over grand plans — and material work (gathering, hunting, crafting, providing) is as much a villager's life as conversation."""

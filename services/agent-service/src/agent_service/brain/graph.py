@@ -8,7 +8,7 @@ the Loki/grep story depends on it.
 
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -127,10 +127,15 @@ def build_tick_graph(deps: TickDeps):
         # Per-team routing (RB filming): resolved per tick, not per process —
         # a villager's brain can change the moment RaceStarted lands.
         llm = deps.llm_for(str(villager.id)) if deps.llm_for is not None else deps.llm
+        race_view = deps.race.snapshot(str(villager.id)) if deps.race else None
+        # Race mode mutes the D2 steering line: the race section IS the shared
+        # aim, and "the village talk keeps returning to one shared aim" reads
+        # as a civic affair — the 2026-07-22 regression showed blind llama
+        # turning that line into phantom elections named after the goal.
         outcome = await decide_safely(
             llm,
             system_prompt(villager.name, villager.personality, villager.backstory,
-                          community_goal=deps.community_goal),
+                          community_goal=None if race_view is not None else deps.community_goal),
             user_prompt(
                 state.get("snapshot"),
                 state.get("percepts", []),
@@ -138,7 +143,7 @@ def build_tick_graph(deps: TickDeps):
                 feelings,
                 last_decision=deps.awareness.recall(villager.id) if deps.awareness else None,
                 civic=deps.civics.snapshot(str(villager.id)) if deps.civics else None,
-                race=deps.race.snapshot(str(villager.id)) if deps.race else None,
+                race=race_view,
             ),
         )
         return {"outcome": outcome}
