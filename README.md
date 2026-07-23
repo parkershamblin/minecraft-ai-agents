@@ -1,4 +1,4 @@
-# AI Civilization Engine
+# Minecraft AI Agents
 
 [![events-contracts](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/events-contracts.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/events-contracts.yml)
 [![event-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/event-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/event-service.yml)
