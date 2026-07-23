@@ -1,4 +1,58 @@
-# Session Handoff — DOCS ALIGNED (architecture ↔ post-#37 reality, PRs #60-#61) · film when ready
+# Session Handoff — PERCEPTION HARDENED (PR #71) · race validated · film when ready
+
+## Session 2026-07-22/23 (twelfth) — the snappy batch that blinded the fleet
+
+**Parker's brief: fix the race-brain regression (zero-milestone races,
+phantom `iron_pickaxe_race` elections) + the orphaned-attempt class.**
+Root cause was never prompting: a Mission-Control test replayed old
+attempt events onto `world.events` via `rpk produce` (snappy by
+default); aiokafka had no snappy codec, so the percept consumer's
+unsupervised `create_task` died with `UnsupportedCodecError` at
+world.events p5@56640 — deterministically on every boot since ~18:40Z,
+while the consumer object's heartbeats kept the group Stable. Frozen
+offsets, zero logs, brains blind: no percepts, no race sections
+(AttemptStarted for the evening races sat thousands of offsets past the
+wedge), gather discipline collapsed (win window gather 62/craft 24 vs
+fail window move 79/gather 4), and blind llama turned the
+COMMUNITY_GOAL system-prompt line into 748 invented-election
+governanceActions. Forensics: `rpk group describe` (Stable + frozen),
+offset-vs-AttemptStarted position in the partition, then an
+assign+seek aiokafka probe inside the container venv that reproduced
+the exact exception.
+
+- **PR #71 (merged, deployed):** codec deps
+  (python-snappy/lz4/zstandard); done-callback that logs CRITICAL and
+  exits(1) on consumer death + compose `restart: on-failure` (the
+  M1-10 kafkajs rule, python edition); consumer starts AFTER
+  roster/reactive hooks; RaceState boot rehydration from the
+  event-service ledger (6h window, cursor-paged) so a restart
+  mid-attempt no longer blinds prompts; system-prompt
+  governanceAction-null guard; race mode mutes the COMMUNITY_GOAL line.
+- **Validation:** throwaway `019f8c68` (easy, mob-free, guard stance)
+  WON honest in 768.5s — coal +3m, iron +8m, furnace +10m,
+  ingot/pickaxe +13m; decision mix gather 52/craft 46/idle 2; blue
+  team live-routed to gemma3:12b (proves consumer→RaceState→TeamRouter
+  end-to-end); 0 phantom elections; honest-race deltas 0/0.
+- **Orphan class:** `019f8b48` (19:23Z, tracker restart amnesia) closed
+  with an `operator-cleanup` AttemptEnded (rpk `-z none`,
+  key=attemptId). Prevention chip filed (startup sweep in
+  attemptTracker).
+- **Deploy state:** main → agent-service + minecraft-service (#68 in).
+  pov-rig container STOPPED: port pool 3100-3105 clashes with main's
+  minecraft-service mapping, and **PR #70 is stranded** — merged into
+  `fix/trail-particle-def` (its stacked base) after #68 had already
+  squash-merged, so pov-rig never reached main. Re-land chip filed;
+  POV cams offline until it runs. Fleet respawned to exactly the 6
+  racers (`spawn-fleet.mjs` defaults to ALL entries — pass a count;
+  `despawn-fleet.mjs 6` trims).
+- **Diagnosis traps for next time:** (1) the RB-2 harness preflight
+  runs ~20 minutes — decisions sampled between harness launch and the
+  ledger's `AttemptStarted.occurredAt` are village-mode ticks that
+  look exactly like the regression (no race section, all-llama
+  routing); anchor every window on the ledger timestamp. (2) "fleet
+  alive, brains dumb" → `rpk group describe agent-service.perception`
+  FIRST. (3) Never `rpk produce` onto a topic a python service
+  consumes without `-z none`.
 
 ## Session 2026-07-22 (eleventh) — the docs catch up to the code: architecture ↔ bottleneck reality
 

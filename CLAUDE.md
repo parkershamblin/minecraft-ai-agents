@@ -1,30 +1,42 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** DOCS ALIGNED (session eleventh — `docs/HANDOFF.md`).
-Architecture docs now match post-#37 code reality: PRs #60-#61 (merged)
-updated 01/02/03/05/09 against file-verified facts; 00/04/06/07/08/10
-verified clean. Still-open bottleneck work (verified ABSENT from code —
-never re-document as shipped): memory decay/archival job, partition
-raise beyond 6 (dispatch lanes make it non-urgent), government
-vote-lock removal, mem limits beyond postgres/redpanda/minecraft,
-ledger range-partitioning. Gotcha: PR #37's commit message claims
-`lingerMs` but its diff never added it — when writing docs from a PR,
-trust the diff, not the commit message. Guard-arc state unchanged
-(session tenth): `.env` runs `THREAT_DEFAULT_STANCE=guard` (revert to
-cautious for speed records; the guard tax ≈80s); first_diamond parked
-on `rb-t2-diamond-wip`. Records: Easy 360.4s (`019f7337`), Normal 881s
-(`019f7352`), Normal+mobs 660.6s (`019f744d`, filmed take). POV_VIEWER
-stays 0 on 1.21.6 (fleet-lethal parse crash). Drill hygiene: clear
-packs before staged gives (full packs drop items silently); mute
-doMobSpawning between takes (an idle fleet under Normal spawning
-accumulates a 200-mob siege); consumer group is
+**Last checkpoint:** PERCEPTION HARDENED, RACE VALIDATED (session
+twelfth — `docs/HANDOFF.md`). The zero-milestone "brain regression" was
+never a prompting problem: one rpk-produced snappy batch on world.events
+(a Mission-Control test replay) killed agent-service's aiokafka consume
+loop silently on every boot since ~18:40Z (heartbeats kept the group
+Stable; brains blind, phantom elections from the COMMUNITY_GOAL line).
+PR #71 (merged, deployed from main): codec deps, exit(1) supervision +
+`restart: on-failure`, consumer starts after roster/hooks, RaceState
+boot rehydration from the ledger, governanceAction-null guard, race
+mode mutes COMMUNITY_GOAL. Validated live: throwaway `019f8c68` WON
+honest 768.5s easy (guard stance, mob-free), full ladder in 13m, mix
+gather 52/craft 46/idle 2, blue on gemma live, 0 phantom elections.
+Orphan attempt `019f8b48` closed (operator-cleanup AttemptEnded);
+prevention chip filed. DIAGNOSIS TRAPS: harness preflight runs ~20 min —
+decisions sampled before the ledger's AttemptStarted.occurredAt are
+village-mode ticks that look exactly like the regression; and `rpk
+group describe agent-service.perception` (Stable + frozen offsets =
+dead consumer) comes BEFORE blaming prompts. Deploy state: main built
+into agent-service AND minecraft-service (#68 in); **pov-rig container
+STOPPED** — its 3100-3105 pool clashes with main's minecraft-service
+mapping, and PR #70 was merged into `fix/trail-particle-def` (stacked
+base), never reached main — POV cams offline until the re-land chip
+runs. Fleet respawned: exactly 6 racers (spawn-fleet defaults to ALL
+20 — pass the count; despawn-fleet 6 trims). `.env` still sets
+COMMUNITY_GOAL (fine: race mode mutes it, village mode keeps it under
+the new guard) and THREAT_DEFAULT_STANCE=guard (revert to cautious for
+speed records; guard tax ≈80s). Records: Easy 360.4s (`019f7337`),
+Normal 881s (`019f7352`), Normal+mobs 660.6s (`019f744d`, filmed).
+Drill hygiene unchanged: clear packs before staged gives; mute
+doMobSpawning between takes; command group is
 `minecraft-service.command-executor`.
 
-**Next session:** Parker films per `docs/demo-rb.md` — the guard fleet
-fights its way up the ladder now, arguably the better footage. Open
-follow-ups in the SV-14 row (leather craft enum, per-villager stance,
-persisted posts). Roadmap beyond T1 unchanged per
-`docs/architecture/10-red-vs-blue.md`.
+**Next session:** Parker films per `docs/demo-rb.md` — fleet is
+record-attempt ready (post-fix throwaway won clean). Re-land #70
+(pov-rig) via the chip before any POV footage. Open follow-ups in the
+SV-14 row (leather craft enum, per-villager stance, persisted posts).
+Roadmap beyond T1 unchanged per `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
 
