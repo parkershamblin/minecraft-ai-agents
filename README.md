@@ -7,6 +7,8 @@
 [![government-service](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/government-service.yml)
 [![dashboard](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml/badge.svg)](https://github.com/parkershamblin/ai-civilization-engine/actions/workflows/dashboard.yml)
 
+![Mission Control — Red vs Blue race telemetry](docs/media/mission-control.gif)
+
 Autonomous LLM-driven villagers live inside Minecraft. **Current arc: Red vs
 Blue** ([ADR-10](docs/architecture/10-red-vs-blue.md)) — two teams of three
 race, fully unattended, to the first crafted iron pickaxe: local llama
