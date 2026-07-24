@@ -1,0 +1,38 @@
+{
+  "$comment": "Frozen RB-race benchmark config (Phase 1, docs/benchmark-rb.md). Every run in a model sweep uses EXACTLY these knobs — only the model axis varies, or the table measures the harness, not the LLM. GovSim-style validity: greedy decoding (temperature 0) + N seeded runs + mean/95% CI.",
+  "benchmark": "rb-race",
+  "configVersion": 1,
+  "frozen": {
+    "difficulty": "easy",
+    "mobs": false,
+    "VILLAGER_COUNT": 6,
+    "TICK_INTERVAL_SECONDS": 30,
+    "THREAT_DEFAULT_STANCE": "cautious",
+    "COMMUNITY_GOAL": "",
+    "OLLAMA_NUM_CTX": 8192,
+    "LLM_MAX_CONCURRENT_REQUESTS": 4,
+    "LLM_DAILY_TOKEN_BUDGET": 100000000,
+    "LLM_TEMPERATURE": 0.0
+  },
+  "roster": {
+    "red": [
+      "019f8e2a-0000-7000-8000-0000000e1a2a",
+      "019f8e2a-0000-7000-8000-0000000b2a44",
+      "019f8e2a-0000-7000-8000-0000000c3e55"
+    ],
+    "blue": [
+      "019f8e2a-0000-7000-8000-0000000d0004",
+      "019f8e2a-0000-7000-8000-0000000d0005",
+      "019f8e2a-0000-7000-8000-0000000d0006"
+    ]
+  },
+  "varyingAxis": {
+    "$comment": "The ONE thing a sweep may change per run: the model. Either the global Ollama model, or the per-team split for head-to-head runs.",
+    "env": ["LLM_MODEL_OLLAMA", "LLM_TEAM_MODELS"]
+  },
+  "referenceRecord": {
+    "$comment": "Fastest known honest run under this config (Easy, mob-free).",
+    "attemptIdPrefix": "019f7337",
+    "durationSeconds": 360.4
+  }
+}

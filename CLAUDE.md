@@ -1,28 +1,32 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** RB FLAGSHIP FILMED — Phase 0 of the model-benchmark
-arc COMPLETE (2026-07-24). Attempt `019f9361-5913-7642-903e-1826f731c0d4`,
-blue/Ansel won 911.4s, honest `{0,0}`, zero intervention. Artifacts
-in-repo: `film/rb-flagship-take-1-20260724.mp4`, `film/flagship-slice.json`
-(the golden fixture for Phase 1), scoreboard stills. The benchmark plan is
-COMMITTED at `docs/benchmark-rb.md` — GovSim-style (`papers/GovSim.pdf`)
-model-comparison table for the RB race; phases: 1 metric substrate,
-2 N-run model sweep, 3 report. Locked decisions live in the doc's kickoff
-box (Python in `bench/`, frozen config Easy mob-free, `LLM_TEMPERATURE`
-already wired — doc-only). Reference papers now in `papers/`. Prior
-checkpoint (fresh-install audit, zero debt) recorded in
-`docs/fresh-install-audit.md` + `docs/HANDOFF.md` history. Records: Easy
-360.4s (`019f7337`), Normal 881s (`019f7352`), Normal+mobs 660.6s
-(`019f744d`); filming runbook stays `docs/demo-rb.md` (drill hygiene:
-clear packs before staged gives, mute doMobSpawning between takes,
-command group `minecraft-service.command-executor`).
+**Last checkpoint:** PHASE 1 METRIC SUBSTRATE BUILT (2026-07-24, branch
+`phase1-bench-substrate`). Deliverables 1→4 of `docs/benchmark-rb.md`
+shipped: `bench/race/frozen-config.json` + protocol README (Easy mob-free,
+temp 0.0, single varying axis = the model), `LLM_TEMPERATURE` documented
+in `.env.example`/`.env`, `bench/bench_race.py` (Tier A slice mode +
+Tier B `--attempt` ledger mode; ledger `MAX_LIMIT=100` — pages 400 above
+it), Tier A golden test `bench/test_race_metrics.py` against
+`film/flagship-slice.json` → `bench/results/race_flagship.expected.json`,
+wired into `task test` + `.github/workflows/bench.yml`. Tier B
+live-smoked against the flagship attempt (per-team tallies sane); its
+golden fixture lands with the first Phase 2 run BY DECISION. Local-only
+flake (pre-existing, green in CI): `test_no_key_falls_to_ollama_with_warmup`
+fails when `.env` pins `LLM_MODEL_OLLAMA=gemma3:12b` — run
+`LLM_MODEL_OLLAMA=llama3.1:8b task test` for a clean local pass. Phase 0
+artifacts: attempt `019f9361-…`, blue/Ansel 911.4s honest `{0,0}`,
+`film/rb-flagship-take-1-20260724.mp4`. Records: Easy 360.4s (`019f7337`),
+Normal 881s (`019f7352`), Normal+mobs 660.6s (`019f744d`); filming
+runbook `docs/demo-rb.md`.
 
-**Next session:** Execute Phase 1 per `docs/benchmark-rb.md` (plan
-APPROVED — implement directly, deliverables 1→4; substrate only: NO live
-races, NO model sweep, NO provider code; work on a branch). Golden test
-input is `film/flagship-slice.json`. Open follow-ups: SV-14 row only
-(leather craft enum, per-villager stance, persisted posts) — audit debt
-is zero. Roadmap beyond T1 unchanged per
+**Next session:** Phase 2 per `docs/benchmark-rb.md` — the N-run model
+sweep under `bench/race/frozen-config.json` (N≥5 per model, temp 0.0 via
+process env, honest runs only), capture a villager-window slice on the
+first run as Tier B's golden fixture, aggregate via `bench/stats.py`.
+Small follow-up: make `test_no_key_falls_to_ollama_with_warmup`
+env-independent (pass `llm_model_ollama` explicitly). Open follow-ups:
+SV-14 row only (leather craft enum, per-villager stance, persisted
+posts). Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide

@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+# run artifacts stay local; only committed golden expectations ride along
+results/*
+!results/*.expected.json

@@ -82,7 +82,7 @@ tasks:
       - 'node scripts/drill-rb2.mjs --bot {{.BOT | default "Elara"}} --stall-minutes {{.STALL | default "8"}}'
 
   test:
-    desc: Run all test suites (contracts, minecraft, agent, memory, event, government)
+    desc: Run all test suites (contracts, minecraft, agent, memory, event, government, bench)
     vars:
       # .\gradlew.bat (explicit path, double-backslash survives the POSIX
       # shell): bare batch names fail under NoDefaultCurrentDirectoryInExePath=1
@@ -95,3 +95,6 @@ tasks:
       - cd services/memory-service && uv run pytest -q
       - cd services/event-service && {{.GRADLEW}} test
       - cd services/government-service && {{.GRADLEW}} test
+      # bench has no pyproject by design (stdlib + --with deps); the golden
+      # test gates the RB-race metric extractor against film/flagship-slice.json
+      - cd bench && uv run --python 3.12 --with pytest pytest -q

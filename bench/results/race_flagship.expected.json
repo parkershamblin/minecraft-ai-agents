@@ -1,0 +1,84 @@
+{
+  "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+  "label": "flagship-take-1",
+  "difficulty": "normal",
+  "teams": {
+    "red": ["Elara", "Bram", "Wren"],
+    "blue": ["Ansel", "Petra", "Fen"]
+  },
+  "outcome": "won",
+  "winner": {
+    "team": "blue",
+    "villager": "Ansel"
+  },
+  "durationSeconds": 911.4,
+  "honestRace": {
+    "fakeProviderDelta": 0,
+    "budgetTrippedDelta": 0
+  },
+  "milestones": {
+    "red": {
+      "first_coal": {
+        "offsetSeconds": 608.473,
+        "villager": "Wren"
+      },
+      "first_iron_ore": {
+        "offsetSeconds": 705.534,
+        "villager": "Wren"
+      },
+      "furnace_placed": {
+        "offsetSeconds": 757.753,
+        "villager": "Wren"
+      }
+    },
+    "blue": {
+      "first_coal": {
+        "offsetSeconds": 363.904,
+        "villager": "Petra"
+      },
+      "first_iron_ore": {
+        "offsetSeconds": 485.118,
+        "villager": "Ansel"
+      },
+      "furnace_placed": {
+        "offsetSeconds": 690.459,
+        "villager": "Ansel"
+      },
+      "first_ingot": {
+        "offsetSeconds": 911.065,
+        "villager": "Ansel"
+      },
+      "iron_pickaxe": {
+        "offsetSeconds": 911.065,
+        "villager": "Ansel"
+      }
+    }
+  },
+  "firstToRung": {
+    "first_coal": {
+      "team": "blue",
+      "offsetSeconds": 363.904,
+      "leadMarginSeconds": 244.569
+    },
+    "first_iron_ore": {
+      "team": "blue",
+      "offsetSeconds": 485.118,
+      "leadMarginSeconds": 220.416
+    },
+    "furnace_placed": {
+      "team": "blue",
+      "offsetSeconds": 690.459,
+      "leadMarginSeconds": 67.294
+    },
+    "first_ingot": {
+      "team": "blue",
+      "offsetSeconds": 911.065,
+      "leadMarginSeconds": null
+    },
+    "iron_pickaxe": {
+      "team": "blue",
+      "offsetSeconds": 911.065,
+      "leadMarginSeconds": null
+    }
+  }
+}

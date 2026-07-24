@@ -1,0 +1,38 @@
+# Gates the RB-race metric extractor (bench/) against extractor drift: the
+# Tier A golden test locks bench_race.py to film/flagship-slice.json. Mirrors
+# the per-suite path-filtered callers; standalone because bench has no
+# pyproject/lockfile or image (stdlib + --with deps by design).
+name: bench
+on:
+  push:
+    branches: [main]
+    paths:
+      [
+        "bench/**",
+        "film/flagship-slice.json",
+        "services/agent-service/seed/villagers.json",
+        ".github/workflows/bench.yml",
+      ]
+  pull_request:
+    paths:
+      [
+        "bench/**",
+        "film/flagship-slice.json",
+        "services/agent-service/seed/villagers.json",
+        ".github/workflows/bench.yml",
+      ]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - working-directory: bench
+        run: uv run --python 3.12 --with pytest pytest -q
