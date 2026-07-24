@@ -24,3 +24,7 @@ Thumbs.db
 # but is not part of it — multi-GB world saves don't belong in git.
 Minecraft 1.21.6 Server/
 .coverage
+
+# Java build output (Eclipse/VSCode drops compiled classes in bin/; Gradle
+# output is build/ — neither belongs in git).
+services/*/bin/
