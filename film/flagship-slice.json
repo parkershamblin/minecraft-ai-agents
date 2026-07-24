@@ -1,0 +1,223 @@
+{
+  "data": [
+    {
+      "eventId": "019f9361-5913-7642-903e-1ec93804ec72",
+      "eventType": "AttemptStarted",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:07:38.387Z",
+      "recordedAt": "2026-07-24T09:07:38.390235Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f9361-5913-7642-903e-216edbc4a8e3",
+      "causationId": null,
+      "topic": "world.events",
+      "payload": {
+        "label": "flagship-take-1",
+        "teams": [
+          {
+            "teamId": "red",
+            "villagerIds": [
+              "019f8e2a-0000-7000-8000-0000000e1a2a",
+              "019f8e2a-0000-7000-8000-0000000b2a44",
+              "019f8e2a-0000-7000-8000-0000000c3e55"
+            ]
+          },
+          {
+            "teamId": "blue",
+            "villagerIds": [
+              "019f8e2a-0000-7000-8000-0000000d0004",
+              "019f8e2a-0000-7000-8000-0000000d0005",
+              "019f8e2a-0000-7000-8000-0000000d0006"
+            ]
+          }
+        ],
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "difficulty": "normal"
+      }
+    },
+    {
+      "eventId": "019f9366-e693-7502-900a-fe0c392c65d6",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:13:42.291Z",
+      "recordedAt": "2026-07-24T09:13:42.294244Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f9366-e5ee-7319-b32e-c8bc88eb9e36",
+      "causationId": "019f9366-e5ee-7319-b32e-c73e15634c69",
+      "topic": "world.events",
+      "payload": {
+        "detail": "mined coal (1 from coal ore)",
+        "teamId": "blue",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "first_coal",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000d0005"
+      }
+    },
+    {
+      "eventId": "019f9368-c011-7567-8128-f165d37ba741",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:15:43.505Z",
+      "recordedAt": "2026-07-24T09:15:43.507694Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f9368-bfd7-73aa-afed-1976cd31f103",
+      "causationId": "019f9368-bfd7-73aa-afed-14b13dfbb1a4",
+      "topic": "world.events",
+      "payload": {
+        "detail": "mined iron ore (2 raw iron from iron ore)",
+        "teamId": "blue",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "first_iron_ore",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000d0004"
+      }
+    },
+    {
+      "eventId": "019f936a-a1ec-76a3-aeb6-322c87d60ac6",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:17:46.86Z",
+      "recordedAt": "2026-07-24T09:17:46.862553Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936a-a169-77ee-85b5-641ae9681825",
+      "causationId": "019f936a-a169-77ee-85b5-62088ab08ff7",
+      "topic": "world.events",
+      "payload": {
+        "detail": "mined coal (1 from coal ore)",
+        "teamId": "red",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "first_coal",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000c3e55"
+      }
+    },
+    {
+      "eventId": "019f936b-e22e-727e-826e-d99bcf9fe4c8",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:19:08.846Z",
+      "recordedAt": "2026-07-24T09:19:08.849042Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936b-b97f-7d84-8a33-92178abc73d3",
+      "causationId": "019f936b-e216-752f-ac76-9771fef514c6",
+      "topic": "world.events",
+      "payload": {
+        "detail": "crafted a furnace",
+        "teamId": "blue",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "furnace_placed",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000d0004"
+      }
+    },
+    {
+      "eventId": "019f936c-1d11-71cf-899a-0f5f14f1d14e",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:19:23.921Z",
+      "recordedAt": "2026-07-24T09:19:23.941221Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936c-1be9-768d-b378-90519fdea904",
+      "causationId": "019f936c-1be9-768d-b378-8d6a49e296b0",
+      "topic": "world.events",
+      "payload": {
+        "detail": "mined iron ore (1 raw iron from iron ore)",
+        "teamId": "red",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "first_iron_ore",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000c3e55"
+      }
+    },
+    {
+      "eventId": "019f936c-e90c-754d-b532-b8076e2fed8f",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:20:16.14Z",
+      "recordedAt": "2026-07-24T09:20:16.17665Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936c-39fc-74f7-9c97-cd223d3706a1",
+      "causationId": "019f936c-e909-76a5-8ad0-91c2fa37ac0f",
+      "topic": "world.events",
+      "payload": {
+        "detail": "crafted a furnace",
+        "teamId": "red",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "furnace_placed",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000c3e55"
+      }
+    },
+    {
+      "eventId": "019f936f-3fec-77eb-80fe-58492a52773a",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:22:49.452Z",
+      "recordedAt": "2026-07-24T09:22:49.515854Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936e-0ded-7c2e-a9bd-21d610a8ed38",
+      "causationId": "019f936f-3fe9-754d-a78c-0a76f2d03509",
+      "topic": "world.events",
+      "payload": {
+        "detail": "smelted 3 iron ingots",
+        "teamId": "blue",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "first_ingot",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000d0004"
+      }
+    },
+    {
+      "eventId": "019f936f-3fec-77eb-80fe-5cb1727cd8fe",
+      "eventType": "ProgressionMilestone",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:22:49.452Z",
+      "recordedAt": "2026-07-24T09:22:49.469013Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936e-0ded-7c2e-a9bd-21d610a8ed38",
+      "causationId": "019f936f-3fe9-754d-a78c-0a76f2d03509",
+      "topic": "world.events",
+      "payload": {
+        "detail": "crafted an iron pickaxe — the winning craft",
+        "teamId": "blue",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "milestone": "iron_pickaxe",
+        "villagerId": "019f8e2a-0000-7000-8000-0000000d0004"
+      }
+    },
+    {
+      "eventId": "019f936f-416b-76af-806c-b591dc116c41",
+      "eventType": "AttemptEnded",
+      "schemaVersion": 1,
+      "occurredAt": "2026-07-24T09:22:49.835Z",
+      "recordedAt": "2026-07-24T09:22:49.845229Z",
+      "source": "minecraft-service",
+      "aggregateType": "Attempt",
+      "aggregateId": "019f9361-5913-7642-903e-1826f731c0d4",
+      "correlationId": "019f936f-416c-7371-8051-05c94bb85593",
+      "causationId": null,
+      "topic": "world.events",
+      "payload": {
+        "outcome": "won",
+        "attemptId": "019f9361-5913-7642-903e-1826f731c0d4",
+        "honestRace": { "fakeProviderDelta": 0, "budgetTrippedDelta": 0 },
+        "winningTeamId": "blue",
+        "winningEventId": "019f936f-3fe9-754d-a78c-0a76f2d03509",
+        "durationSeconds": 911.4,
+        "winningVillagerId": "019f8e2a-0000-7000-8000-0000000d0004"
+      }
+    }
+  ],
+  "nextCursor": null
+}

@@ -1,48 +1,28 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** FRESH-INSTALL AUDIT CLOSED OUT, ZERO DEBT (session
-thirteenth — `docs/fresh-install-audit.md` is the full record). Tier-1
-sim (fresh clone + `COMPOSE_PROJECT_NAME=fresh-sim` isolation, README
-verbatim) found 10 findings; ALL resolved same day across 9 merged PRs:
-#74 `.env.example` sync, #75 smoke resolves mineflayer from the
-workspace pin (root `npm install` is now a smoke prerequisite), #76
-README Quickstart rewrite (containerized-Paper default path +
-`MC_HOST=minecraft`, up:all → seed → proof-of-life), #80 audit record,
-#81 handoff, #82 container-name helper (`scripts/lib/containers.mjs`
-`containerName()` — every script derives `docker exec` names from
-`COMPOSE_PROJECT_NAME`; closed #77), #83 Paper defaults baked into the
-profile (`SPAWN_PROTECTION: "0"` env + `PATCH_DEFINITIONS` bukkit patch
-to connection-throttle -1; nuke-proof for the CONTAINERIZED server,
-host server stays manual; closed #79), #84 `task dashboard` (dashboard
-host-run BY DECISION, compose stays backend-only; closed #78). Sim
-verified end-to-end on empty volumes: seed → Elara deliberating on real
-ollama (llama3.1:8b, 1.1–1.3s, 970–1469 tok), full causation chains,
-threat reflexes live. New traps learned: ledger read envelope is
-`{data, nextCursor}` (not `items`); `MC_HOST=host.docker.internal`
-reaches containerized Paper only via the 25565 publish loopback — use
-`MC_HOST=minecraft`; itzg `/config` mount syncs to `/data/config` NOT
-`/data`; a PATCH_DEFINITIONS directory wants bare `{file, ops}` files
-(the `{patches:[...]}` wrapper exit(2)s the boot). STACK STATE: live
-stack restored from main 2026-07-23, 10/10 healthy; only #83/#84 among
-the merges touch runtime and neither needs a rebuild (compose env/config
-+ Taskfile). minecraft-service was RECREATED during the sim → in-memory
-fleet GONE (respawn commands required); host MC server STOPPED; paper
-profile not running; government-service (mothballed) and pov-rig left
-Exited as found — #72 landed the pov sidecar on main, verify the rig
-before POV footage. `.env` unchanged: COMMUNITY_GOAL set (race mode
-mutes it) and THREAT_DEFAULT_STANCE=guard (revert to cautious for speed
-records; guard tax ≈80s). Records: Easy 360.4s (`019f7337`), Normal
-881s (`019f7352`), Normal+mobs 660.6s (`019f744d`, filmed). Drill
-hygiene unchanged: clear packs before staged gives; mute doMobSpawning
-between takes; command group is `minecraft-service.command-executor`.
+**Last checkpoint:** RB FLAGSHIP FILMED — Phase 0 of the model-benchmark
+arc COMPLETE (2026-07-24). Attempt `019f9361-5913-7642-903e-1826f731c0d4`,
+blue/Ansel won 911.4s, honest `{0,0}`, zero intervention. Artifacts
+in-repo: `film/rb-flagship-take-1-20260724.mp4`, `film/flagship-slice.json`
+(the golden fixture for Phase 1), scoreboard stills. The benchmark plan is
+COMMITTED at `docs/benchmark-rb.md` — GovSim-style (`papers/GovSim.pdf`)
+model-comparison table for the RB race; phases: 1 metric substrate,
+2 N-run model sweep, 3 report. Locked decisions live in the doc's kickoff
+box (Python in `bench/`, frozen config Easy mob-free, `LLM_TEMPERATURE`
+already wired — doc-only). Reference papers now in `papers/`. Prior
+checkpoint (fresh-install audit, zero debt) recorded in
+`docs/fresh-install-audit.md` + `docs/HANDOFF.md` history. Records: Easy
+360.4s (`019f7337`), Normal 881s (`019f7352`), Normal+mobs 660.6s
+(`019f744d`); filming runbook stays `docs/demo-rb.md` (drill hygiene:
+clear packs before staged gives, mute doMobSpawning between takes,
+command group `minecraft-service.command-executor`).
 
-**Next session:** Parker films per `docs/demo-rb.md`. Pre-attempt
-sequence: start the host MC server (currently stopped; or paper profile
-+ `MC_HOST=minecraft` — its next start applies the #83 patch, a no-op
-on the live volume), respawn exactly 6 racers (spawn-fleet defaults to
-ALL 20 — pass the count), verify pov-rig tiles. Open follow-ups: SV-14
-row only (leather craft enum, per-villager stance, persisted posts) —
-audit debt is zero. Roadmap beyond T1 unchanged per
+**Next session:** Execute Phase 1 per `docs/benchmark-rb.md` (plan
+APPROVED — implement directly, deliverables 1→4; substrate only: NO live
+races, NO model sweep, NO provider code; work on a branch). Golden test
+input is `film/flagship-slice.json`. Open follow-ups: SV-14 row only
+(leather craft enum, per-villager stance, persisted posts) — audit debt
+is zero. Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
