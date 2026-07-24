@@ -15,10 +15,17 @@ Two metric tiers over an attempt's ledger events:
 
 Modes:
   --slice <file.json>                   Tier A offline (the golden-test path).
+    [--window-slice <file.json>]        + Tier B offline from a saved
+                                        villager-window slice (the Phase 2
+                                        golden-test path).
   --attempt <id> [--ledger <url>]       fetch attempt slice + villager window
                                         from the event-service ledger (:8081),
                                         compute Tier A + Tier B. Needs httpx:
                                         uv run --with httpx python bench/bench_race.py --attempt <id>
+    [--save-slices <dir>]               dump the fetched raw slices as
+                                        <dir>/<label>.slice.json +
+                                        <dir>/<label>.window.json — fixture
+                                        capture and offline re-extraction.
 
 Output: bench/results/race_<label>.json + .csv + one summary line — the
 convention the Phase 2 N-run aggregation feeds into stats.py.
@@ -269,14 +276,20 @@ def main() -> int:
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--slice", help="attempt slice JSON file (Tier A only, offline)")
     src.add_argument("--attempt", help="attempt id — fetch slice + villager window from the ledger")
+    ap.add_argument("--window-slice", help="villager-window slice JSON file (offline Tier B; needs --slice)")
+    ap.add_argument("--save-slices", help="dir to dump fetched raw slices into (needs --attempt)")
     ap.add_argument("--ledger", default=DEFAULT_LEDGER, help=f"event-service base URL (default {DEFAULT_LEDGER})")
     ap.add_argument("--label", help="results file label (default: the attempt's label)")
     args = ap.parse_args()
+    if args.window_slice and not args.slice:
+        ap.error("--window-slice needs --slice")
+    if args.save_slices and not args.attempt:
+        ap.error("--save-slices needs --attempt")
 
     name_of, team_of = load_roster()
     if args.slice:
         attempt_events = load_slice(args.slice)
-        villager_events = None
+        villager_events = load_slice(args.window_slice) if args.window_slice else None
     else:
         attempt_events, villager_events = fetch_attempt(args.attempt, args.ledger)
 
@@ -285,6 +298,15 @@ def main() -> int:
 
     label = args.label or a["label"] or a["attemptId"][:8]
     json_path = write_results(result, label)
+
+    if args.save_slices:
+        slices_dir = Path(args.save_slices)
+        slices_dir.mkdir(parents=True, exist_ok=True)
+        # Same {data: [...]} envelope the ledger returns and load_slice expects.
+        (slices_dir / f"{label}.slice.json").write_text(
+            json.dumps({"data": attempt_events}, indent=2) + "\n", encoding="utf-8")
+        (slices_dir / f"{label}.window.json").write_text(
+            json.dumps({"data": villager_events}, indent=2) + "\n", encoding="utf-8")
 
     honest = a["honestRace"] or {}
     leaders = " ".join(f"{m}:{r['team']}" for m, r in a["firstToRung"].items())

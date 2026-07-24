@@ -48,3 +48,23 @@ def test_roster_is_seed_sourced():
     _, team_of = bench_race.load_roster()
     assert sorted(team_of.values()).count("red") == 3
     assert sorted(team_of.values()).count("blue") == 3
+
+
+def test_mean_ci95():
+    from stats import mean_ci95
+
+    # n=5 (the sweep's N): df=4 → t=2.776; s=√2.5, se=s/√5=√0.5
+    ci = mean_ci95([1, 2, 3, 4, 5])
+    assert ci.n == 5
+    assert ci.mean == 3
+    assert abs(ci.half - 2.776 * 0.5**0.5) < 1e-9
+    assert abs(ci.low - (3 - ci.half)) < 1e-12
+    assert abs(ci.high - (3 + ci.half)) < 1e-12
+
+    # degenerate samples: no interval, never a crash
+    import math
+    assert mean_ci95([]).n == 0
+    one = mean_ci95([7.5])
+    assert one.mean == 7.5 and math.isnan(one.half)
+    zero_var = mean_ci95([2.0, 2.0, 2.0])
+    assert zero_var.mean == 2.0 and zero_var.half == 0.0
