@@ -325,29 +325,3 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   phantom haul in delta-based counters). Scan twice, accept only two identical
   passes (`humanInventory.ts:fetchHumanInventoryStable`); a discarded cycle
   loses nothing because deltas compare against the last ACCEPTED scan.
-
-## Claude Code best practices (session discipline)
-
-**Memory & handoff:**
-- Update this file between sessions with new gotchas, conventions, or architectural shifts.
-- Use `/rewind` at major checkpoints to compress conversation history and free context.
-- Paste the relevant section of this file into the next session's opening prompt if context is tight.
-- See: https://code.claude.com/docs/en/memory (CLAUDE.md scope and auto memory).
-
-**Session structure:**
-- Start with a clear `/goal` if the session has a measurable end state (e.g., "RB-1 exit: scripted harness drill mines→smelts→crafts iron pickaxe end-to-end").
-- Use `/rewind` → "Summarize up to here" at green boundaries (passing tests, merged PRs, phase exits).
-- Link to ADRs, runbooks, and architecture docs in CLAUDE.md so Claude finds them without asking.
-- See: https://code.claude.com/docs/en/goal and https://code.claude.com/docs/en/checkpointing.
-
-**Debugging & troubleshooting:**
-- Paste exact error messages and stack traces verbatim—Claude Code can often spot the issue directly.
-- For Docker/compose issues, include `docker compose logs <service>` output (last 50 lines).
-- For Kafka/ledger issues, include the correlationId and the relevant ledger rows.
-- See: https://code.claude.com/docs/en/troubleshoot-install for common setup problems.
-
-**Code review & CI:**
-- Enforce contract-first (schema + fixture before code) via CI gates, not just review.
-- Pin exact versions at boundaries you don't control (mineflayer, compose images).
-- Use `task gen` to regenerate types and COMMIT the output—CI drift-gates it.
-- See: https://code.claude.com/docs/en/overview for Claude Code's agentic workflow.

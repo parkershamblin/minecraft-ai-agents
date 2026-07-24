@@ -15,6 +15,7 @@
     "canvas": "npm:noop2@2.0.0"
   },
   "devDependencies": {
-    "patch-package": "8.0.0"
+    "patch-package": "8.0.0",
+    "prettier": "3.4.2"
   }
 }
