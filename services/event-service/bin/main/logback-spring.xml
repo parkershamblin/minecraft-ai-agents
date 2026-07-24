@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Structured JSON to stdout: Loki-ready (M1), grep-able today.
+         MDC (correlationId) is included in every line automatically. -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"event-service"}</customFields>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL:-INFO}">
+        <appender-ref ref="JSON"/>
+    </root>
+
+    <!-- Kafka client is chatty at INFO during rebalances -->
+    <logger name="org.apache.kafka" level="WARN"/>
+</configuration>
