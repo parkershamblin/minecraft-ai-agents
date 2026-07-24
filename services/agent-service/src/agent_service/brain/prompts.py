@@ -220,7 +220,7 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
     fleet chopping wood), and it stays silent only at the smelt/win rungs,
     where a re-tool detour would cost the race, and at the banked-cobble
     furnace rung, where the craft hint must speak alone."""
-    if inventory is None or next_unmet not in ("first_coal", "first_iron_ore", "furnace_placed"):
+    if inventory is None or next_unmet not in ("first_coal", "first_iron_ore", "furnace_placed", "first_ingot"):
         return None
     count: dict[str, int] = {}
     for stack in inventory:
@@ -244,6 +244,32 @@ def _race_tool_check(inventory: list[dict] | None, next_unmet: str | None) -> st
     # bury the "craft a furnace" hint (the sweep caught 6/6 `gather wood`
     # here). Stay silent and let the rung hint speak.
     if next_unmet == "furnace_placed" and cobble >= 8:
+        return None
+    # gemma3 blind spot (2026-07-24 replay, ingot rung 30/30 `gather coal`):
+    # it reads "fuel" in the smelt hint and re-gathers coal it already holds
+    # (2 coal smelts far more than 3 iron). The win craft SMELTS as one step,
+    # so the move here is NEVER more fuel — it is the pickaxe chain. Speak a
+    # positive directive that bans the gather-coal loop by name (the silent
+    # fallthrough here let the weak rung hint's "fuel (coal...)" wording
+    # trap the loop, deterministic across 30/30 samples).
+    # Only the BARE pack loops on coal here: with sticks the win craft is one
+    # move (rung hint speaks it), and with planks/logs _race_sticks_check owns
+    # the stick craft. This branch fills the gap sticks_check punts on (a pack
+    # with no sticks AND no planks AND no logs), where the weak "fuel (coal...)"
+    # rung hint otherwise traps gemma3 into gather-coal (30/30, 2026-07-24).
+    if next_unmet == "first_ingot":
+        # Own EVERY first_ingot case and return here — never fall through to the
+        # no-pickaxe bootstrap catch-all below (that block re-teaches
+        # stone_pickaxe/planks, wrong for the smelt rung). Only the BARE pack
+        # loops on coal; with planks/logs _race_sticks_check names the stick
+        # craft, and with sticks the rung hint speaks the win craft.
+        if sticks < 2 and planks < 2 and logs == 0:
+            return (
+                f"SMELT CHECK: you already carry fuel ({count.get('coal', 0)} coal — 2 smelts "
+                "far more than 3 iron) and your body smelts automatically during the "
+                "iron_pickaxe craft. Do NOT gather coal, do NOT gather more fuel. Your ONE "
+                "next move: gather wood (count 1) — you need planks then sticks for the win craft."
+            )
         return None
     # Tooled-up rungs speak a POSITIVE directive (exit-1 lesson, 2026-07-17:
     # a silent check here let the rung hint's bootstrap prose re-teach
