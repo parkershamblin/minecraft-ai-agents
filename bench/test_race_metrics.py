@@ -7,9 +7,18 @@ is intentional, regenerate the expected doc with:
 
 and copy the tierA object into race_flagship.expected.json.
 
-Tier B has no golden fixture yet BY DECISION (docs/benchmark-rb.md scope
-boundary): its villager-window slice is captured during the first Phase 2
-live run and committed then.
+Tier B is golden-locked to the first Phase 2 sweep run (bench-llama3.1-8b-r1,
+attempt 019f9400…): its attempt + villager-window slices are committed under
+bench/race/fixtures/, verified 3-way at capture time (offline computation ==
+live extraction during the run == fresh ledger re-fetch). Regenerate the
+expected doc after an intentional drift with:
+
+    uv run python bench/bench_race.py \
+        --slice bench/race/fixtures/bench-llama3.1-8b-r1.slice.json \
+        --window-slice bench/race/fixtures/bench-llama3.1-8b-r1.window.json \
+        --label tierb-regen
+
+and copy the result over race_bench-llama3.1-8b-r1.expected.json.
 """
 
 import json
@@ -21,6 +30,10 @@ BENCH_DIR = Path(__file__).resolve().parent
 REPO_ROOT = BENCH_DIR.parent
 SLICE = REPO_ROOT / "film" / "flagship-slice.json"
 EXPECTED = BENCH_DIR / "results" / "race_flagship.expected.json"
+FIXTURES = BENCH_DIR / "race" / "fixtures"
+TIERB_SLICE = FIXTURES / "bench-llama3.1-8b-r1.slice.json"
+TIERB_WINDOW = FIXTURES / "bench-llama3.1-8b-r1.window.json"
+TIERB_EXPECTED = BENCH_DIR / "results" / "race_bench-llama3.1-8b-r1.expected.json"
 
 
 def compute():
@@ -48,6 +61,32 @@ def test_roster_is_seed_sourced():
     _, team_of = bench_race.load_roster()
     assert sorted(team_of.values()).count("red") == 3
     assert sorted(team_of.values()).count("blue") == 3
+
+
+def compute_sweep_run():
+    name_of, team_of = bench_race.load_roster()
+    return {
+        "tierA": bench_race.tier_a(bench_race.load_slice(TIERB_SLICE), name_of),
+        "tierB": bench_race.tier_b(bench_race.load_slice(TIERB_WINDOW), team_of),
+    }
+
+
+def test_tier_b_matches_expected_doc():
+    expected = json.loads(TIERB_EXPECTED.read_text(encoding="utf-8"))
+    assert compute_sweep_run() == expected
+
+
+def test_tier_b_headline_numbers():
+    b = compute_sweep_run()["tierB"]
+    assert set(b) == {"red", "blue"}
+    for team in b.values():
+        # every counter grouped and non-empty — the live-smoke sanity, locked
+        assert team["gatherRequests"] > 0
+        assert team["gatheredTotal"] > 0
+        assert 0 <= team["wasteRatio"] <= 1
+        assert team["llm"]["decisions"] > 0
+        assert team["llm"]["tokensUsed"] > 0
+        assert team["llm"]["latencyMsP50"] <= team["llm"]["latencyMsP95"]
 
 
 def test_mean_ci95():
