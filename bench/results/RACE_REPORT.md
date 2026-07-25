@@ -43,18 +43,20 @@ then `uv run python bench/aggregate_race.py`.
 
 - **qwen3.5:4b under v1 — structurally mute.** Hybrid reasoning model: it
   burned the entire 8192-token `OLLAMA_NUM_CTX` window on chain-of-thought
-  and returned an EMPTY completion (~112s p50, exactly 8192
-  tokens/decision); every deliberation fell back to idle. That row
+  and returned an EMPTY completion (~111s p50, ~8192
+  tokens/decision); ~100% of deliberations fell back to idle (3 gather
+  decisions in the whole v1 block). That row
   measured incompatibility with the non-thinking decision contract, not
   Minecraft ability. **v2** sends `think: false` to thinking-capable
   models (capability-probed via /api/show); qwen's current row is the
   v2 re-bench. v1 rows for plain models remain valid — their request
   payloads are byte-identical under v2.
-- **lfm2.5 — engaged but too slow and sloppy.** Real gameplay (~560
-  decisions/run, 54% gathers, wood collected) but ~23s deliberations at a
-  30s tick through the 4-lane concurrency gate, ~40% idle, and frequent
-  schema violations (out-of-range relationship deltas, junk targets)
-  falling back to idle — never reached first coal in 75 minutes.
+- **lfm2.5 — engaged but too slow and sloppy.** Real gameplay (~540
+  decisions/run, ~41% gathers pooled, blocks collected every run) but ~23s
+  deliberations at a 30s tick through the 4-lane concurrency gate and
+  frequent schema violations (out-of-range relationship deltas, junk
+  targets) left ~58% of decisions as idle fallbacks — never reached first
+  coal inside the watchdog window.
 
 ## Per-run appendix (kept runs, all config versions)
 
