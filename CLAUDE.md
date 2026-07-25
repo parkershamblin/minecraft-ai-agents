@@ -29,10 +29,24 @@ version, aggregator uses each model's highest). qwen3.5:4b v2 re-bench:
 8192). `test_no_key_falls_to_ollama_with_warmup` pins llm_model_ollama —
 the .env flake is dead, plain `task test` green locally.
 
-**Next session:** merge PR for `qwen-think-rebench` if still open.
-Remaining follow-up: world-reset-per-block or interleaved run order to
-kill the wear confound (documented in RACE_REPORT.md). SV-14 row
-unchanged. Roadmap beyond T1 unchanged per
+**Update (2026-07-25, branch `phase3-race-writeup`):** PHASE 3 DONE.
+Narrative report `docs/reports/rb-race-model-sweep-2026-07-25.md`
+(exec summary, method, per-model analysis, threats to validity).
+Traceability review pass ran (fresh-eyes agent): 30/30 attempt ids,
+all appendix rows, all 25 aggregate cells reproduce from
+manifest+result JSONs; found and FIXED 3 run-1-only lfm2.5 numbers
+that had propagated from PR #90's diagnosis (54% gathers→41% pooled,
+~560 decisions→~540, ~40% idle→58% idle decisions) plus qwen v1
+overstatements ("exactly 8192", "every deliberation") in BOTH
+RACE_REPORT.md and the narrative. Known-unverifiable-from-repo claims
+(smoke 2.0s/47tok, param counts, reference-record knobs) flagged in
+review, kept with secondary sourcing.
+
+**Next session:** Phase 3b sensitivity sweep (tick, stance, num_ctx —
+one axis at a time, SAME frozen protocol, never mixed into model
+table). Before any between-winner ranking claims: world-reset-per-block
+or interleaved run order to kill the wear confound (documented in
+RACE_REPORT.md). SV-14 row unchanged. Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
