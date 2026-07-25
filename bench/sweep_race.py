@@ -192,8 +192,13 @@ def save_manifest(manifest: dict) -> None:
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
 
-def kept(manifest: dict, model: str, index: int) -> bool:
-    return any(r["model"] == model and r["index"] == index and not r["discarded"]
+def kept(manifest: dict, model: str, index: int, config_version: int) -> bool:
+    """Match includes configVersion: a harness bump re-benches a model from
+    scratch instead of resuming into stale-version rows. Records written
+    before versioning are v1."""
+    return any(r["model"] == model and r["index"] == index
+               and r.get("configVersion", 1) == config_version
+               and not r["discarded"]
                for r in manifest["runs"])
 
 
@@ -207,13 +212,16 @@ def main() -> int:
 
     frozen = json.loads(FROZEN_PATH.read_text(encoding="utf-8"))
     difficulty = frozen["frozen"]["difficulty"]
+    config_version = frozen.get("configVersion", 1)
+    version_tag = "" if config_version == 1 else f"-v{config_version}"
     models = [m.strip() for m in args.models.split(",") if m.strip()]
 
     manifest = load_manifest()
     preflight_failures = 0
 
     for model in models:
-        todo = [i for i in range(1, args.runs + 1) if not kept(manifest, model, i)]
+        todo = [i for i in range(1, args.runs + 1)
+                if not kept(manifest, model, i, config_version)]
         if not todo:
             log(f"block {model}: all {args.runs} runs already kept — skip")
             continue
@@ -224,7 +232,7 @@ def main() -> int:
         for index in todo:
             for attempt_no in range(MAX_DIRTY_RERUNS + 1):
                 suffix = "" if attempt_no == 0 else chr(ord("b") + attempt_no - 1)
-                label = f"bench-{slug(model)}-r{index}{suffix}"
+                label = f"bench-{slug(model)}{version_tag}-r{index}{suffix}"
                 code, attempt_id = run_race(label, difficulty)
 
                 if code == 3 or attempt_id is None:
@@ -244,6 +252,7 @@ def main() -> int:
                     # next take's harness aborts stale attempts itself.
                     manifest["runs"].append({
                         "model": model, "index": index, "label": label,
+                        "configVersion": config_version,
                         "attemptId": attempt_id, "outcome": "orphaned",
                         "honest": None, "discarded": True,
                         "reason": "race process timeout-killed", "at": now_iso(),
@@ -258,6 +267,7 @@ def main() -> int:
                 except Exception as exc:  # noqa: BLE001 — unattended sweep must outlive one bad attempt
                     manifest["runs"].append({
                         "model": model, "index": index, "label": label,
+                        "configVersion": config_version,
                         "attemptId": attempt_id, "outcome": "extract-failed",
                         "honest": None, "discarded": True,
                         "reason": f"extraction failed: {exc}", "at": now_iso(),
@@ -271,6 +281,7 @@ def main() -> int:
                          and honest.get("budgetTrippedDelta") == 0)
                 record = {
                     "model": model, "index": index, "label": label,
+                    "configVersion": config_version,
                     "attemptId": attempt_id,
                     "outcome": a.get("outcome"),
                     "winner": a["winner"]["team"] if a.get("outcome") == "won" else None,

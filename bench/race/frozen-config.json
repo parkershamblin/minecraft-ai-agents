@@ -1,7 +1,11 @@
 {
   "$comment": "Frozen RB-race benchmark config (Phase 1, docs/benchmark-rb.md). Every run in a model sweep uses EXACTLY these knobs — only the model axis varies, or the table measures the harness, not the LLM. GovSim-style validity: greedy decoding (temperature 0) + N seeded runs + mean/95% CI.",
   "benchmark": "rb-race",
-  "configVersion": 1,
+  "configVersion": 2,
+  "$versionHistory": {
+    "1": "Phase 2 initial sweep (PR #90)",
+    "2": "Ollama provider sends think:false to thinking-capable models — reasoning models (qwen3.5 family) previously burned the whole num_ctx window on chain-of-thought and returned empty completions; plain models are byte-identical to v1"
+  },
   "frozen": {
     "difficulty": "easy",
     "mobs": false,
