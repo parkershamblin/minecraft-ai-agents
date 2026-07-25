@@ -18,13 +18,21 @@ idle; lfm2.5 = plays but ~23s deliberations at 30s tick + schema
 violations, never reached coal. Known confound (in report): blocked run
 order on shared world — wear correlates with run index.
 
-**Next session:** merge PR for `phase2-model-sweep`, restart pov-rig if
-wanted (`--profile pov up -d pov-rig` — stopped for sweep purity).
-Follow-ups: (1) strip/disable thinking channel for reasoning-family
-Ollama models in the provider, re-bench qwen under bumped configVersion;
-(2) world-reset-per-block or interleaved run order to kill the wear
-confound; (3) make `test_no_key_falls_to_ollama_with_warmup`
-env-independent. SV-14 row unchanged. Roadmap beyond T1 unchanged per
+**Update (2026-07-25, branch `qwen-think-rebench`):** PR #90 merged.
+Follow-ups (1) and (3) DONE: OllamaProvider now probes /api/show (once,
+cached) and sends `think:false` to thinking-capable models — plain
+models' payloads byte-identical; probe failure degrades to plain. Bench
+harness versioned (`configVersion: 2`; sweep skips/labels/records by
+version, aggregator uses each model's highest). qwen3.5:4b v2 re-bench:
+**1/5 win 4225.4s + 4 honest DNFs** (was 0/5 mute); latency p50 111s →
+1.6s; smoke: think:false → valid JSON in 2.0s/47 tokens (was empty at
+8192). `test_no_key_falls_to_ollama_with_warmup` pins llm_model_ollama —
+the .env flake is dead, plain `task test` green locally.
+
+**Next session:** merge PR for `qwen-think-rebench` if still open.
+Remaining follow-up: world-reset-per-block or interleaved run order to
+kill the wear confound (documented in RACE_REPORT.md). SV-14 row
+unchanged. Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide

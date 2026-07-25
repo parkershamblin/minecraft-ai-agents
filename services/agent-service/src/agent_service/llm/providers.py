@@ -221,9 +221,12 @@ class OllamaProvider:
             # the class default and existing dashboards keep matching.
             self.name = name
         self._url = f"{base_url.rstrip('/')}/api/chat"
+        self._show_url = f"{base_url.rstrip('/')}/api/show"
         self._temperature = temperature
         self._num_ctx = num_ctx
         self._client = client
+        # None = not yet probed; see _thinking_capable().
+        self._thinking_capable_cache: bool | None = None
         # Shared across all ticks (one provider instance per process). A single
         # local GPU thrashes under 20 parallel completions; queued ticks wait
         # here on purpose — the wait counts toward the deliberate node's
@@ -239,24 +242,52 @@ class OllamaProvider:
             options["num_ctx"] = self._num_ctx
         return options
 
+    async def _thinking_capable(self) -> bool:
+        """Thinking-capable models (qwen3.5, deepseek-r1 family) default to
+        reasoning mode, burn the entire num_ctx window on chain-of-thought and
+        return an EMPTY content channel under structured outputs — the Phase 2
+        qwen3.5:4b 0/5 row (bench/results/RACE_REPORT.md). Those models get
+        `think: false` on every call. Plain models must NOT get the flag —
+        Ollama rejects `think` on models without the capability. One /api/show
+        probe per process, cached; probe failure = assume plain (never block
+        the deliberation path on an introspection call)."""
+        if self._thinking_capable_cache is None:
+            try:
+                response = await self._client.post(
+                    self._show_url, json={"model": self.model}, timeout=30.0
+                )
+                response.raise_for_status()
+                capabilities = response.json().get("capabilities", [])
+                self._thinking_capable_cache = "thinking" in capabilities
+            except Exception:
+                self._thinking_capable_cache = False
+        return self._thinking_capable_cache
+
+    async def _payload(self, messages: list[dict]) -> dict:
+        payload: dict = {
+            "model": self.model,
+            "stream": False,
+            "options": self._options(),
+            "messages": messages,
+        }
+        if await self._thinking_capable():
+            payload["think"] = False
+        return payload
+
     async def complete(self, system: str, user: str) -> LLMResponse:
         async with self._gate:
             return await self._complete(system, user)
 
     async def _complete(self, system: str, user: str) -> LLMResponse:
         started = time.perf_counter()
+        payload = await self._payload([
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ])
+        payload["format"] = DECISION_SCHEMA  # Ollama structured outputs
         response = await self._client.post(
             self._url,
-            json={
-                "model": self.model,
-                "stream": False,
-                "format": DECISION_SCHEMA,  # Ollama structured outputs
-                "options": self._options(),
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": user},
-                ],
-            },
+            json=payload,
             timeout=120.0,  # local model latency varies with GPU load
         )
         response.raise_for_status()
@@ -281,12 +312,7 @@ class OllamaProvider:
         """
         await self._client.post(
             self._url,
-            json={
-                "model": self.model,
-                "stream": False,
-                "options": self._options(),
-                "messages": [{"role": "user", "content": "ok"}],
-            },
+            json=await self._payload([{"role": "user", "content": "ok"}]),
             timeout=300.0,
         )
 

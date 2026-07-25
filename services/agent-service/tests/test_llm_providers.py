@@ -81,6 +81,8 @@ class TestOllamaProvider:
         options_seen = []
 
         def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/show":
+                return httpx.Response(200, json={"capabilities": ["completion"]})
             options_seen.append(json.loads(request.content).get("options"))
             return httpx.Response(200, json={"message": {"content": "{}"}})
 
@@ -91,6 +93,57 @@ class TestOllamaProvider:
         await provider.complete("sys", "usr")
 
         assert [o.get("num_ctx") for o in options_seen] == [8192, 8192]
+
+    async def test_thinking_model_gets_think_false_everywhere(self):
+        # qwen3.5-family lesson (Phase 2 sweep, 0/5): a thinking-capable model
+        # burns the whole num_ctx window on chain-of-thought and returns empty
+        # content under structured outputs. think:false must ride every call,
+        # warmup included, and the /api/show probe must run exactly once.
+        chat_bodies, show_calls = [], []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/show":
+                show_calls.append(json.loads(request.content))
+                return httpx.Response(200, json={"capabilities": ["completion", "thinking"]})
+            chat_bodies.append(json.loads(request.content))
+            return httpx.Response(200, json={"message": {"content": "{}"}})
+
+        provider = OllamaProvider("http://ollama:11434", "qwen3.5:4b", 0.0, _client(handler))
+        await provider.warmup()
+        await provider.complete("sys", "usr")
+
+        assert [b["think"] for b in chat_bodies] == [False, False]
+        assert show_calls == [{"model": "qwen3.5:4b"}]  # probed once, cached
+
+    async def test_plain_model_never_gets_think_flag(self):
+        # Ollama rejects `think` on models without the capability — the flag
+        # must be absent, not think:true, for the whole non-reasoning fleet.
+        chat_bodies = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/show":
+                return httpx.Response(200, json={"capabilities": ["completion"]})
+            chat_bodies.append(json.loads(request.content))
+            return httpx.Response(200, json={"message": {"content": "{}"}})
+
+        provider = OllamaProvider("http://ollama:11434", "llama3.1:8b", 0.7, _client(handler))
+        await provider.complete("sys", "usr")
+        assert "think" not in chat_bodies[0]
+
+    async def test_show_probe_failure_degrades_to_plain(self):
+        # Introspection must never block deliberation: a dead /api/show means
+        # "assume plain" and the completion still goes out (without think).
+        chat_bodies = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path == "/api/show":
+                return httpx.Response(500)
+            chat_bodies.append(json.loads(request.content))
+            return httpx.Response(200, json={"message": {"content": "{}"}})
+
+        provider = OllamaProvider("http://ollama:11434", "mystery:7b", 0.7, _client(handler))
+        await provider.complete("sys", "usr")
+        assert "think" not in chat_bodies[0]
 
     async def test_instance_name_labels_metrics_per_team(self):
         def handler(request: httpx.Request) -> httpx.Response:
@@ -124,11 +177,16 @@ class TestChain:
             calls.append(request.url.path)
             if request.url.path == "/api/tags":
                 return httpx.Response(200, json={"models": [{"name": "llama3.1:8b"}]})
+            if request.url.path == "/api/show":  # thinking-capability probe
+                return httpx.Response(200, json={"capabilities": ["completion"]})
             if request.url.path == "/api/chat":  # warmup
                 return httpx.Response(200, json={"message": {"content": "ok"}})
             raise AssertionError(request.url.path)
 
-        settings = Settings(llm_provider="auto", openai_api_key="")
+        # llm_model_ollama pinned explicitly: without it Settings reads the
+        # machine's .env and the test goes red whenever that pins a model the
+        # mock /api/tags doesn't list (the HANDOFF local-only flake).
+        settings = Settings(llm_provider="auto", openai_api_key="", llm_model_ollama="llama3.1:8b")
         provider = await build_llm_provider(settings, _client(handler))
         assert isinstance(provider, OllamaProvider)
         assert "/api/chat" in calls  # warmed at boot

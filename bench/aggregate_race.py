@@ -74,8 +74,14 @@ def fmt_ci(ci: MeanCI95, digits: int = 1) -> str:
 
 def aggregate(manifest: dict) -> tuple[dict, list[dict]]:
     models: dict[str, dict] = {}
-    kept = [r for r in manifest["runs"] if not r["discarded"]]
+    all_kept = [r for r in manifest["runs"] if not r["discarded"]]
     discarded = [r for r in manifest["runs"] if r["discarded"]]
+    # A harness bump re-benches a model; its row always comes from the model's
+    # HIGHEST configVersion (pre-versioning records are v1). Never mix versions
+    # inside one row.
+    latest = {r["model"]: max(x.get("configVersion", 1) for x in all_kept
+                              if x["model"] == r["model"]) for r in all_kept}
+    kept = [r for r in all_kept if r.get("configVersion", 1) == latest[r["model"]]]
     for run in kept:
         result = json.loads((BENCH_DIR.parent / run["resultFile"]).read_text(encoding="utf-8"))
         per_run = pooled_tier_b(result["tierB"]) if result.get("tierB") else {}
@@ -94,6 +100,7 @@ def aggregate(manifest: dict) -> tuple[dict, list[dict]]:
         n = len(m["runs"])
         rows.append({
             "model": model,
+            "configVersion": latest[model],
             "n": n,
             "wins": m["wins"],
             "winRate": m["wins"] / n if n else float("nan"),
@@ -148,12 +155,12 @@ def write_outputs(agg: dict, manifest: dict) -> None:
         "run is a kept DNF: it counts against win rate, and its Tier B behaviour is",
         "included, but its duration is not (that would measure the watchdog).",
         "",
-        "| Model | N | Win rate | Time-to-goal s (won) | Gather eff. (blocks/req) | Waste ratio | Tokens/run | Latency p50 ms |",
-        "|---|--:|--:|--:|--:|--:|--:|--:|",
+        "| Model | cfg | N | Win rate | Time-to-goal s (won) | Gather eff. (blocks/req) | Waste ratio | Tokens/run | Latency p50 ms |",
+        "|---|--:|--:|--:|--:|--:|--:|--:|--:|",
     ]
     for r in rows:
         lines.append(
-            f"| `{r['model']}` | {r['n']} | {r['wins']}/{r['n']} "
+            f"| `{r['model']}` | v{r['configVersion']} | {r['n']} | {r['wins']}/{r['n']} "
             f"| {fmt_ci(r['timeToGoalSeconds'])} | {fmt_ci(r['gatherEfficiency'], 2)} "
             f"| {fmt_ci(r['wasteRatio'], 3)} | {fmt_ci(r['tokensUsed'], 0)} "
             f"| {fmt_ci(r['latencyMsP50'], 0)} |")
@@ -184,14 +191,15 @@ def write_outputs(agg: dict, manifest: dict) -> None:
         "",
         "## Failure modes of the 0-win models (diagnosed from ledger + logs)",
         "",
-        "- **qwen3.5:4b — structurally mute.** Hybrid reasoning model: it burns the",
-        "  entire 8192-token `OLLAMA_NUM_CTX` window on chain-of-thought and returns",
-        "  an EMPTY completion (~112s p50, exactly 8192 tokens/decision). Every",
-        "  deliberation logged `malformed LLM decision — falling back to idle`",
-        '  with `raw: ""`; decision mix is ~100% idle. The row measures',
-        "  incompatibility with the non-thinking decision contract at this ctx,",
-        "  not Minecraft ability. Follow-up: disable/strip the thinking channel",
-        "  for reasoning-family models, then re-bench under a bumped configVersion.",
+        "- **qwen3.5:4b under v1 — structurally mute.** Hybrid reasoning model: it",
+        "  burned the entire 8192-token `OLLAMA_NUM_CTX` window on chain-of-thought",
+        "  and returned an EMPTY completion (~112s p50, exactly 8192",
+        "  tokens/decision); every deliberation fell back to idle. That row",
+        "  measured incompatibility with the non-thinking decision contract, not",
+        "  Minecraft ability. **v2** sends `think: false` to thinking-capable",
+        "  models (capability-probed via /api/show); qwen's current row is the",
+        "  v2 re-bench. v1 rows for plain models remain valid — their request",
+        "  payloads are byte-identical under v2.",
         "- **lfm2.5 — engaged but too slow and sloppy.** Real gameplay (~560",
         "  decisions/run, 54% gathers, wood collected) but ~23s deliberations at a",
         "  30s tick through the 4-lane concurrency gate, ~40% idle, and frequent",
@@ -199,12 +207,12 @@ def write_outputs(agg: dict, manifest: dict) -> None:
         "  falling back to idle — never reached first coal in 75 minutes.",
         "",
     ]
-    lines += ["## Per-run appendix (kept runs)", "",
-              "| Model | Run | Outcome | Duration s | Attempt |", "|---|--:|---|--:|---|"]
+    lines += ["## Per-run appendix (kept runs, all config versions)", "",
+              "| Model | cfg | Run | Outcome | Duration s | Attempt |", "|---|--:|--:|---|--:|---|"]
     for run in manifest["runs"]:
         if not run["discarded"]:
-            lines.append(f"| `{run['model']}` | {run['index']} | {run['outcome']} "
-                         f"| {run['durationSeconds']} | `{run['attemptId'][:13]}…` |")
+            lines.append(f"| `{run['model']}` | v{run.get('configVersion', 1)} | {run['index']} "
+                         f"| {run['outcome']} | {run['durationSeconds']} | `{run['attemptId'][:13]}…` |")
     lines.append("")
     if discarded:
         lines += ["## Discarded runs (never averaged in)", ""]
