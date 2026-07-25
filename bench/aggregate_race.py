@@ -159,12 +159,53 @@ def write_outputs(agg: dict, manifest: dict) -> None:
             f"| {fmt_ci(r['latencyMsP50'], 0)} |")
     lines += [
         "",
-        "Reference record under this config: Easy mob-free **360.4s** (`019f7337`,",
-        "llama3.1:8b per-team era). Reproduce any row:",
+        "Reference record under this config's knobs but NOT this protocol: Easy",
+        "mob-free **360.4s** (`019f7337`) — set at the 10s race tick with per-team",
+        "models and default temperature, so it is a ceiling reference, not a row.",
+        "Reproduce any row:",
         "`uv run --with httpx python bench/sweep_race.py --models <model> --runs 5`",
         "then `uv run python bench/aggregate_race.py`.",
         "",
+        "## Method caveats",
+        "",
+        "- **Greedy decoding was truly in effect for the first time this sweep**:",
+        "  compose never passed `LLM_TEMPERATURE` into agent-service before this",
+        "  branch, so all pre-sweep reference runs sampled at the 0.7 default.",
+        "- **Blocked run order on a shared persistent world**: blocks ran",
+        "  llama3.1:8b → gemma3:12b → gemma4 → qwen3.5:4b → lfm2.5 without world",
+        "  resets; within-block run index correlates with world wear (see the",
+        "  per-run appendix — llama3.1 drifts 700.9→1301.8s across its block).",
+        "  Model and world age are therefore partially confounded across blocks.",
+        "- **DNF Tier B windows are watchdog-length** (~75 min vs ~10-30 min for",
+        "  wins), so token totals for 0-win models measure a longer window; the",
+        "  gemma3:12b tokens CI is inflated by its one DNF for the same reason.",
+        "- **Latency p50 is a decision-weighted mean of team p50s** per run, not a",
+        "  pooled raw-latency percentile (raw latencies are not retained).",
+        "",
+        "## Failure modes of the 0-win models (diagnosed from ledger + logs)",
+        "",
+        "- **qwen3.5:4b — structurally mute.** Hybrid reasoning model: it burns the",
+        "  entire 8192-token `OLLAMA_NUM_CTX` window on chain-of-thought and returns",
+        "  an EMPTY completion (~112s p50, exactly 8192 tokens/decision). Every",
+        "  deliberation logged `malformed LLM decision — falling back to idle`",
+        '  with `raw: ""`; decision mix is ~100% idle. The row measures',
+        "  incompatibility with the non-thinking decision contract at this ctx,",
+        "  not Minecraft ability. Follow-up: disable/strip the thinking channel",
+        "  for reasoning-family models, then re-bench under a bumped configVersion.",
+        "- **lfm2.5 — engaged but too slow and sloppy.** Real gameplay (~560",
+        "  decisions/run, 54% gathers, wood collected) but ~23s deliberations at a",
+        "  30s tick through the 4-lane concurrency gate, ~40% idle, and frequent",
+        "  schema violations (out-of-range relationship deltas, junk targets)",
+        "  falling back to idle — never reached first coal in 75 minutes.",
+        "",
     ]
+    lines += ["## Per-run appendix (kept runs)", "",
+              "| Model | Run | Outcome | Duration s | Attempt |", "|---|--:|---|--:|---|"]
+    for run in manifest["runs"]:
+        if not run["discarded"]:
+            lines.append(f"| `{run['model']}` | {run['index']} | {run['outcome']} "
+                         f"| {run['durationSeconds']} | `{run['attemptId'][:13]}…` |")
+    lines.append("")
     if discarded:
         lines += ["## Discarded runs (never averaged in)", ""]
         for d in discarded:
@@ -179,7 +220,7 @@ def main() -> int:
     agg, kept = aggregate(manifest)
     write_outputs(agg, manifest)
     print(f"aggregated {len(kept)} kept runs across {len(agg['rows'])} models "
-          f"({len(agg['discarded'])} discarded) → {REPORT_MD}")
+          f"({len(agg['discarded'])} discarded) -> {REPORT_MD}")
     return 0
 
 

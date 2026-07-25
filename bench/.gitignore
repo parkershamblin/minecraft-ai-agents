@@ -1,5 +1,12 @@
 __pycache__/
 *.pyc
-# run artifacts stay local; only committed golden expectations ride along
+# run artifacts stay local; only committed golden expectations and the
+# Phase 2 sweep deliverables (report, aggregate summary, run manifest) ride along
 results/*
 !results/*.expected.json
+!results/RACE_REPORT.md
+!results/race_sweep_summary.json
+!results/race_sweep_summary.csv
+!results/sweep/
+results/sweep/*
+!results/sweep/manifest.json

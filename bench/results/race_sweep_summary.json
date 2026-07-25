@@ -1,0 +1,163 @@
+{
+  "benchmark": "rb-race-sweep",
+  "frozenConfig": "bench/race/frozen-config.json",
+  "startedAt": "2026-07-24T12:01:21.897084+00:00",
+  "models": [
+    {
+      "model": "llama3.1:8b",
+      "n": 5,
+      "wins": 5,
+      "winRate": 1.0,
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 945.28,
+        "ci95Half": 329.16944146533166
+      },
+      "gatherEfficiency": {
+        "n": 5,
+        "mean": 1.1443315086800367,
+        "ci95Half": 0.8234486241707818
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.602331670231716,
+        "ci95Half": 0.19783933284243846
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 454226.8,
+        "ci95Half": 149529.21149890605
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 1678.0665247277375,
+        "ci95Half": 105.8917884358398
+      }
+    },
+    {
+      "model": "gemma4:latest",
+      "n": 5,
+      "wins": 5,
+      "winRate": 1.0,
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 1001.26,
+        "ci95Half": 605.7970966326411
+      },
+      "gatherEfficiency": {
+        "n": 5,
+        "mean": 0.621972873157499,
+        "ci95Half": 0.5571800150261075
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.7446403391037022,
+        "ci95Half": 0.10061755060999472
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 548793.2,
+        "ci95Half": 344062.6993368357
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 8528.63237927746,
+        "ci95Half": 500.6992706716025
+      }
+    },
+    {
+      "model": "gemma3:12b",
+      "n": 5,
+      "wins": 4,
+      "winRate": 0.8,
+      "timeToGoalSeconds": {
+        "n": 4,
+        "mean": 650.875,
+        "ci95Half": 150.72922598492914
+      },
+      "gatherEfficiency": {
+        "n": 5,
+        "mean": 0.5284900112555275,
+        "ci95Half": 0.24022757359500124
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.7627574615713111,
+        "ci95Half": 0.07914948506629994
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 772969.2,
+        "ci95Half": 1253815.0770307642
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 3596.454379616075,
+        "ci95Half": 142.40684681270506
+      }
+    },
+    {
+      "model": "qwen3.5:4b",
+      "n": 5,
+      "wins": 0,
+      "winRate": 0.0,
+      "timeToGoalSeconds": {
+        "n": 0,
+        "mean": NaN,
+        "ci95Half": NaN
+      },
+      "gatherEfficiency": {
+        "n": 3,
+        "mean": 0.3333333333333333,
+        "ci95Half": 1.4343333333333335
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.03811594202898551,
+        "ci95Half": 0.09466811093265373
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 286853.6,
+        "ci95Half": 154175.5736711976
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 111160.41033444817,
+        "ci95Half": 2330.7423100018673
+      }
+    },
+    {
+      "model": "lfm2.5:latest",
+      "n": 5,
+      "wins": 0,
+      "winRate": 0.0,
+      "timeToGoalSeconds": {
+        "n": 0,
+        "mean": NaN,
+        "ci95Half": NaN
+      },
+      "gatherEfficiency": {
+        "n": 5,
+        "mean": 0.14034725574855098,
+        "ci95Half": 0.22422281313112216
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.38455780745697565,
+        "ci95Half": 0.11698841965717065
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 1392557.4,
+        "ci95Half": 76920.59990096086
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 23646.959286304627,
+        "ci95Half": 2537.4786106784927
+      }
+    }
+  ],
+  "discardedRuns": []
+}
