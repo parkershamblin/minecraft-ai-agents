@@ -1,0 +1,407 @@
+{
+  "benchmark": "rb-race-sweep",
+  "frozenConfig": "bench/race/frozen-config.json",
+  "startedAt": "2026-07-24T12:01:21.897084+00:00",
+  "runs": [
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-r1",
+      "attemptId": "019f9400-fa5c-751a-8d79-10ae505c208e",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 700.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-r1.json",
+      "at": "2026-07-24T12:13:50.893722+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-r2",
+      "attemptId": "019f940c-4b74-73c8-914b-bfcfa73469f5",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 680.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-r2.json",
+      "at": "2026-07-24T12:25:52.602959+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-r3",
+      "attemptId": "019f9417-5049-760d-ae08-c834f7f5c20f",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1101.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-r3.json",
+      "at": "2026-07-24T12:44:55.539713+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-r4",
+      "attemptId": "019f9428-cda9-707f-8f9e-7ca3d6542a5d",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 941.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-r4.json",
+      "at": "2026-07-24T13:01:21.110341+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-r5",
+      "attemptId": "019f9437-c7b9-71cf-920e-c1a6c8941d8a",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 1301.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-r5.json",
+      "at": "2026-07-24T13:23:43.280338+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-r1",
+      "attemptId": "019f944e-1d39-7086-9d35-c4b49b984bfd",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 5544.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma3-12b-r1.json",
+      "at": "2026-07-24T14:58:50.215627+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-r2",
+      "attemptId": "019f94a3-67e1-72f0-9000-3abc9c1137f4",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 580.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma3-12b-r2.json",
+      "at": "2026-07-24T15:09:15.338081+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 3,
+      "label": "bench-gemma3-12b-r3",
+      "attemptId": "019f94ac-e843-71e6-92ad-c33b2f84b3eb",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 580.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma3-12b-r3.json",
+      "at": "2026-07-24T15:19:38.328746+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 4,
+      "label": "bench-gemma3-12b-r4",
+      "attemptId": "019f94b6-620c-773b-9e86-2fa9d73f8903",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 661.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma3-12b-r4.json",
+      "at": "2026-07-24T15:31:19.602895+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 5,
+      "label": "bench-gemma3-12b-r5",
+      "attemptId": "019f94c1-1747-737d-8f58-b3acf2fb4d7d",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 781.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma3-12b-r5.json",
+      "at": "2026-07-24T15:45:01.369463+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 1,
+      "label": "bench-gemma4-latest-r1",
+      "attemptId": "019f94ce-431a-736b-9e4e-45c394b1272f",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 941.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma4-latest-r1.json",
+      "at": "2026-07-24T16:02:04.882210+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 2,
+      "label": "bench-gemma4-latest-r2",
+      "attemptId": "019f94dd-42e8-7566-be36-e6e0ffdeffda",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 981.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma4-latest-r2.json",
+      "at": "2026-07-24T16:19:07.777937+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 3,
+      "label": "bench-gemma4-latest-r3",
+      "attemptId": "019f94ec-e90b-72f5-9472-2b3d2895d845",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 640.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma4-latest-r3.json",
+      "at": "2026-07-24T16:30:32.918924+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 4,
+      "label": "bench-gemma4-latest-r4",
+      "attemptId": "019f94f7-5557-7536-8fcc-8c20e848d960",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 1822.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma4-latest-r4.json",
+      "at": "2026-07-24T17:01:37.268840+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 5,
+      "label": "bench-gemma4-latest-r5",
+      "attemptId": "019f9513-c413-721a-b840-046dce8ba143",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 620.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-gemma4-latest-r5.json",
+      "at": "2026-07-24T17:12:39.214042+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 1,
+      "label": "bench-qwen3.5-4b-r1",
+      "attemptId": "019f951e-e8d2-718a-8d7a-a95ab52bc7b5",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4504.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-r1.json",
+      "at": "2026-07-24T18:29:33.570012+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 2,
+      "label": "bench-qwen3.5-4b-r2",
+      "attemptId": "019f9564-48bb-76c4-8651-00cad4f56d0a",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4503.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-r2.json",
+      "at": "2026-07-24T19:45:19.020422+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 3,
+      "label": "bench-qwen3.5-4b-r3",
+      "attemptId": "019f95a9-9fbf-74e1-b952-cb32d8bb0f95",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-r3.json",
+      "at": "2026-07-24T21:01:05.208390+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 4,
+      "label": "bench-qwen3.5-4b-r4",
+      "attemptId": "019f95ee-fe1a-74a3-a0fc-3eeab261d958",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4504.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-r4.json",
+      "at": "2026-07-24T22:16:50.527442+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 5,
+      "label": "bench-qwen3.5-4b-r5",
+      "attemptId": "019f9634-5bdc-770b-858d-d564cb8bf8ca",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4504.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-r5.json",
+      "at": "2026-07-24T23:32:36.513079+00:00"
+    },
+    {
+      "model": "lfm2.5:latest",
+      "index": 1,
+      "label": "bench-lfm2.5-latest-r1",
+      "attemptId": "019f967a-6085-709a-b9ed-f4d31a8230bb",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-lfm2.5-latest-r1.json",
+      "at": "2026-07-25T00:49:05.669559+00:00"
+    },
+    {
+      "model": "lfm2.5:latest",
+      "index": 2,
+      "label": "bench-lfm2.5-latest-r2",
+      "attemptId": "019f96bf-c302-73b2-99eb-dba23e5ab5a4",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-lfm2.5-latest-r2.json",
+      "at": "2026-07-25T02:04:53.238670+00:00"
+    },
+    {
+      "model": "lfm2.5:latest",
+      "index": 3,
+      "label": "bench-lfm2.5-latest-r3",
+      "attemptId": "019f9705-28c3-7161-9646-80629f10658e",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-lfm2.5-latest-r3.json",
+      "at": "2026-07-25T03:20:40.773675+00:00"
+    },
+    {
+      "model": "lfm2.5:latest",
+      "index": 4,
+      "label": "bench-lfm2.5-latest-r4",
+      "attemptId": "019f974a-899b-711c-af78-f0c2a563e43c",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-lfm2.5-latest-r4.json",
+      "at": "2026-07-25T04:36:28.001087+00:00"
+    },
+    {
+      "model": "lfm2.5:latest",
+      "index": 5,
+      "label": "bench-lfm2.5-latest-r5",
+      "attemptId": "019f978f-e7f3-73ca-b829-f47c63a855b7",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.2,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-lfm2.5-latest-r5.json",
+      "at": "2026-07-25T05:52:13.920264+00:00"
+    }
+  ]
+}

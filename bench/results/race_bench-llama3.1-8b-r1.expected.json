@@ -1,0 +1,128 @@
+{
+  "tierA": {
+    "attemptId": "019f9400-fa5c-751a-8d79-10ae505c208e",
+    "label": "bench-llama3.1-8b-r1",
+    "difficulty": "easy",
+    "teams": {
+      "red": [
+        "Elara",
+        "Bram",
+        "Wren"
+      ],
+      "blue": [
+        "Ansel",
+        "Petra",
+        "Fen"
+      ]
+    },
+    "outcome": "won",
+    "winner": {
+      "team": "blue",
+      "villager": "Petra"
+    },
+    "durationSeconds": 700.9,
+    "honestRace": {
+      "fakeProviderDelta": 0,
+      "budgetTrippedDelta": 0
+    },
+    "milestones": {
+      "red": {
+        "first_coal": {
+          "offsetSeconds": 305.325,
+          "villager": "Bram"
+        },
+        "first_iron_ore": {
+          "offsetSeconds": 427.482,
+          "villager": "Wren"
+        }
+      },
+      "blue": {
+        "first_coal": {
+          "offsetSeconds": 266.35,
+          "villager": "Ansel"
+        },
+        "first_iron_ore": {
+          "offsetSeconds": 351.29,
+          "villager": "Ansel"
+        },
+        "furnace_placed": {
+          "offsetSeconds": 391.988,
+          "villager": "Ansel"
+        },
+        "first_ingot": {
+          "offsetSeconds": 681.562,
+          "villager": "Petra"
+        },
+        "iron_pickaxe": {
+          "offsetSeconds": 681.562,
+          "villager": "Petra"
+        }
+      }
+    },
+    "firstToRung": {
+      "first_coal": {
+        "team": "blue",
+        "offsetSeconds": 266.35,
+        "leadMarginSeconds": 38.975
+      },
+      "first_iron_ore": {
+        "team": "blue",
+        "offsetSeconds": 351.29,
+        "leadMarginSeconds": 76.192
+      },
+      "furnace_placed": {
+        "team": "blue",
+        "offsetSeconds": 391.988,
+        "leadMarginSeconds": null
+      },
+      "first_ingot": {
+        "team": "blue",
+        "offsetSeconds": 681.562,
+        "leadMarginSeconds": null
+      },
+      "iron_pickaxe": {
+        "team": "blue",
+        "offsetSeconds": 681.562,
+        "leadMarginSeconds": null
+      }
+    }
+  },
+  "tierB": {
+    "blue": {
+      "gatherEfficiency": 1.535,
+      "gatheredTotal": 66,
+      "gatherRequests": 43,
+      "wasteRatio": 0.426,
+      "actionsRequested": 68,
+      "actionsFailed": 29,
+      "decisionMix": {
+        "craft": 25,
+        "gather": 43
+      },
+      "llm": {
+        "decisions": 68,
+        "tokensUsed": 161118,
+        "latencyMsP50": 1541.5,
+        "latencyMsP95": 2005.8
+      }
+    },
+    "red": {
+      "gatherEfficiency": 1.659,
+      "gatheredTotal": 68,
+      "gatherRequests": 41,
+      "wasteRatio": 0.592,
+      "actionsRequested": 71,
+      "actionsFailed": 42,
+      "decisionMix": {
+        "craft": 30,
+        "gather": 41
+      },
+      "llm": {
+        "decisions": 71,
+        "tokensUsed": 174063,
+        "latencyMsP50": 1690.0,
+        "latencyMsP95": 2295.5
+      }
+    }
+  }
+}

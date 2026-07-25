@@ -277,6 +277,9 @@ services:
       LLM_TEAM_MODELS: ${LLM_TEAM_MODELS:-}
       # KV-cache ceiling per request — keeps two team models resident on one GPU.
       OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
+      # Deliberation sampling temperature (global across all team providers).
+      # 0.0 = greedy decoding for benchmark runs (bench/race/frozen-config.json).
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
       TICK_INTERVAL_SECONDS: ${TICK_INTERVAL_SECONDS:-60}
       VILLAGER_COUNT: ${VILLAGER_COUNT:-1}
       # D2 filming lever (M2-10): one shared-aim line in every system prompt.

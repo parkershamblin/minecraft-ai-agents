@@ -1,32 +1,30 @@
 ## HANDOFF (current session)
 
-**Last checkpoint:** PHASE 1 METRIC SUBSTRATE BUILT (2026-07-24, branch
-`phase1-bench-substrate`). Deliverables 1→4 of `docs/benchmark-rb.md`
-shipped: `bench/race/frozen-config.json` + protocol README (Easy mob-free,
-temp 0.0, single varying axis = the model), `LLM_TEMPERATURE` documented
-in `.env.example`/`.env`, `bench/bench_race.py` (Tier A slice mode +
-Tier B `--attempt` ledger mode; ledger `MAX_LIMIT=100` — pages 400 above
-it), Tier A golden test `bench/test_race_metrics.py` against
-`film/flagship-slice.json` → `bench/results/race_flagship.expected.json`,
-wired into `task test` + `.github/workflows/bench.yml`. Tier B
-live-smoked against the flagship attempt (per-team tallies sane); its
-golden fixture lands with the first Phase 2 run BY DECISION. Local-only
-flake (pre-existing, green in CI): `test_no_key_falls_to_ollama_with_warmup`
-fails when `.env` pins `LLM_MODEL_OLLAMA=gemma3:12b` — run
-`LLM_MODEL_OLLAMA=llama3.1:8b task test` for a clean local pass. Phase 0
-artifacts: attempt `019f9361-…`, blue/Ansel 911.4s honest `{0,0}`,
-`film/rb-flagship-take-1-20260724.mp4`. Records: Easy 360.4s (`019f7337`),
-Normal 881s (`019f7352`), Normal+mobs 660.6s (`019f744d`); filming
-runbook `docs/demo-rb.md`.
+**Last checkpoint:** PHASE 2 MODEL SWEEP COMPLETE (2026-07-25, branch
+`phase2-model-sweep`). 25/25 honest runs (zero dirty), 5 models × N=5
+under `bench/race/frozen-config.json`: llama3.1:8b 5/5 wins 945.3s±329.2,
+gemma4 5/5 1001.3s±605.8, gemma3:12b 4/5 650.9s±150.7 (fastest winner),
+qwen3.5:4b 0/5, lfm2.5 0/5. Full table + method caveats + failure
+diagnoses: `bench/results/RACE_REPORT.md`; per-attempt ids in
+`bench/results/sweep/manifest.json`. CRITICAL FIX shipped: compose never
+passed `LLM_TEMPERATURE` into agent-service — this sweep is the FIRST
+truly greedy (0.0) data; all earlier references ran 0.7. New machinery:
+`bench/sweep_race.py` (resume-safe blocked sweep, honesty gate, DNF-kept
+policy), `bench/aggregate_race.py` (mean+95% CI via `stats.mean_ci95`),
+Tier B golden fixture `bench/race/fixtures/bench-llama3.1-8b-r1.*`
+(3-way verified, attempt `019f9400-…`). 0-win diagnoses: qwen3.5:4b =
+reasoning model burns whole 8192 ctx on think, EMPTY completions, ~100%
+idle; lfm2.5 = plays but ~23s deliberations at 30s tick + schema
+violations, never reached coal. Known confound (in report): blocked run
+order on shared world — wear correlates with run index.
 
-**Next session:** Phase 2 per `docs/benchmark-rb.md` — the N-run model
-sweep under `bench/race/frozen-config.json` (N≥5 per model, temp 0.0 via
-process env, honest runs only), capture a villager-window slice on the
-first run as Tier B's golden fixture, aggregate via `bench/stats.py`.
-Small follow-up: make `test_no_key_falls_to_ollama_with_warmup`
-env-independent (pass `llm_model_ollama` explicitly). Open follow-ups:
-SV-14 row only (leather craft enum, per-villager stance, persisted
-posts). Roadmap beyond T1 unchanged per
+**Next session:** merge PR for `phase2-model-sweep`, restart pov-rig if
+wanted (`--profile pov up -d pov-rig` — stopped for sweep purity).
+Follow-ups: (1) strip/disable thinking channel for reasoning-family
+Ollama models in the provider, re-bench qwen under bumped configVersion;
+(2) world-reset-per-block or interleaved run order to kill the wear
+confound; (3) make `test_no_key_falls_to_ollama_with_warmup`
+env-independent. SV-14 row unchanged. Roadmap beyond T1 unchanged per
 `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
