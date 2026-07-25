@@ -5,6 +5,7 @@
   "models": [
     {
       "model": "llama3.1:8b",
+      "configVersion": 1,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
@@ -36,6 +37,7 @@
     },
     {
       "model": "gemma4:latest",
+      "configVersion": 1,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
@@ -67,6 +69,7 @@
     },
     {
       "model": "gemma3:12b",
+      "configVersion": 1,
       "n": 5,
       "wins": 4,
       "winRate": 0.8,
@@ -98,37 +101,39 @@
     },
     {
       "model": "qwen3.5:4b",
+      "configVersion": 2,
       "n": 5,
-      "wins": 0,
-      "winRate": 0.0,
+      "wins": 1,
+      "winRate": 0.2,
       "timeToGoalSeconds": {
-        "n": 0,
-        "mean": NaN,
+        "n": 1,
+        "mean": 4225.4,
         "ci95Half": NaN
       },
       "gatherEfficiency": {
-        "n": 3,
-        "mean": 0.3333333333333333,
-        "ci95Half": 1.4343333333333335
+        "n": 5,
+        "mean": 0.26105706357562136,
+        "ci95Half": 0.46024824253294794
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.03811594202898551,
-        "ci95Half": 0.09466811093265373
+        "mean": 0.6028264468497053,
+        "ci95Half": 0.07769445286739972
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 286853.6,
-        "ci95Half": 154175.5736711976
+        "mean": 2460691.4,
+        "ci95Half": 362739.4687766083
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 111160.41033444817,
-        "ci95Half": 2330.7423100018673
+        "mean": 1575.386230986565,
+        "ci95Half": 23.673080118133605
       }
     },
     {
       "model": "lfm2.5:latest",
+      "configVersion": 1,
       "n": 5,
       "wins": 0,
       "winRate": 0.0,

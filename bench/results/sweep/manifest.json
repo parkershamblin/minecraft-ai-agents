@@ -402,6 +402,91 @@
       "discarded": false,
       "resultFile": "bench/results/race_bench-lfm2.5-latest-r5.json",
       "at": "2026-07-25T05:52:13.920264+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 1,
+      "label": "bench-qwen3.5-4b-v2-r1",
+      "configVersion": 2,
+      "attemptId": "019f97de-6bc7-710f-9063-e0b3c1be1b24",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 4225.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-v2-r1.json",
+      "at": "2026-07-25T07:13:19.722152+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 2,
+      "label": "bench-qwen3.5-4b-v2-r2",
+      "configVersion": 2,
+      "attemptId": "019f981f-9383-73b4-930a-510516b1cf30",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 5726.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-v2-r2.json",
+      "at": "2026-07-25T08:49:31.018566+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 3,
+      "label": "bench-qwen3.5-4b-v2-r3",
+      "configVersion": 2,
+      "attemptId": "019f9877-9f1a-7707-b394-236b88ec93c9",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4509.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-v2-r3.json",
+      "at": "2026-07-25T10:05:23.480189+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 4,
+      "label": "bench-qwen3.5-4b-v2-r4",
+      "configVersion": 2,
+      "attemptId": "019f98bd-1f56-7678-98d8-5fbb715b4657",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4505.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-v2-r4.json",
+      "at": "2026-07-25T11:21:15.080170+00:00"
+    },
+    {
+      "model": "qwen3.5:4b",
+      "index": 5,
+      "label": "bench-qwen3.5-4b-v2-r5",
+      "configVersion": 2,
+      "attemptId": "019f9902-9137-7079-a375-e63bb3071ca0",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 4506.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-qwen3.5-4b-v2-r5.json",
+      "at": "2026-07-25T12:37:06.838734+00:00"
     }
   ]
 }
