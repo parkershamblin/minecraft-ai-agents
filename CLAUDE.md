@@ -89,6 +89,21 @@ the runbook) before the first sweep. No v2 re-bench: that budget goes to
 v3 re-baseline (llama3.1:8b, gemma3:12b, gemma4:latest, N=5) plus the
 free `/api/show` probe on lfm2.5 before writing it off.
 
+**Update (2026-07-26, 3b RESULTS — llama3.1:8b, N=5, all v3):** Both
+axes DONE, 30 kept honest rows, zero dirty (`bench/results/
+AXIS_REPORT.md`, commit `1cd1eff` on `v3-protocol`). num_ctx 4096/8192/
+16384: all 5/5, overlapping CIs — INSENSITIVE (prompts fit in 4096).
+Tick: 15s = 533.1±152.6 (no real gain), 30s = 608.6±136.7, 60s =
+1181.1±1077.4 **and 3/5 with honest DNFs at r2/r4** — asymmetric cliff;
+cadence starves the race, context does not. Mid-sweep power loss
+recovered via resume-safe path (crashed attempt `019f9d4a` recorded as
+discarded row, log preserved as `.log.crashed`). NEW GOTCHA promoted to
+the permanent list: RCON `list` is ellipsized at ~26 players — fleet
+gate now probes `execute if entity <name>` per name. Fleet recovery:
+`task seed` spawns nothing for EXISTING villagers; `spawn-fleet.mjs`
+spawns ALL 20 — for the race fleet use spawn-fleet then
+`despawn-fleet.mjs 6` (racers are villagers.json[0:6]).
+
 **Next session:** finish the v3 re-baseline — llama3.1:8b needs runs 2-5,
 then gemma3:12b and gemma4:latest at N=5 (`--world-snapshot
 D:/backups/ai-civilization-engine/pristine-6233701440491701965-v3.tgz`,
