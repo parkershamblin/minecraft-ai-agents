@@ -221,14 +221,17 @@ def restore_world(snapshot: Path, seed: str, usernames: list[str]) -> None:
 
     # Bots auto-reconnect with exponential backoff (BotSession.ts, capped 60s);
     # connection-throttle is patched to -1 every boot, so the herd is admitted
-    # at once. Race preflight still needs them ONLINE — checked BY NAME, since
-    # the POV rig's six cam bots would satisfy any count-based gate on their own.
+    # at once. Race preflight still needs them ONLINE — probed PER NAME with
+    # `execute if entity`, never by parsing `list`: the POV rig's six cam bots
+    # would satisfy any count-based gate, and RCON ellipsizes long output
+    # server-side (~150 chars), so with enough players online `list` silently
+    # drops names past the cutoff and an online racer reads as missing
+    # (cost three ctx blocks on 2026-07-26, 26 players online).
     deadline = time.monotonic() + 300
     missing: list[str] = list(usernames)
     while time.monotonic() < deadline:
-        online = rcon("list")
-        present = {n for n in usernames if re.search(rf"\b{re.escape(n)}\b", online)}
-        missing = [n for n in usernames if n not in present]
+        missing = [n for n in usernames
+                   if "Test passed" not in rcon(f"execute if entity {n}")]
         if not missing:
             log(f"fleet back online ({len(usernames)} villagers: {', '.join(usernames)})")
             return
@@ -607,6 +610,7 @@ def main() -> int:
                              + (f"-{axis_slug}-{slug(str(axis_value))}" if axis else ""),
                     "sweepKind": "axis" if axis else "model",
                     "axis": axis, "axisValue": axis_value,
+                    "axisBaseline": (str(axes[axis]["baseline"]) if axis else None),
                     "configVersion": config_version, "worldSeed": world_seed,
                     "attemptId": None, "outcome": "block-setup-failed",
                     "honest": None, "discarded": True,

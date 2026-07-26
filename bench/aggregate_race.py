@@ -1029,8 +1029,12 @@ def axis_blocks(axis_runs: list[dict]) -> dict[tuple, dict]:
     for run in axis_runs:
         key = (run["model"], run.get("axis"), str(run.get("axisValue")))
         b = out.setdefault(key, {"durations": [], "n": 0, "wins": 0,
-                                 "baseline": run.get("axisBaseline"),
+                                 "baseline": None,
                                  "holes": [], "discarded": []})
+        # From ANY row that carries it, not just the first: a block whose first
+        # manifest row is a setup failure would otherwise pin baseline to None
+        # and silently drop its Δ column (bit the first ctx report).
+        b["baseline"] = b["baseline"] or run.get("axisBaseline")
         if run["discarded"]:
             (b["holes"] if run["outcome"] in ("no-clean-run", "block-setup-failed")
              else b["discarded"]).append(run)
@@ -1065,7 +1069,15 @@ def write_axis_outputs(axis_runs: list[dict]) -> int:
         "| Model | Axis | Arm | N | Win rate | Time-to-goal s (won) | Δ vs baseline |",
         "|---|---|--:|--:|--:|--:|--:|",
     ]
-    for (model, axis, value), b in sorted(blocks.items()):
+    def arm_sort(item):
+        (model, axis, value), _ = item
+        # Numeric arms in numeric order — "16384" sorts before "4096" as text.
+        try:
+            return (model, axis, 0, float(value), "")
+        except ValueError:
+            return (model, axis, 1, 0.0, value)
+
+    for (model, axis, value), b in sorted(blocks.items(), key=arm_sort):
         base = blocks.get((model, axis, str(b["baseline"])))
         delta = "—"
         if base and base is not b and base["timeToGoal"].n and b["timeToGoal"].n:

@@ -390,6 +390,10 @@ else fake), `OPENAI_API_KEY` (optional — never required).
 - RCON `data get` output is ELLIPSIZED server-side past ~150 chars (measured
   2026-07-09: a literal `...` mid-SNBT) — full-inventory reads are impossible;
   read per-slot (`Inventory[i].id` / `.count`, stop at "Found no elements").
+  `list` is ellipsized the same way: at ~26 players online the tail names
+  vanish, so any is-player-online check that parses `list` reads online
+  players as missing (cost three ctx sweep blocks on 2026-07-26). Probe per
+  name instead: `execute if entity <name>` — "Test passed" iff online.
   And the player Inventory NBT is a DENSE list that reindexes whenever the
   player moves items, while each RCON command lands on a separate tick: a
   single per-slot pass can tear (missed stack → its reappearance books a

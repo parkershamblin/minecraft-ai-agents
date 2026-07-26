@@ -542,6 +542,886 @@
       "discarded": false,
       "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r1.json",
       "at": "2026-07-26T01:15:30.259926+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-tick-15-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9c02-9728-75c9-8c67-6fde8c5c6c9a",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 480.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T01:28:54.144687+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-tick-30-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9c0b-d19c-751f-a209-96856d685ee8",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 641,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T01:41:39.236580+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-tick-60-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9c17-853a-73cc-b4aa-f658ea409cbf",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1641.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T02:11:06.741306+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-tick-30-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9c32-72cb-73bd-919d-75cff2a6f91f",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 760.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T02:25:50.427626+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-tick-60-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9c3f-eceb-718a-9adc-493753ed44ba",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 5224.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T03:54:57.475782+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-tick-15-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9c91-7fdd-710d-a035-81b44ddfab51",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 581,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T04:06:40.181110+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-tick-60-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9c9c-4116-72b9-9c8b-f6a85e89c39e",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 780.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T04:21:44.506828+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-tick-15-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9caa-0fd7-765c-b1ca-842e3c2fc667",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 481.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T04:31:50.128709+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-tick-30-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9cb3-5731-7528-a3a1-a48c1b36b4a1",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 500.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T04:42:17.437128+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-tick-15-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9cbc-f10e-75ec-9a26-47353c18a9a8",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 401.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T04:51:07.540020+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-tick-30-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9cc5-02e8-7713-a87d-d08342977049",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 640.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T05:03:55.466050+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-tick-60-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9cd0-b0ec-7418-9c24-f75f9e2e4654",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 5124.2,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T06:31:24.751888+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-tick-30-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d20-b76e-7693-946f-70c00f913226",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 500.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T06:41:45.401473+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-tick-60-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9d2a-414b-706b-9ff8-d1c401b8283c",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1121.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T07:02:31.177451+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-tick-15-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9d3d-67e0-739d-8cb8-22d235df2e30",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 721.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T07:16:46.276735+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r1",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": "019f9d4a-61d5-7198-a33c-5685af071653",
+      "outcome": "crashed",
+      "honest": null,
+      "discarded": true,
+      "reason": "host power loss ~10min into the race (both teams at furnace_placed); attempt orphaned live, closed as 'aborted' by the next take's preflight stale-attempt sweep. Log preserved: bench/results/sweep/logs/sens-ctx-4096-llama3.1-8b-v3-r1.log.crashed",
+      "at": "2026-07-26T07:28:00+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "setup-llama3.1-8b-ctx-4096",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": null,
+      "outcome": "block-setup-failed",
+      "honest": null,
+      "discarded": true,
+      "reason": "block setup failed: villagers still offline after 300s: Elara, Wren, Ansel \u2014 last list: 'There are 26 of a max of 30 players online: Bram, pov_cam_6, Dagny, pov_cam_2, Hollis, Maren, Gideon, Nils, Vesper, Tansy, Juniper, Fen, Cassia, pov_cam_4, ...'",
+      "at": "2026-07-26T08:10:54.082660+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "setup-llama3.1-8b-ctx-8192",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": null,
+      "outcome": "block-setup-failed",
+      "honest": null,
+      "discarded": true,
+      "reason": "block setup failed: villagers still offline after 300s: Elara, Ansel, Petra \u2014 last list: 'There are 26 of a max of 30 players online: pov_cam_4, Bram, Dagny, pov_cam_2, Gideon, Tansy, Juniper, pov_cam_1, Fen, Ines, Sable, Nils, Wren, Ulric, ...'",
+      "at": "2026-07-26T08:16:31.756541+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "setup-llama3.1-8b-ctx-16384",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": null,
+      "outcome": "block-setup-failed",
+      "honest": null,
+      "discarded": true,
+      "reason": "block setup failed: villagers still offline after 300s: Elara, Wren, Ansel, Petra, Fen \u2014 last list: 'There are 26 of a max of 30 players online: Gideon, pov_cam_4, pov_cam_1, Bram, Juniper, Yara, Maren, Ines, Sable, Ulric, pov_cam_3, Cassia, Dagny, Hollis, ...'",
+      "at": "2026-07-26T08:22:06.623344+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d88-2696-716b-8c07-f35255253f17",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 702,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T08:38:05.682800+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d93-8fae-710a-b959-ab9df26f7013",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 560.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T08:48:12.074233+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d9c-cd53-7649-980a-bf8d8b13dd68",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 700.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T09:00:37.762339+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9da8-3068-758d-8a3b-b64d9a392b66",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 560.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T09:10:43.892867+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9db1-6857-7643-b0bb-7859f9190d0b",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1221.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T09:31:49.207651+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9dc5-fdb7-7473-b743-5af299b6c160",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 640.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T09:44:36.923830+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9dd0-6e84-763f-8f95-137a54a8aa6d",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1701.2,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T10:13:41.895636+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9deb-0206-765e-8c9d-c0eb3a285b25",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 540.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T10:23:22.700753+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9df3-e00a-76fb-9917-7e9b994a5bd4",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 560.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T10:33:23.728307+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9dfd-1189-725e-806d-0e5a931b6bbd",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 500.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T10:42:26.378651+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e06-7b5d-7055-a9ae-06bf07e88727",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 660.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T10:55:23.431378+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e11-2c5b-72dc-9df4-57836cc4cd3d",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 580.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T11:05:44.080967+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e1a-bac9-74e7-be11-4b2f813d4ae8",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 520.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T11:15:10.464793+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e23-5124-72bd-b4fd-647878403a3e",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 580.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T11:25:33.062653+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e2c-c972-7548-887b-d83337ab735b",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 480.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T11:34:13.593281+00:00"
     }
   ],
   "$worldProtocol": "Runs carrying worldSeed 1709071022456631449 predate the v3 world protocol: one shared, never-reset world, no time/weather freeze, and memory-service reflections at the 0.7 default (compose never passed LLM_TEMPERATURE). Seed verified via RCON on 2026-07-25 against the live pre-v3 world ('Seed: [1709071022456631449]') before that world was replaced. The world itself is archived, not lost: D:/backups/ai-civilization-engine/pre-v3-world-1709071022456631449.tgz (cold tar of the whole minecraft-data volume, taken immediately before the v3 wipe) - restore it to re-inspect the terrain any of these 30 runs was raced on. v3 runs restore pristine-6233701440491701965-v3.tgz per block instead (docs/runbooks/race-world-reset.md). Never pool the two: the aggregator keys on (model, configVersion)."
