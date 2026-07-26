@@ -1583,6 +1583,45 @@
       "resultFile": "bench/results/race_bench-gemma3-12b-v3-r2.json",
       "at": "2026-07-26T14:51:31.615241+00:00",
       "reason": "bot session reconnect loop during the race (Elara x1037 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f0d-e898-7776-b61e-6bc7f77d3f03",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 560.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T15:41:27.648567+00:00"
     }
   ],
   "$worldProtocol": "Runs carrying worldSeed 1709071022456631449 predate the v3 world protocol: one shared, never-reset world, no time/weather freeze, and memory-service reflections at the 0.7 default (compose never passed LLM_TEMPERATURE). Seed verified via RCON on 2026-07-25 against the live pre-v3 world ('Seed: [1709071022456631449]') before that world was replaced. The world itself is archived, not lost: D:/backups/ai-civilization-engine/pre-v3-world-1709071022456631449.tgz (cold tar of the whole minecraft-data volume, taken immediately before the v3 wipe) - restore it to re-inspect the terrain any of these 30 runs was raced on. v3 runs restore pristine-6233701440491701965-v3.tgz per block instead (docs/runbooks/race-world-reset.md). Never pool the two: the aggregator keys on (model, configVersion)."

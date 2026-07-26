@@ -227,6 +227,45 @@ export function targetKey(p: Position): string {
 }
 
 /**
+ * A whole NEIGHBOURHOOD that recently defeated this bot, not one block of it.
+ *
+ * Per-block marks cannot escape an unreachable cluster: a tree is a column of
+ * logs, so a bot standing below a cliff-top oak blacklists one log per trip and
+ * re-picks the next log of the SAME tree on the next trip. Measured 2026-07-26:
+ * Ansel spent ten consecutive 60-second trips on one tree 16 blocks away,
+ * cycling targets (243,70,-497) → (243,71,-497) → (247,70,-497) → …, collecting
+ * nothing, while his teammates gathered normally. The key encodes the centre and
+ * radius so `pickGatherTarget` can test membership without a second map.
+ */
+export function regionKey(centre: Position, radius: number): string {
+  return `R:${Math.round(centre.x)},${Math.round(centre.y)},${Math.round(centre.z)}:${radius}`
+}
+
+function parseRegionKey(key: string): { centre: Position; radius: number } | null {
+  if (!key.startsWith('R:')) {
+    return null
+  }
+  const [, coords, radius] = key.split(':')
+  const parts = (coords ?? '').split(',').map(Number)
+  const r = Number(radius)
+  if (parts.length !== 3 || parts.some(Number.isNaN) || Number.isNaN(r)) {
+    return null
+  }
+  const [x, y, z] = parts as [number, number, number]
+  return { centre: { x, y, z }, radius: r }
+}
+
+/** Mark every block within `radius` of `centre` as recently-defeating. */
+export function blacklistRegion(
+  blacklist: Map<string, number>,
+  centre: Position,
+  radius: number,
+  until: number,
+): void {
+  blacklist.set(regionKey(centre, radius), until)
+}
+
+/**
  * Choose the nearest candidate that hasn't recently defeated this bot.
  * findBlock is deterministic from a standing position, so without memory a
  * failed target gets re-picked every tick — measured 2026-07-09: one
@@ -242,11 +281,27 @@ export function pickGatherTarget<T extends Position>(
   blacklist: ReadonlyMap<string, number>,
   now: number,
 ): T | null {
+  // Live region marks, parsed once — a candidate inside any of them is out,
+  // however fresh that individual block is.
+  const regions: { centre: Position; radius: number }[] = []
+  for (const [key, until] of blacklist) {
+    if (until <= now) {
+      continue
+    }
+    const region = parseRegionKey(key)
+    if (region) {
+      regions.push(region)
+    }
+  }
+
   let best: T | null = null
   let bestDistance = Infinity
   for (const candidate of candidates) {
     const until = blacklist.get(targetKey(candidate))
     if (until !== undefined && until > now) {
+      continue
+    }
+    if (regions.some((r) => distance(candidate, r.centre) <= r.radius)) {
       continue
     }
     const d = distance(candidate, origin)

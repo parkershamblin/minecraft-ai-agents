@@ -65,6 +65,7 @@ import {
   gatherFailureMessage,
   gatherStartAnnouncement,
   haulAnnouncement,
+  blacklistRegion,
   pickGatherTarget,
   planHarvest,
   scanNearbyResources,
@@ -94,6 +95,15 @@ const { pathfinder, Movements, goals } = mineflayerPathfinder
  *  the every-tick re-pick loop, short enough that shifted world state gets
  *  its retry (a block that defeated four attempts fell on the fifth). */
 const GATHER_TARGET_BLACKLIST_MS = 10 * 60_000
+
+/** Radius blacklisted when a gather trip left the body where it started.
+ *  Sized to swallow a whole tree or ore pocket — the point is to stop the bot
+ *  re-picking the next block of the cluster that just defeated it. */
+const UNREACHABLE_REGION_RADIUS = 8
+
+/** Below this, a trip moved the body so little that the target was, in
+ *  practice, unreachable from where it stood. */
+const STUCK_EPSILON_BLOCKS = 2
 
 /** Process-global so no two spawns — across reconnects, death-respawns, OR
  *  brand-new BotSession instances for the same username — ever share a
@@ -164,6 +174,10 @@ export class BotSession {
   private lastScan: { position: Position; at: number } | null = null
   /** gather targets that recently defeated this bot: targetKey → expiry ms */
   private readonly gatherBlacklist = new Map<string, number>()
+  /** where the last gather trip aimed, and where the body stood when it set
+   *  off — read at the START of the next trip, because the trip watchdog
+   *  abandons the promise and no code after the walk is guaranteed to run. */
+  private lastGatherAttempt: { target: Position; origin: Position } | null = null
   private movement: MovementTracker
   private spawnWaiters: Array<(reason: SpawnReason) => void> = []
   private log
@@ -1037,6 +1051,35 @@ export class BotSession {
         this.gatherBlacklist.delete(key)
       }
     }
+
+    // Did the LAST trip move us at all? If the body is standing where it set
+    // off from, that target was unreachable from here — and so is the rest of
+    // its cluster. Blacklisting one block per trip cannot escape a tree (a
+    // column of logs) or an ore pocket: measured 2026-07-26, one bot burned ten
+    // consecutive 60s trips cycling logs of a single cliff-top oak 16 blocks
+    // away while his teammates gathered normally. Checked HERE, at the start of
+    // the next trip, because the executor's watchdog abandons the trip promise
+    // and nothing after the walk is guaranteed to run.
+    const previous = this.lastGatherAttempt
+    if (previous && distance(this.position as Position, previous.origin) < STUCK_EPSILON_BLOCKS) {
+      blacklistRegion(
+        this.gatherBlacklist,
+        previous.target,
+        UNREACHABLE_REGION_RADIUS,
+        now + GATHER_TARGET_BLACKLIST_MS,
+      )
+      this.log.warn(
+        { target: previous.target, radius: UNREACHABLE_REGION_RADIUS },
+        'gather trip left the body where it started — blacklisting the whole cluster',
+      )
+      // Cheap unstick before the next attempt: drop any stale control state
+      // and hop. Costs nothing when the body was merely blocked by geometry,
+      // and no teleport or operator command is involved.
+      bot.clearControlStates()
+      bot.setControlState('jump', true)
+      setTimeout(() => bot.setControlState('jump', false), 250)
+    }
+    this.lastGatherAttempt = null
     const candidates = bot.findBlocks({
       matching: (candidate) => names.includes(candidate.name),
       maxDistance,
@@ -1084,6 +1127,7 @@ export class BotSession {
     // the walk/dig never settles — the watchdog abandons this promise — the
     // mark survives and the next pick (this session or the next) moves on.
     this.gatherBlacklist.set(targetKey(target), now + GATHER_TARGET_BLACKLIST_MS)
+    this.lastGatherAttempt = { target, origin: { ...(this.position as Position) } }
     if (announceStart) {
       bot.chat(gatherStartAnnouncement(resource, block.name, target, count))
     }
@@ -1128,6 +1172,9 @@ export class BotSession {
       // standing), and clearing on completion re-exposed that ghost target
       // to every future scan.
       this.gatherBlacklist.delete(targetKey(target))
+      // A real haul proves the body reached it — the next trip must not read
+      // this attempt as evidence of a stuck cluster.
+      this.lastGatherAttempt = null
     }
     return { blockType, position: { x: block.position.x, y: block.position.y, z: block.position.z }, collected }
   }

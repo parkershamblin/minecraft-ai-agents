@@ -10,6 +10,8 @@ import {
   gatherStartAnnouncement,
   haulAnnouncement,
   pickGatherTarget,
+  blacklistRegion,
+  regionKey,
   planHarvest,
   targetKey,
   scanNearbyResources,
@@ -348,5 +350,52 @@ describe('shouldRescan (the CPU gate — sweeps are ~175ms each at 20 bots)', ()
 
   it('the first survey ignores the floor (nothing to space against)', () => {
     expect(shouldRescan(null, at(0), 0, { ...GATE, minSweepMs: 15_000 })).toBe(true)
+  })
+})
+
+describe('unreachable cluster blacklisting', () => {
+  // Regression: 2026-07-26. A bot below a cliff-top oak burned ten consecutive
+  // 60s gather trips cycling logs of the SAME tree — (243,70,-497),
+  // (243,71,-497), (247,70,-497), ... — collecting nothing, because a
+  // per-block mark cannot escape a cluster. Its team raced a member short for
+  // the whole run and both gates called the run clean.
+  const ANSEL = { x: 243, y: 67, z: -512 }
+  const TREE = [
+    { x: 243, y: 70, z: -497 },
+    { x: 243, y: 71, z: -497 },
+    { x: 247, y: 70, z: -497 },
+    { x: 243, y: 72, z: -497 },
+    { x: 247, y: 74, z: -497 },
+  ]
+
+  it('per-block marks alone still hand back the next log of the same tree', () => {
+    const blacklist = new Map<string, number>()
+    blacklist.set(targetKey(TREE[0]!), 2_000)
+    const pick = pickGatherTarget(TREE, ANSEL, blacklist, 1_000)
+    expect(pick).not.toBeNull()
+    expect(pick).not.toBe(TREE[0])
+  })
+
+  it('a region mark takes the whole cluster off the menu', () => {
+    const blacklist = new Map<string, number>()
+    blacklistRegion(blacklist, TREE[0]!, 8, 2_000)
+    expect(pickGatherTarget(TREE, ANSEL, blacklist, 1_000)).toBeNull()
+  })
+
+  it('leaves resources outside the region pickable', () => {
+    const blacklist = new Map<string, number>()
+    blacklistRegion(blacklist, TREE[0]!, 8, 2_000)
+    const elsewhere = { x: 300, y: 70, z: -497 }
+    expect(pickGatherTarget([...TREE, elsewhere], ANSEL, blacklist, 1_000)).toBe(elsewhere)
+  })
+
+  it('expires with the rest of the blacklist', () => {
+    const blacklist = new Map<string, number>()
+    blacklistRegion(blacklist, TREE[0]!, 8, 2_000)
+    expect(pickGatherTarget(TREE, ANSEL, blacklist, 3_000)).not.toBeNull()
+  })
+
+  it('regionKey is stable for the same centre and radius', () => {
+    expect(regionKey({ x: 1.4, y: 2.6, z: -3.5 }, 8)).toBe(regionKey({ x: 1, y: 3, z: -3 }, 8))
   })
 })
