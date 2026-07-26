@@ -114,6 +114,7 @@
       "values": ["cautious", "guard"],
       "requiresMobs": true,
       "runnable": false,
+      "$status": "Design APPROVED, execution DEFERRED by the project owner on 2026-07-26. Run nothing; the sweep keeps refusing this axis. The approved shape is a parallel `variants.mobs` overlay (mobs:true, everything else inherited) selected with --variant, NOT a configVersion bump — a version bump means 'old rows are invalid, re-bench', and mob-free rows are not invalidated by a mobs-on experiment, they answer a different question. Arms brave/cautious(baseline)/guard, 15 runs at N=5, ~5-9h. Full proposal: docs/runbooks/race-sensitivity-sweep.md.",
       "$note": "NOT RUNNABLE under this frozen config, and the sweep refuses it. Stance governs the hostile-threat response, but `frozen.mobs` is false and the race preflight both disables doMobSpawning and kills every hostile type — so there are no threats for a stance to govern. The only behaviour left is GuardTether's idle-post radius, i.e. a mobility knob under a threat-shaped name. Measuring stance honestly needs mobs ON, which is a DIFFERENT frozen config and cannot share a baseline with the tick/ctx arms. The README's '`guard` costs ~80s on Easy' folklore predates this config and does not transfer."
     }
   },

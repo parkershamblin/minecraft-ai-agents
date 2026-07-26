@@ -1040,11 +1040,18 @@ def axis_blocks(axis_runs: list[dict]) -> dict[tuple, dict]:
              else b["discarded"]).append(run)
             continue
         b["n"] += 1
+        b.setdefault("keptIndices", set()).add(run["index"])
         if run["outcome"] == "won":
             b["wins"] += 1
             b["durations"].append(run["durationSeconds"])
     for b in out.values():
         b["timeToGoal"] = mean_ci95(b["durations"])
+        # A hole whose index later produced a kept row was RECOVERED — the run
+        # was re-raced after whatever broke it was fixed, so it is audit trail,
+        # not missing coverage. Only an index with no kept row shortens N.
+        kept_idx = b.get("keptIndices", set())
+        b["recovered"] = [h for h in b["holes"] if h["index"] in kept_idx]
+        b["uncovered"] = [h for h in b["holes"] if h["index"] not in kept_idx]
     return out
 
 
@@ -1087,19 +1094,34 @@ def write_axis_outputs(axis_runs: list[dict]) -> int:
             f"| `{model}` | {axis} | {value}{marker} | {b['n']} "
             f"| {b['wins']}/{b['n']} | {fmt_ci(b['timeToGoal'])} | {delta} |")
 
-    holes = [(k, r) for k, b in sorted(blocks.items()) for r in b["holes"]]
+    uncovered = [(k, r) for k, b in sorted(blocks.items()) for r in b["uncovered"]]
+    recovered = [(k, r) for k, b in sorted(blocks.items()) for r in b["recovered"]]
     lines += ["", "## Coverage", ""]
-    if holes:
-        lines.append("Runs that produced NO kept row — the N column above is short by "
-                     "exactly these, and they are listed because silent truncation "
-                     "reads as coverage:")
+    if uncovered:
+        lines.append("**Missing coverage.** These runs never produced a kept row, so "
+                     "the N column above is short by exactly them. Listed because a "
+                     "silent truncation reads as coverage:")
         lines.append("")
-        for (model, axis, value), r in holes:
+        for (model, axis, value), r in uncovered:
             lines.append(f"- `{model}` {axis}={value} run {r['index']}: "
                          f"{r['outcome']} — {r.get('reason', '')}")
-    else:
-        lines.append("Every planned run produced a kept row; no holes, no "
-                     "block-setup failures.")
+        lines.append("")
+    if recovered:
+        lines.append("**Recovered failures (audit trail, NOT missing coverage).** Each "
+                     "of these failed once, then the same run index was re-raced "
+                     "successfully after the cause was fixed — the N column above "
+                     "already counts the successful take. They are kept in the "
+                     "manifest so the failure is on the record rather than edited out:")
+        lines.append("")
+        for (model, axis, value), r in recovered:
+            lines.append(f"- `{model}` {axis}={value} run {r['index']}: "
+                         f"{r['outcome']} — {r.get('reason', '')}")
+        lines.append("")
+    if not uncovered and not recovered:
+        lines.append("Every planned run produced a kept row on its first take; no "
+                     "holes, no block-setup failures.")
+    elif not uncovered:
+        lines.append("No missing coverage: every planned run has a kept row.")
     lines += [
         "",
         "Per-arm process timeout scales with the tick arm (`raceTimeoutSeconds` in",

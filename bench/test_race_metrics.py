@@ -409,3 +409,28 @@ def test_axis_report_lists_holes_instead_of_shrinking_n_silently():
     assert baseline["n"] == 1 and baseline["wins"] == 1
     assert slow["n"] == 0
     assert [h["label"] for h in slow["holes"]] == ["sens-tick-60-m-r1"]
+
+
+def test_recovered_failures_are_not_reported_as_missing_coverage():
+    """A block-setup failure whose run index was later re-raced successfully is
+    audit trail, not a hole — reporting it as missing coverage understates N
+    and reads as a truncated sweep."""
+    import aggregate_race
+
+    axis_runs = [
+        # run 1 failed setup, then run 1 was re-raced and kept
+        {"model": "m", "index": 1, "label": "setup-m-ctx-4096", "sweepKind": "axis",
+         "axis": "OLLAMA_NUM_CTX", "axisValue": "4096", "axisBaseline": "8192",
+         "discarded": True, "outcome": "block-setup-failed", "reason": "fleet offline"},
+        {"model": "m", "index": 1, "label": "sens-ctx-4096-m-r1", "sweepKind": "axis",
+         "axis": "OLLAMA_NUM_CTX", "axisValue": "4096", "axisBaseline": "8192",
+         "discarded": False, "outcome": "won", "durationSeconds": 700.0},
+        # run 2 never recovered — genuine missing coverage
+        {"model": "m", "index": 2, "label": "sens-ctx-4096-m-r2", "sweepKind": "axis",
+         "axis": "OLLAMA_NUM_CTX", "axisValue": "4096", "axisBaseline": "8192",
+         "discarded": True, "outcome": "no-clean-run", "reason": "3 dirty tries"},
+    ]
+    b = aggregate_race.axis_blocks(axis_runs)[("m", "OLLAMA_NUM_CTX", "4096")]
+    assert b["n"] == 1 and b["wins"] == 1
+    assert [r["index"] for r in b["recovered"]] == [1]
+    assert [r["index"] for r in b["uncovered"]] == [2]
