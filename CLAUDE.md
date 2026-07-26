@@ -42,12 +42,65 @@ RACE_REPORT.md and the narrative. Known-unverifiable-from-repo claims
 (smoke 2.0s/47tok, param counts, reference-record knobs) flagged in
 review, kept with secondary sourcing.
 
-**Next session:** Phase 3b sensitivity sweep (tick, stance, num_ctx —
-one axis at a time, SAME frozen protocol, never mixed into model
-table). Before any between-winner ranking claims: world-reset-per-block
-or interleaved run order to kill the wear confound (documented in
-RACE_REPORT.md). SV-14 row unchanged. Roadmap beyond T1 unchanged per
-`docs/architecture/10-red-vs-blue.md`.
+**Update (2026-07-26, v3 EXECUTED + 3b harness):** World transition RUN.
+Pre-wipe backup `D:\backups\ai-civilization-engine\pre-v3-world-
+1709071022456631449.tgz` (264 MB, seed RCON-verified before the wipe);
+pristine `pristine-6233701440491701965-v3.tgz` (232 MB) built with
+gamerules baked + seed gate + graceful stop. FIRST v3 RUN GREEN:
+`bench-llama3.1-8b-v3-r1`, attempt `019f9bf3-4634…`, **won 680.6s**,
+honest {0,0}. Consequence: llama3.1:8b's row is now v3 n=1 and its five
+v1 runs left the table (25 -> 21 kept) — report marks provisional rows
+(n<3) and banners the v1/v2/v3 version mix. TWO REAL BUGS caught by
+running it: (1) the fleet-readiness gate counted PLAYERS, and the POV
+rig's 6 cams satisfy any count gate with zero villagers — now waits by
+roster name; (2) on this seed `locate biome` picks WATER for the blue
+post, `spreadplayers` refuses liquid with a message naming neither —
+posts now PINNED in `frozen.world.posts` (red [-416,-192], blue
+[364,-583], both forest-distance 0, 873 apart, symmetry checked). 9
+review findings applied (no-reset rows can't be resumed into or pooled
+as v3; reflection budget pinned+verified — a tripped breaker keeps the
+honesty gate green; exact seed match; wear prose + caveats now derived,
+not asserted). Phase 3b harness IMPLEMENTED: `--axis/--axis-values`,
+axis rows partitioned out of the model table by `sweepKind`, separate
+`AXIS_REPORT.md`, interleaved tick arms, tick-scaled process timeout
+(the 75m watchdog is inter-milestone, NOT total), holes recorded as
+rows, `--expect-tick` equality. **Stance axis REFUSED** under
+`mobs:false` — no hostiles to govern, so it would measure GuardTether's
+idle radius; needs a mobs-ON config. Tests 20 green. Runbooks:
+`docs/runbooks/race-world-reset.md`, `race-sensitivity-sweep.md`.
+NOTHING COMMITTED YET — tree also carries prior uncommitted bench work.
+
+**Update (2026-07-25, v3 world protocol — CODE LANDED, NOT YET RUN):**
+Owner's call: land the whole protocol in ONE bump before any new runs,
+so 3b doesn't bake in confounds a v3 would invalidate anyway. Shipped:
+compose pins `SEED: "6233701440491701965"` (minecraft, new worlds only)
+and finally passes `LLM_TEMPERATURE` to **memory-service** — reflections
+ran at the 0.7 default in every v1/v2 "greedy" run; `frozen-config.json`
+is `configVersion: 3` with a `frozen.world` block (seed, per-block reset,
+gamerules, day/clear); `race-rb2.mjs` preflight freezes and reads back
+`doDaylightCycle`/`doWeatherCycle` + `time set day` + `weather clear`;
+`sweep_race.py` restores a pristine snapshot per block (wipe-then-extract,
+RCON seed gate, waits for the fleet to reconnect), recreates+verifies
+memory-service, and records `worldSeed` per run; the 30 pre-v3 manifest
+rows are labelled with the old seed `1709071022456631449`. Runbook:
+`docs/runbooks/race-world-reset.md`. **Nothing has been raced under v3** —
+the pristine snapshot does not exist yet; build it (one-time section of
+the runbook) before the first sweep. No v2 re-bench: that budget goes to
+v3 re-baseline (llama3.1:8b, gemma3:12b, gemma4:latest, N=5) plus the
+free `/api/show` probe on lfm2.5 before writing it off.
+
+**Next session:** finish the v3 re-baseline — llama3.1:8b needs runs 2-5,
+then gemma3:12b and gemma4:latest at N=5 (`--world-snapshot
+D:/backups/ai-civilization-engine/pristine-6233701440491701965-v3.tgz`,
+~4-8h per model). Only then is the v3 model table readable. After that
+the 3b tick and ctx sweeps (`docs/runbooks/race-sensitivity-sweep.md`);
+stance stays blocked until someone decides whether a mobs-ON config is
+worth its own baseline. Cross-block wear is fixed by v3; WITHIN-block
+wear is not, and villager memory/relationships still accumulate across
+every block (postgres is untouched by the restore) — both documented as
+threats, neither fixed. Also still open: the OpenAI `params` strict-mode
+reshape before any OpenAI filming run. SV-14 row unchanged. Roadmap
+beyond T1 unchanged per `docs/architecture/10-red-vs-blue.md`.
 
 # AI Civilization Engine — project guide
 
@@ -320,6 +373,20 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   ALWAYS oldest-first within the filter. "What happened recently" queries MUST
   pass `since=` (ISO); reading page 1 as "newest" invents phantom outages
   (cost 20 min on 2026-07-18).
+- `locate biome` returns a point that can be WATER, and `spreadplayers`
+  refuses to place anyone on liquid — it fails with `Could not spread 1
+  entity/entities around X, Z (too many entities for space - try using spread
+  of at most 0.00)`, which names neither water nor the real cause. On the
+  pinned benchmark seed the auto-located blue post (342,160) is water at y=62
+  with air above, so the race preflight burned five growing-radius retries and
+  died with "could not station Ansel" (cost the first v3 attempt). Force-loading
+  the chunks does NOT help — it is not a generation problem. Probe a candidate
+  with `execute if block <x> <y> <z> minecraft:water` (`data get block … id`
+  only works on block entities and answers "not a block entity" for everything
+  else), and pick posts with the operation that has to succeed:
+  `spreadplayers` itself, then `data get entity <bot> Pos` to see where it
+  actually landed. Benchmark posts are pinned in `frozen.world.posts` for
+  exactly this reason (`docs/runbooks/race-world-reset.md`).
 - RCON `data get` output is ELLIPSIZED server-side past ~150 chars (measured
   2026-07-09: a literal `...` mid-SNBT) — full-inventory reads are impossible;
   read per-slot (`Inventory[i].id` / `.count`, stop at "Found no elements").

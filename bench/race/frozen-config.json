@@ -1,10 +1,11 @@
 {
   "$comment": "Frozen RB-race benchmark config (Phase 1, docs/benchmark-rb.md). Every run in a model sweep uses EXACTLY these knobs — only the model axis varies, or the table measures the harness, not the LLM. GovSim-style validity: greedy decoding (temperature 0) + N seeded runs + mean/95% CI.",
   "benchmark": "rb-race",
-  "configVersion": 2,
+  "configVersion": 3,
   "$versionHistory": {
     "1": "Phase 2 initial sweep (PR #90)",
-    "2": "Ollama provider sends think:false to thinking-capable models — reasoning models (qwen3.5 family) previously burned the whole num_ctx window on chain-of-thought and returned empty completions; plain models are byte-identical to v1"
+    "2": "Ollama provider sends think:false to thinking-capable models — reasoning models (qwen3.5 family) previously burned the whole num_ctx window on chain-of-thought and returned empty completions; plain models are byte-identical to v1",
+    "3": "World protocol: pristine world restored per block from a pinned-seed snapshot (kills the wear confound), day/weather frozen (kills the time-of-day confound), and memory-service reflections finally run at LLM_TEMPERATURE (compose never passed it — every v1/v2 'greedy' run reflected at 0.7). NOT comparable to v1/v2 for any model: re-bench before mixing rows."
   },
   "frozen": {
     "difficulty": "easy",
@@ -16,7 +17,33 @@
     "OLLAMA_NUM_CTX": 8192,
     "LLM_MAX_CONCURRENT_REQUESTS": 4,
     "LLM_DAILY_TOKEN_BUDGET": 100000000,
-    "LLM_TEMPERATURE": 0.0
+    "LLM_TEMPERATURE": 0.0,
+    "REFLECTION_ENABLED": true,
+    "REFLECTION_DAILY_TOKEN_BUDGET": 100000000,
+    "$reflectionBudget": "Ollama-sized, same reasoning as LLM_DAILY_TOKEN_BUDGET. The shipped default is 200000, which a 15-25 h sweep exhausts partway through — and a tripped reflection breaker is SILENT: memory-service logs 'skipped_budget' and returns no reflections, while AttemptEnded.honestRace only reads agent-service's counters, so the run still passes the honesty gate. Late blocks would then race villagers whose memory stream stopped growing, with nothing in the data to show it.",
+    "world": {
+      "$comment": "v3 world protocol. Lowercase, so frozen_env() (bench/sweep_race.py, uppercase-only filter) never exports this object into a container — the sweep reads it as procedure, not as env. Full procedure: docs/runbooks/race-world-reset.md.",
+      "seed": "6233701440491701965",
+      "resetPolicy": "per-block",
+      "$resetPolicy": "Every model block starts from the same pristine snapshot: stop minecraft, wipe the minecraft-data volume, untar the snapshot, start, wait healthy. Blocked run order stays, but wear can no longer accumulate ACROSS blocks — which is what correlated wear with run index in v1/v2 (bench/results/RACE_REPORT.md, method caveats). Within-block wear survives; interleaving is the upgrade if between-winner ranking claims are wanted.",
+      "snapshotArtifact": "pristine-6233701440491701965-v3.tgz",
+      "gamerules": {
+        "keepInventory": true,
+        "doInsomnia": false,
+        "mobGriefing": false,
+        "doMobSpawning": false,
+        "doDaylightCycle": false,
+        "doWeatherCycle": false
+      },
+      "posts": {
+        "$comment": "Team posts as [x, z] anchors (y omitted = station via spreadplayers, the existing behaviour). PINNED because the world is: letting `locate biome` re-derive posts every run makes the start conditions a function of a command's tie-breaking, and on THIS seed it picks a point that cannot be raced from. Verified 2026-07-26 against the pristine snapshot: both anchors accept `spreadplayers` (1 entity, r=8), both report `locate biome #minecraft:is_forest` distance 0, 872 blocks apart. The auto-located blue post (342,160 / 352,160) is water at y=62 with air above — spreadplayers refuses it with 'too many entities for space, try a spread of at most 0.00', which fails the preflight five retries deep with no mention of water.",
+        "red": [-416, -192],
+        "blue": [364, -583]
+      },
+      "timeOfDay": "day",
+      "weather": "clear",
+      "$timeAndWeather": "New in v3. v1/v2 runs drifted through dawn/dusk/night and random rain across a block: light level gates mob spawns, visibility, and (with doDaylightCycle on) how much of a 10-70 minute attempt happens in the dark. Frozen day + clear weather removes it. race-rb2.mjs sets AND reads back both every preflight."
+    }
   },
   "roster": {
     "red": [
@@ -33,6 +60,62 @@
   "varyingAxis": {
     "$comment": "The ONE thing a sweep may change per run: the model. Either the global Ollama model, or the per-team split for head-to-head runs.",
     "env": ["LLM_MODEL_OLLAMA", "LLM_TEAM_MODELS"]
+  },
+  "modelRoster": {
+    "$comment": "Which models a sweep may spend GPU-hours on. Metadata only — lowercase, so frozen_env() (bench/sweep_race.py, uppercase-only filter) never exports it to a container and no configVersion bump is warranted. Every number below was recomputed from bench/results/sweep/manifest.json + the saved slices, not copied from prose; narrative in docs/reports/rb-race-model-sweep-2026-07-25.md.",
+    "decidedOn": "2026-07-25",
+    "decidedBy": "project owner",
+    "approved": [
+      "llama3.1:8b",
+      "gemma3:12b",
+      "gemma4:latest"
+    ],
+    "$approvedEvidence": "Wins at configVersion 1: llama3.1:8b 5/5, gemma4:latest 5/5, gemma3:12b 4/5; all 15 runs reached first_coal; winning durations 580.5–1822.1 s.",
+    "excluded": [
+      {
+        "model": "qwen3.5:4b",
+        "evidence": "0/5 wins at configVersion 1 (0/5 runs reached first_coal; 173/176 decisions = 98.3% were schema-violation fallbacks) and 1/5 at configVersion 2 with think:false — best run 4225.4 s vs 580.5–1822.1 s for viable-model wins, 2669/2895 = 92.2% of gather commands failed, 1527/4577 = 33.4% fallbacks.",
+        "attemptIdRanges": {
+          "1": "019f951e-e8d2-718a-8d7a-a95ab52bc7b5 .. 019f9634-5bdc-770b-858d-d564cb8bf8ca",
+          "2": "019f97de-6bc7-710f-9063-e0b3c1be1b24 .. 019f9902-9137-7079-a375-e63bb3071ca0"
+        }
+      },
+      {
+        "model": "lfm2.5:latest",
+        "evidence": "0/5 wins at configVersion 1, no run ever reached first_coal; 1563/2700 = 57.9% of decisions were schema-violation fallbacks and 1031/1099 = 93.8% of gather commands failed.",
+        "attemptIdRanges": {
+          "1": "019f967a-6085-709a-b9ed-f4d31a8230bb .. 019f978f-e7f3-73ca-b829-f47c63a855b7"
+        }
+      }
+    ]
+  },
+  "sensitivityAxes": {
+    "$comment": "Phase 3b. An axis run overrides exactly ONE knob from `frozen` above; everything else stays at baseline, including the v3 world protocol. Axis runs NEVER enter the model-comparison table (the aggregator partitions on the manifest's `sweepKind`). Metadata only — lowercase, so frozen_env()'s uppercase-only filter can never export this object into a container, and adding an axis does not bump configVersion. Changing a value in `frozen` would.",
+    "TICK_INTERVAL_SECONDS": {
+      "slug": "tick",
+      "service": "agent-service",
+      "baseline": 30,
+      "values": [15, 30, 60],
+      "armOrder": "interleaved",
+      "$note": "The race harness bounds tick at <=30 by default; the sweep passes --expect-tick <value> so the preflight asserts EQUALITY with the arm instead of relaxing the bound. Slower ticks stretch total runtime, so the per-arm process timeout scales with the arm (see raceTimeoutSeconds in the manifest) — the 75-minute watchdog is inter-milestone, not total, and does not bound a run."
+    },
+    "OLLAMA_NUM_CTX": {
+      "slug": "ctx",
+      "service": "agent-service",
+      "baseline": 8192,
+      "values": [4096, 8192, 16384],
+      "armOrder": "blocked",
+      "$note": "Blocked, not interleaved: changing num_ctx forces an Ollama runner reload, so interleaving would pay a model reload per run. Agent-service deliberation only — memory-service reflections do not read it, so a ctx arm does not widen the reflection window."
+    },
+    "THREAT_DEFAULT_STANCE": {
+      "slug": "stance",
+      "service": "minecraft-service",
+      "baseline": "cautious",
+      "values": ["cautious", "guard"],
+      "requiresMobs": true,
+      "runnable": false,
+      "$note": "NOT RUNNABLE under this frozen config, and the sweep refuses it. Stance governs the hostile-threat response, but `frozen.mobs` is false and the race preflight both disables doMobSpawning and kills every hostile type — so there are no threats for a stance to govern. The only behaviour left is GuardTether's idle-post radius, i.e. a mobility knob under a threat-shaped name. Measuring stance honestly needs mobs ON, which is a DIFFERENT frozen config and cannot share a baseline with the tick/ctx arms. The README's '`guard` costs ~80s on Easy' folklore predates this config and does not transfer."
+    }
   },
   "referenceRecord": {
     "$comment": "Fastest known honest run under this config (Easy, mob-free).",

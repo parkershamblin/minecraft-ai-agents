@@ -238,6 +238,13 @@ services:
       REFLECTION_ENABLED: ${REFLECTION_ENABLED:-true}
       REFLECTION_DAILY_TOKEN_BUDGET: ${REFLECTION_DAILY_TOKEN_BUDGET:-200000}
       REFLECTIONS_PER_HOUR_CAP: ${REFLECTIONS_PER_HOUR_CAP:-12}
+      # Reflection sampling temperature. Same lever as agent-service's — and it
+      # was MISSING here until the v3 protocol bump, so every "greedy" benchmark
+      # run before v3 still summarised memories at settings.py's 0.7 default
+      # (services/memory-service/src/memory_service/settings.py: llm_temperature).
+      # Reflections feed retrieval, which feeds deliberation: an unpinned
+      # temperature here leaks nondeterminism into a supposedly greedy run.
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -383,6 +390,12 @@ services:
       TYPE: PAPER
       VERSION: ${MC_VERSION:-1.21.6}
       ONLINE_MODE: "FALSE"          # bots auth 'offline' (BotSession.ts) — must match
+      # Benchmark world pin (v3 protocol, bench/race/frozen-config.json). Seeds
+      # NEW worlds ONLY — an existing minecraft-data volume keeps its own seed,
+      # so changing this does nothing until the volume is removed
+      # (docs/runbooks/race-world-reset.md). Verify after any regeneration with
+      # `rcon-cli seed` — no match means the env never took.
+      SEED: "6233701440491701965"
       # Easy-by-default since 2026-07-17 (Parker's call; Survival era). Seeds
       # NEW worlds only — the live world's difficulty lives in level.dat
       # (flipped via RCON + save-all + restart-verify, the closed-loop

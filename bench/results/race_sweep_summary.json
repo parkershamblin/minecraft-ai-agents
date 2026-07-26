@@ -2,37 +2,68 @@
   "benchmark": "rb-race-sweep",
   "frozenConfig": "bench/race/frozen-config.json",
   "startedAt": "2026-07-24T12:01:21.897084+00:00",
+  "latencyMethod": "pooled raw per-decision latencies per run (schema-violation fallbacks included), then mean \u00b1 95% CI across runs",
   "models": [
     {
       "model": "llama3.1:8b",
-      "configVersion": 1,
-      "n": 5,
-      "wins": 5,
+      "configVersion": 3,
+      "n": 1,
+      "wins": 1,
       "winRate": 1.0,
       "timeToGoalSeconds": {
-        "n": 5,
-        "mean": 945.28,
-        "ci95Half": 329.16944146533166
+        "n": 1,
+        "mean": 680.6,
+        "ci95Half": NaN
+      },
+      "windowSeconds": {
+        "n": 1,
+        "mean": 680.6,
+        "ci95Half": NaN
       },
       "gatherEfficiency": {
-        "n": 5,
-        "mean": 1.1443315086800367,
-        "ci95Half": 0.8234486241707818
+        "n": 1,
+        "mean": 2.056603773584906,
+        "ci95Half": NaN
       },
       "wasteRatio": {
-        "n": 5,
-        "mean": 0.602331670231716,
-        "ci95Half": 0.19783933284243846
+        "n": 1,
+        "mean": 0.48872180451127817,
+        "ci95Half": NaN
       },
       "tokensUsed": {
-        "n": 5,
-        "mean": 454226.8,
-        "ci95Half": 149529.21149890605
+        "n": 1,
+        "mean": 283023.0,
+        "ci95Half": NaN
+      },
+      "tokensPerDecision": {
+        "n": 1,
+        "mean": 2128.0,
+        "ci95Half": NaN
+      },
+      "tokensPerMinute": {
+        "n": 1,
+        "mean": 24950.6,
+        "ci95Half": NaN
       },
       "latencyMsP50": {
-        "n": 5,
-        "mean": 1678.0665247277375,
-        "ci95Half": 105.8917884358398
+        "n": 1,
+        "mean": 1701.0,
+        "ci95Half": NaN
+      },
+      "latencyMsP90": {
+        "n": 1,
+        "mean": 8802.8,
+        "ci95Half": NaN
+      },
+      "latencyMsP95": {
+        "n": 1,
+        "mean": 12923.2,
+        "ci95Half": NaN
+      },
+      "latencyMsP99": {
+        "n": 1,
+        "mean": 14916.8,
+        "ci95Half": NaN
       }
     },
     {
@@ -42,6 +73,11 @@
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 1001.26,
+        "ci95Half": 605.7970966326411
+      },
+      "windowSeconds": {
         "n": 5,
         "mean": 1001.26,
         "ci95Half": 605.7970966326411
@@ -61,10 +97,35 @@
         "mean": 548793.2,
         "ci95Half": 344062.6993368357
       },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 3121.46,
+        "ci95Half": 38.58206600120839
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 32676.379999999997,
+        "ci95Half": 861.2444076474669
+      },
       "latencyMsP50": {
         "n": 5,
-        "mean": 8528.63237927746,
-        "ci95Half": 500.6992706716025
+        "mean": 8518.4,
+        "ci95Half": 497.6043688853224
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 13146.12,
+        "ci95Half": 713.0830211347723
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 14421.579999999998,
+        "ci95Half": 1562.6208806100828
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 16316.180000000002,
+        "ci95Half": 1873.7000991727684
       }
     },
     {
@@ -77,6 +138,11 @@
         "n": 4,
         "mean": 650.875,
         "ci95Half": 150.72922598492914
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 1629.66,
+        "ci95Half": 2719.0156746580174
       },
       "gatherEfficiency": {
         "n": 5,
@@ -93,10 +159,35 @@
         "mean": 772969.2,
         "ci95Half": 1253815.0770307642
       },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2556.3599999999997,
+        "ci95Half": 27.889282635334933
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 29323.46,
+        "ci95Half": 1066.8030593255096
+      },
       "latencyMsP50": {
         "n": 5,
-        "mean": 3596.454379616075,
-        "ci95Half": 142.40684681270506
+        "mean": 3593.2,
+        "ci95Half": 154.95800090811701
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 4706.2,
+        "ci95Half": 443.2435296873086
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 5392.0599999999995,
+        "ci95Half": 590.5643218244677
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 6171.86,
+        "ci95Half": 761.5431445934037
       }
     },
     {
@@ -109,6 +200,11 @@
         "n": 1,
         "mean": 4225.4,
         "ci95Half": NaN
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 4694.7,
+        "ci95Half": 732.0476484310567
       },
       "gatherEfficiency": {
         "n": 5,
@@ -125,10 +221,35 @@
         "mean": 2460691.4,
         "ci95Half": 362739.4687766083
       },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2689.38,
+        "ci95Half": 30.988093966141243
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 31475.6,
+        "ci95Half": 905.6990124579104
+      },
       "latencyMsP50": {
         "n": 5,
-        "mean": 1575.386230986565,
-        "ci95Half": 23.673080118133605
+        "mean": 1576.0,
+        "ci95Half": 23.456789345517855
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 2117.38,
+        "ci95Half": 254.51291499824208
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 2424.18,
+        "ci95Half": 341.31933637001936
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 3076.46,
+        "ci95Half": 484.2703126013089
       }
     },
     {
@@ -141,6 +262,11 @@
         "n": 0,
         "mean": NaN,
         "ci95Half": NaN
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 4505.280000000001,
+        "ci95Half": 0.25442460258377186
       },
       "gatherEfficiency": {
         "n": 5,
@@ -157,12 +283,38 @@
         "mean": 1392557.4,
         "ci95Half": 76920.59990096086
       },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2579.8,
+        "ci95Half": 39.81784705460604
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 18545.68,
+        "ci95Half": 1023.9684956051688
+      },
       "latencyMsP50": {
         "n": 5,
-        "mean": 23646.959286304627,
-        "ci95Half": 2537.4786106784927
+        "mean": 23780.3,
+        "ci95Half": 2820.1794631324865
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 35776.44,
+        "ci95Half": 3507.75139716993
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 39584.36,
+        "ci95Half": 3925.1208769216973
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 44283.9,
+        "ci95Half": 3631.7146938253186
       }
     }
   ],
-  "discardedRuns": []
+  "discardedRuns": [],
+  "excludedUnresetRuns": []
 }
