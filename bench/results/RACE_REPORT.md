@@ -22,8 +22,8 @@ totals are kept below in their own table.
 | Model | cfg | N | Win rate | Time-to-goal s (won) | Gather eff. (blocks/req) | Waste ratio | Tokens/decision | Tokens/min | Latency p50 ms |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|
 | `gemma4:latest` | v4 | 5 | 5/5 | 744.7 ± 593.6 | 2.16 ± 1.09 | 0.469 ± 0.188 | 2360 ± 39 | 28409 ± 1565 | 2156 ± 211 |
-| `llama3.1:8b` | v4 | 5 | 5/5 | 784.8 ± 392.4 | 1.32 ± 0.50 | 0.533 ± 0.195 | 2145 ± 15 | 25859 ± 932 | 1570 ± 196 |
 | `gemma3:12b` | v4 | 5 | 5/5 | 872.7 ± 276.4 | 2.82 ± 1.62 | 0.451 ± 0.181 | 2269 ± 33 | 26179 ± 895 | 3269 ± 208 |
+| `llama3.1:8b` | v4 | 5 | 5/5 | 1249.1 ± 722.2 | 1.23 ± 0.43 | 0.634 ± 0.158 | 2132 ± 21 | 25411 ± 515 | 1583 ± 152 |
 | `qwen3.5:4b` | v2 | 5 | 1/5 | 4225.4 (n=1) | 0.26 ± 0.46 | 0.603 ± 0.078 | 2689 ± 31 | 31476 ± 906 | 1576 ± 23 |
 | `lfm2.5:latest` | v1 | 5 | 0/5 | — | 0.14 ± 0.22 | 0.385 ± 0.117 | 2580 ± 40 | 18546 ± 1024 | 23780 ± 2820 |
 
@@ -32,8 +32,8 @@ totals are kept below in their own table.
 | Model | p50 ms | p90 ms | p95 ms | p99 ms |
 |---|--:|--:|--:|--:|
 | `gemma4:latest` | 2156 ± 211 | 2812 ± 418 | 3318 ± 1039 | 5250 ± 4714 |
-| `llama3.1:8b` | 1570 ± 196 | 1927 ± 317 | 2314 ± 854 | 4108 ± 4824 |
 | `gemma3:12b` | 3269 ± 208 | 4336 ± 621 | 5351 ± 1557 | 10330 ± 10381 |
+| `llama3.1:8b` | 1583 ± 152 | 1994 ± 209 | 2447 ± 711 | 4730 ± 4534 |
 | `qwen3.5:4b` | 1576 ± 23 | 2117 ± 255 | 2424 ± 341 | 3076 ± 484 |
 | `lfm2.5:latest` | 23780 ± 2820 | 35776 ± 3508 | 39584 ± 3925 | 44284 ± 3632 |
 
@@ -42,8 +42,8 @@ totals are kept below in their own table.
 | Model | Tokens/run | Mean window s |
 |---|--:|--:|
 | `gemma4:latest` | 345907 ± 250682 | 745 ± 594 |
-| `llama3.1:8b` | 336597 ± 160176 | 785 ± 392 |
 | `gemma3:12b` | 380805 ± 121051 | 873 ± 276 |
+| `llama3.1:8b` | 528525 ± 302493 | 1249 ± 722 |
 | `qwen3.5:4b` | 2460691 ± 362739 | 4695 ± 732 |
 | `lfm2.5:latest` | 1392557 ± 76921 | 4505 ± 0 |
 
@@ -96,13 +96,13 @@ docker: `uv run python bench/bench_race.py --reextract` then
   By contrast, blocks `llama3.1:8b` v3 → `llama3.1:8b` v4 → `gemma3:12b` v4 → `gemma4:latest` v4 ran at configVersion 3+, which restores a pristine pinned-seed world before each block: cross-block wear cannot reach them, and only within-block wear remains.
   Measured, that confound does not carry the model table:
   - `gemma4:latest` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope -238.2 ± 107.6 s/step (t = -2.21), drift -952.6 s across the observed span; mean 744.7 s → 744.7 s detrended to index 3.0.
-  - `llama3.1:8b` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope +148.0 ± 77.6 s/step (t = +1.91), drift +591.9 s across the observed span; mean 784.8 s → 784.8 s detrended to index 3.0.
   - `gemma3:12b` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope -48.0 ± 76.4 s/step (t = -0.63), drift -192.1 s across the observed span; mean 872.7 s → 872.7 s detrended to index 3.0.
-  - Run index can only move a between-model mean if the blocks cover different indices. `gemma4:latest` and `llama3.1:8b` have the SAME mean index (3.00), so index cannot generate the 40.1 s gap between them at all.
+  - `llama3.1:8b` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope +55.9 ± 209.9 s/step (t = +0.27), drift +223.6 s across the observed span; mean 1249.1 s → 1249.1 s detrended to index 3.0.
+  - Run index can only move a between-model mean if the blocks cover different indices. `gemma4:latest` and `gemma3:12b` have the SAME mean index (3.00), so index cannot generate the 128.0 s gap between them at all.
   - No cumulative wear ACROSS the sweep: over the 14 winners in run order (configVersion 1 sweep, winners only), Pearson +0.142, Spearman -0.029, +10.7 s per step. Durations reset at every block boundary.
   The caution against reading adjacent winner rows as a ranking STANDS —
   but it rests on raw sampling noise at n=5, not on the wear mechanism:
-  `gemma4:latest`'s own sd is 478.1 s against a 40.1 s gap to `llama3.1:8b`.
+  `llama3.1:8b`'s own sd is 581.7 s against a 376.4 s gap to `gemma3:12b`.
   Resetting the world per block (or interleaving run order) is still worth
   doing as hygiene; it is simply not what makes these rows unrankable, and
   the earlier claim that run index alone could account for the winner
@@ -141,7 +141,7 @@ Derived from the same saved slices every run JSON is extracted from
 its highest configVersion only. The per-model rows below carry their own
 `cfg`; the totals in this paragraph do not belong to any single version.
 
-7649 of 13379 resolved actions failed (57.2%). Restricted to `gather` — the
+8026 of 13845 resolved actions failed (58.0%). Restricted to `gather` — the
 verb that actually advances the ladder — failures over gather commands
 issued:
 
@@ -150,9 +150,9 @@ issued:
 | `qwen3.5:4b` | v2 | 2895 | 2669 | 92.2% |
 | `gemma3:12b` | v1 | 1147 | 1041 | 90.8% |
 | `lfm2.5:latest` | v1 | 1099 | 1031 | 93.8% |
+| `llama3.1:8b` | v4 | 785 | 603 | 76.8% |
 | `gemma4:latest` | v1 | 714 | 631 | 88.4% |
 | `llama3.1:8b` | v1 | 674 | 497 | 73.7% |
-| `llama3.1:8b` | v4 | 438 | 318 | 72.6% |
 | `gemma3:12b` | v4 | 410 | 248 | 60.5% |
 | `gemma4:latest` | v4 | 343 | 230 | 67.1% |
 | `llama3.1:8b` | v3 | 105 | 45 | 42.9% |
@@ -160,13 +160,13 @@ issued:
 Blocks issuing fewer than 50 gather commands are omitted above — no
 meaningful rate, and the orphan outcomes below can exceed the denominator: `qwen3.5:4b` v1 (3 issued, 5 failed).
 
-A SINGLE executor-side error string accounts for 4303 of 7649
-failures (56.3%): "Took to long to decide path to goal!",
+A SINGLE executor-side error string accounts for 4311 of 8026
+failures (53.7%): "Took to long to decide path to goal!",
 errorCode INTERNAL — a mineflayer pathfinder timeout. State that
-precisely: errorCode INTERNAL totals 4497, the specific string is
-4303; the two are NOT interchangeable.
+precisely: errorCode INTERNAL totals 4515, the specific string is
+4311; the two are NOT interchangeable.
 
-Full errorCode mix: INTERNAL 4497, RESOURCE_NOT_FOUND 1272, TIMEOUT 854, TOOL_TIER_REQUIRED 552, TOOL_REQUIRED 303, PATH_NOT_FOUND 122, SMELT_FAILED 32, STALE_COMMAND 14, TARGET_ESCAPED 2, SELF_DEFENSE_IN_PROGRESS 1.
+Full errorCode mix: INTERNAL 4515, RESOURCE_NOT_FOUND 1390, TIMEOUT 879, TOOL_TIER_REQUIRED 707, TOOL_REQUIRED 333, PATH_NOT_FOUND 137, SMELT_FAILED 48, STALE_COMMAND 14, TARGET_ESCAPED 2, SELF_DEFENSE_IN_PROGRESS 1.
 
 Per-run failure rate tracks time-to-goal within a block. Only blocks with
 wins are listed: for a 0-win block "time-to-goal" is the watchdog length,
@@ -176,9 +176,9 @@ so the correlation there measures the watchdog, not the model.
 - `gemma4:latest` v1: r = +0.106 over all 5 kept runs.
 - `gemma4:latest` v4: r = +0.841 over all 5 kept runs.
 - `llama3.1:8b` v1: r = +0.966 over all 5 kept runs.
-- `llama3.1:8b` v4: r = +0.939 over all 5 kept runs.
+- `llama3.1:8b` v4: r = +0.778 over all 5 kept runs.
 
-Bookkeeping caveat: 281 of 13379 outcome events (2.1%) reference a commandId
+Bookkeeping caveat: 277 of 13845 outcome events (2.0%) reference a commandId
 with no in-window `ActionRequested` (window-edge truncation), and the gather
 denominator is commands issued while the numerator is resolved outcomes —
 these rates are robust at roughly the 2% level, not tighter.
@@ -201,7 +201,7 @@ after an action that did NOT fail.
 | `lfm2.5:latest` | v1 | 1717 | 588 (34.2%) | 1096 |
 | `gemma3:12b` | v1 | 633 | 555 (87.7%) | 0 |
 | `llama3.1:8b` | v1 | 589 | 465 (78.9%) | 0 |
-| `llama3.1:8b` | v4 | 339 | 259 (76.4%) | 0 |
+| `llama3.1:8b` | v4 | 508 | 416 (81.9%) | 2 |
 | `gemma4:latest` | v1 | 325 | 291 (89.5%) | 0 |
 | `gemma3:12b` | v4 | 152 | 73 (48.0%) | 0 |
 | `qwen3.5:4b` | v1 | 143 | 0 (0.0%) | 143 |
@@ -213,7 +213,7 @@ action failed, and true livelock is exactly 0 in all three. It appears only
 in `qwen3.5:4b` and `lfm2.5:latest`, where it is the `error == true`
 schema-violation fallback to idle rather than a sampling effect.
 
-The per-run repeat fraction IS higher in stalled runs than won ones (won 0.412 (n=32), stalled 0.749 (n=15)),
+The per-run repeat fraction IS higher in stalled runs than won ones (won 0.410 (n=32), stalled 0.749 (n=15)),
 but it is collinear with the failure rate in the section above and does not
 survive as an independent cause. **Temperature is not the next knob to turn.**
 
@@ -290,8 +290,6 @@ get future GPU-hours, not a retraction of data already collected.
 | `llama3.1:8b` | v3 | 1 | won | 680.6 | `019f9bf3-4634…` |
 | `llama3.1:8b` | v3 | 2 | won | 560.8 | `019f9f0d-e898…` |
 | `llama3.1:8b` | v4 | 1 | won | 541.1 | `019f9fab-a9ec…` |
-| `llama3.1:8b` | v4 | 2 | won | 520.5 | `019f9fb4-9677…` |
-| `llama3.1:8b` | v4 | 3 | won | 680.7 | `019f9fbd-3155…` |
 | `llama3.1:8b` | v4 | 4 | won | 1280.9 | `019f9fc8-3ef7…` |
 | `llama3.1:8b` | v4 | 5 | won | 900.8 | `019f9fdc-74f5…` |
 | `gemma3:12b` | v4 | 1 | won | 740.7 | `019f9fec-13e8…` |
@@ -304,6 +302,8 @@ get future GPU-hours, not a retraction of data already collected.
 | `gemma4:latest` | v4 | 3 | won | 480.4 | `019fa057-47e1…` |
 | `gemma4:latest` | v4 | 4 | won | 440.4 | `019fa05f-3aec…` |
 | `gemma4:latest` | v4 | 5 | won | 520.7 | `019fa066-90e8…` |
+| `llama3.1:8b` | v4 | 2 | won | 1441.3 | `019fa07d-d232…` |
+| `llama3.1:8b` | v4 | 3 | won | 2081.6 | `019fa094-76ab…` |
 
 ## Discarded runs (never averaged in)
 
@@ -320,3 +320,6 @@ get future GPU-hours, not a retraction of data already collected.
 - `bench-llama3.1-8b-v4-r5` (llama3.1:8b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f55-b9cf-73ce-9e52-32ecd4106e0f`
 - `bench-gemma3-12b-v4-r1` (gemma3:12b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f5e-891c-715d-9a19-54b2cd041140`
 - `bench-gemma3-12b-v4-r2` (gemma3:12b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f6f-f71e-742f-a11b-3e8750d2067d`
+- `bench-llama3.1-8b-v4-r2` (llama3.1:8b): Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only — v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them. — attempt `019f9fb4-9677-7720-abe9-0aea0e6ffc2c`
+- `bench-llama3.1-8b-v4-r3` (llama3.1:8b): Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only — v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them. — attempt `019f9fbd-3155-7139-a2a0-50d475e9d6b9`
+- `bench-llama3.1-8b-v4-r2` (llama3.1:8b): Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it — attempt `019fa075-3ac9-7408-a3fc-fd1f8bfb2a97`

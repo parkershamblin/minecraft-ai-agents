@@ -67,68 +67,6 @@
       }
     },
     {
-      "model": "llama3.1:8b",
-      "configVersion": 4,
-      "n": 5,
-      "wins": 5,
-      "winRate": 1.0,
-      "timeToGoalSeconds": {
-        "n": 5,
-        "mean": 784.8,
-        "ci95Half": 392.41497117128444
-      },
-      "windowSeconds": {
-        "n": 5,
-        "mean": 784.8,
-        "ci95Half": 392.41497117128444
-      },
-      "gatherEfficiency": {
-        "n": 5,
-        "mean": 1.3203028110224904,
-        "ci95Half": 0.49966685784998904
-      },
-      "wasteRatio": {
-        "n": 5,
-        "mean": 0.5333694917975134,
-        "ci95Half": 0.19506630847558068
-      },
-      "tokensUsed": {
-        "n": 5,
-        "mean": 336596.6,
-        "ci95Half": 160176.05321263362
-      },
-      "tokensPerDecision": {
-        "n": 5,
-        "mean": 2144.54,
-        "ci95Half": 14.89566524521819
-      },
-      "tokensPerMinute": {
-        "n": 5,
-        "mean": 25859.420000000002,
-        "ci95Half": 931.8559083955103
-      },
-      "latencyMsP50": {
-        "n": 5,
-        "mean": 1569.8,
-        "ci95Half": 196.22491338013123
-      },
-      "latencyMsP90": {
-        "n": 5,
-        "mean": 1926.94,
-        "ci95Half": 316.76631297807165
-      },
-      "latencyMsP95": {
-        "n": 5,
-        "mean": 2313.8599999999997,
-        "ci95Half": 854.2169273941752
-      },
-      "latencyMsP99": {
-        "n": 5,
-        "mean": 4107.9,
-        "ci95Half": 4824.40898716131
-      }
-    },
-    {
       "model": "gemma3:12b",
       "configVersion": 4,
       "n": 5,
@@ -188,6 +126,68 @@
         "n": 5,
         "mean": 10330.380000000001,
         "ci95Half": 10381.265978900734
+      }
+    },
+    {
+      "model": "llama3.1:8b",
+      "configVersion": 4,
+      "n": 5,
+      "wins": 5,
+      "winRate": 1.0,
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 1249.1399999999999,
+        "ci95Half": 722.1830057080169
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 1249.1399999999999,
+        "ci95Half": 722.1830057080169
+      },
+      "gatherEfficiency": {
+        "n": 5,
+        "mean": 1.2292941278619582,
+        "ci95Half": 0.4252599428140196
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.634292910721943,
+        "ci95Half": 0.15767620270773047
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 528525.2,
+        "ci95Half": 302493.0332347615
+      },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2131.6400000000003,
+        "ci95Half": 20.660901017951854
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 25410.7,
+        "ci95Half": 515.4354100176824
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 1582.8,
+        "ci95Half": 151.7520147735772
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 1993.6799999999998,
+        "ci95Half": 209.1364485022504
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 2447.16,
+        "ci95Half": 711.2986602929108
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 4730.5,
+        "ci95Half": 4533.840351814769
       }
     },
     {
@@ -739,6 +739,126 @@
       "resultFile": "bench/results/race_bench-gemma3-12b-v4-r2.json",
       "at": "2026-07-26T17:41:54.710843+00:00",
       "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fb4-9677-7720-abe9-0aea0e6ffc2c",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T18:42:50.794640+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only \u2014 v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fbd-3155-7139-a2a0-50d475e9d6b9",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 680.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T18:54:54.907614+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only \u2014 v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa075-3ac9-7408-a3fc-fd1f8bfb2a97",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T22:13:15.902073+00:00",
+      "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
     }
   ],
   "excludedUnresetRuns": []

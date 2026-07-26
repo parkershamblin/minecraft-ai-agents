@@ -414,15 +414,18 @@ def fleet_health(villager_events: list[dict], name_of: dict[str, str],
     roster = [name_of[v] for v in team_of]
     storming = {n: spawns.get(n, 0) for n in roster
                 if spawns.get(n, 0) > SPAWN_STORM_THRESHOLD}
-    # Deliberated but never once acted: a weaker signal than a storm (a real
-    # villager CAN fail every action), so it is recorded, not gated on.
+    # Deliberated the whole race and never once completed an action. A body
+    # that contributes nothing makes its team a member short, exactly like a
+    # storming one — the cause differs (a hallucinated move target stranding
+    # the body, a wedge, an unreachable cluster) but the effect on the row is
+    # the same. Gated since the operator's call on 2026-07-26.
     mute = [n for n in roster if decisions.get(n, 0) > 0 and completed.get(n, 0) == 0]
     return {
         "spawns": {n: spawns.get(n, 0) for n in roster},
         "completed": {n: completed.get(n, 0) for n in roster},
         "storming": storming,
         "mute": mute,
-        "ok": not storming,
+        "ok": not storming and not mute,
     }
 
 
@@ -765,13 +768,18 @@ def main() -> int:
             }
             if not honest_ok:
                 record["reason"] = "polluted honestRace deltas"
-            elif not fleet_ok:
+            elif health["storming"]:
                 who = ", ".join(f"{n} x{c}" for n, c in
                                 sorted(health["storming"].items(), key=lambda kv: -kv[1]))
                 record["reason"] = (
                     f"bot session reconnect loop during the race ({who} spawns, "
                     f"threshold {SPAWN_STORM_THRESHOLD}): that body was absent or "
                     "thrashing and its team raced a member short")
+            elif health["mute"]:
+                record["reason"] = (
+                    f"{', '.join(health['mute'])} deliberated all race and completed "
+                    "no action: a body contributing nothing leaves its team a member "
+                    "short, whatever stranded it")
             manifest["runs"].append(record)
             save_manifest(manifest)
             verdict = ("KEPT" if clean else
@@ -780,15 +788,21 @@ def main() -> int:
             log(f"{label}: {a.get('outcome')} in {a.get('durationSeconds')}s, "
                 f"honest {honest}, spawns {health['spawns']} — {verdict}")
             if health["mute"]:
-                log(f"  note: deliberated but never acted: {', '.join(health['mute'])} "
-                    "(recorded, not gated on)")
+                log(f"  deliberated but never acted: {', '.join(health['mute'])}")
             if not fleet_ok:
                 consecutive_contaminated += 1
                 if consecutive_contaminated >= 2:
-                    log("two consecutive fleet-contaminated runs — the fleet is "
-                        "broken, not unlucky. Stopping with evidence intact; "
-                        "recreate minecraft-service to clear its in-memory "
-                        "sessions, re-seed, verify 6 racers by name, then resume.")
+                    # Distinguish the two causes in the halt message: a storm
+                    # means recreate the service, a mute body means a villager
+                    # is being stranded and needs diagnosis, not a restart.
+                    cause = ("reconnect loops" if health["storming"]
+                             else f"a villager contributing nothing ({', '.join(health['mute'])})")
+                    log(f"two consecutive fleet-contaminated runs ({cause}) — this is "
+                        "broken, not unlucky. Stopping with evidence intact. For a "
+                        "storm: recreate minecraft-service to clear its in-memory "
+                        "sessions, re-seed, verify 6 racers by name. For a mute "
+                        "body: read that villager's ActionFailed codes before racing "
+                        "again — rerunning will not unstick it.")
                     return 7
                 log(f"  {label}: fleet contaminated — discarded, rerunning")
                 continue

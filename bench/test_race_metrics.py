@@ -496,9 +496,11 @@ def test_fleet_health_tolerates_a_couple_of_honest_reconnects():
     assert h["ok"] is True
 
 
-def test_fleet_health_records_mute_villagers_without_gating():
-    """Deliberated but never acted is a weaker signal than a storm — a villager
-    really can fail every action — so it is recorded, not gated on."""
+def test_fleet_health_gates_on_a_mute_villager():
+    """A body that deliberates all race and completes nothing leaves its team a
+    member short, exactly like a storming one. Gated since 2026-07-26 — the
+    live example was a villager stranded 140 blocks off-post by a hallucinated
+    move target, failing every gather trip for the rest of the race."""
     import sweep_race
 
     roster = ["Elara", "Bram", "Wren", "Ansel", "Petra", "Fen"]
@@ -509,5 +511,6 @@ def test_fleet_health_records_mute_villagers_without_gating():
                "payload": {"villagerId": [v for v in team_of
                                           if name_of[v] == "Elara"][0]}})
     h = sweep_race.fleet_health(ev, name_of, team_of)
-    assert h["ok"] is True
+    assert h["ok"] is False
     assert h["mute"] == ["Elara"]
+    assert h["storming"] == {}  # the cause is muteness, not session churn
