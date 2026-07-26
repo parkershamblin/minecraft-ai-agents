@@ -5,13 +5,13 @@
       "model": "llama3.1:8b",
       "axis": "OLLAMA_NUM_CTX",
       "axisValue": "16384",
-      "n": 5,
-      "wins": 5,
+      "n": 0,
+      "wins": 0,
       "baseline": "8192",
       "timeToGoalSeconds": {
-        "n": 5,
-        "mean": 564.48,
-        "ci95Half": 84.94022019565524
+        "n": 0,
+        "mean": NaN,
+        "ci95Half": NaN
       },
       "holes": [
         "setup-llama3.1-8b-ctx-16384"

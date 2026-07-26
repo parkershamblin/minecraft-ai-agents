@@ -434,3 +434,80 @@ def test_recovered_failures_are_not_reported_as_missing_coverage():
     assert b["n"] == 1 and b["wins"] == 1
     assert [r["index"] for r in b["recovered"]] == [1]
     assert [r["index"] for r in b["uncovered"]] == [2]
+
+
+# ---------------------------------------------------------------------------
+# Fleet-health gate — the honesty gate covers the brain, this covers the body.
+# ---------------------------------------------------------------------------
+
+def _window(spawn_counts, completed_counts=None):
+    """Synthetic villager window: N VillagerSpawned per racer, plus acts."""
+    import bench_race as br
+    name_of, team_of = br.load_roster()
+    id_of = {name_of[v]: v for v in team_of}
+    events = []
+    for name, n in spawn_counts.items():
+        for _ in range(n):
+            events.append({"eventType": "VillagerSpawned",
+                           "payload": {"villagerId": id_of[name]}})
+    for name, n in (completed_counts or {}).items():
+        for _ in range(n):
+            events.append({"eventType": "DecisionMade",
+                           "payload": {"villagerId": id_of[name]}})
+            events.append({"eventType": "ActionCompleted",
+                           "payload": {"villagerId": id_of[name]}})
+    return events, name_of, team_of
+
+
+def test_fleet_health_passes_a_normal_race():
+    import sweep_race
+
+    roster = ["Elara", "Bram", "Wren", "Ansel", "Petra", "Fen"]
+    ev, name_of, team_of = _window({n: 1 for n in roster}, {n: 5 for n in roster})
+    h = sweep_race.fleet_health(ev, name_of, team_of)
+    assert h["ok"] is True
+    assert h["storming"] == {}
+    assert h["mute"] == []
+
+
+def test_fleet_health_catches_a_reconnect_storm():
+    """The real failure: 1962 spawns for one villager while the honesty gate
+    reported {0,0} and the run banked as KEPT."""
+    import sweep_race
+
+    roster = ["Elara", "Bram", "Wren", "Ansel", "Petra", "Fen"]
+    spawns = {n: 1 for n in roster}
+    spawns["Elara"] = 1962
+    ev, name_of, team_of = _window(spawns, {n: 5 for n in roster})
+    h = sweep_race.fleet_health(ev, name_of, team_of)
+    assert h["ok"] is False
+    assert h["storming"] == {"Elara": 1962}
+
+
+def test_fleet_health_tolerates_a_couple_of_honest_reconnects():
+    """A server hiccup mid-race is normal; the threshold must not fire on it."""
+    import sweep_race
+
+    roster = ["Elara", "Bram", "Wren", "Ansel", "Petra", "Fen"]
+    spawns = {n: 1 for n in roster}
+    spawns["Fen"] = 3
+    ev, name_of, team_of = _window(spawns, {n: 5 for n in roster})
+    h = sweep_race.fleet_health(ev, name_of, team_of)
+    assert h["ok"] is True
+
+
+def test_fleet_health_records_mute_villagers_without_gating():
+    """Deliberated but never acted is a weaker signal than a storm — a villager
+    really can fail every action — so it is recorded, not gated on."""
+    import sweep_race
+
+    roster = ["Elara", "Bram", "Wren", "Ansel", "Petra", "Fen"]
+    completed = {n: 5 for n in roster}
+    del completed["Elara"]
+    ev, name_of, team_of = _window({n: 1 for n in roster}, completed)
+    ev.append({"eventType": "DecisionMade",
+               "payload": {"villagerId": [v for v in team_of
+                                          if name_of[v] == "Elara"][0]}})
+    h = sweep_race.fleet_health(ev, name_of, team_of)
+    assert h["ok"] is True
+    assert h["mute"] == ["Elara"]

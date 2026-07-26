@@ -75,6 +75,14 @@ COMPOSE_MC = [*COMPOSE_BASE, "--profile", "minecraft"]
 # consecutive preflight failure means the environment is broken and burning
 # more GPU-hours unattended would be noise, so the sweep aborts loudly.
 MAX_DIRTY_RERUNS = 2
+# Fleet-health gate. A healthy race spawns each racer exactly ONCE; a body
+# stuck in a connect/socketClosed/reconnect loop spawns 600-2000 times inside
+# one race (measured 2026-07-26: Elara, 11 runs). The loop is invisible to the
+# honesty gate — those runs banked with honestRace {0,0} while a team raced a
+# member short and the shared minecraft-service event loop was saturated.
+# 10 leaves room for a couple of legitimate reconnects (a server hiccup mid-race
+# is normal) while being three orders of magnitude below a real storm.
+SPAWN_STORM_THRESHOLD = 10
 RACE_TIMEOUT_SECONDS = 110 * 60  # 75m stall watchdog + preflight + margin
 STALL_WATCHDOG_SECONDS = 75 * 60  # race-rb2.mjs inter-milestone watchdog
 BASELINE_TICK = 30                # frozen TICK_INTERVAL_SECONDS
@@ -376,9 +384,51 @@ def run_race(label: str, difficulty: str, timeout_seconds: int,
     return code, m.group(1) if m else None
 
 
-def extract(attempt_id: str, label: str) -> dict:
-    """Tier A + Tier B off the live ledger; raw slices dumped for offline
-    re-extraction and the Tier B fixture."""
+def fleet_health(villager_events: list[dict], name_of: dict[str, str],
+                 team_of: dict[str, str]) -> dict:
+    """Was every racer actually EMBODIED for the whole race?
+
+    Returns per-racer spawn/act counts plus a verdict. The honesty gate reads
+    AttemptEnded counters and cannot see a body that was thrashing or absent, so
+    a five-villager race passes it and lands in the table looking clean. This is
+    the missing half: the same window slice the metrics come from also carries
+    every VillagerSpawned, so the check costs nothing extra.
+    """
+    spawns: dict[str, int] = {}
+    completed: dict[str, int] = {}
+    decisions: dict[str, int] = {}
+    for e in villager_events:
+        p = e.get("payload", {})
+        vid = p.get("villagerId")
+        if vid not in team_of:
+            continue
+        name = name_of.get(vid, vid)
+        et = e["eventType"]
+        if et == "VillagerSpawned":
+            spawns[name] = spawns.get(name, 0) + 1
+        elif et == "ActionCompleted":
+            completed[name] = completed.get(name, 0) + 1
+        elif et == "DecisionMade":
+            decisions[name] = decisions.get(name, 0) + 1
+
+    roster = [name_of[v] for v in team_of]
+    storming = {n: spawns.get(n, 0) for n in roster
+                if spawns.get(n, 0) > SPAWN_STORM_THRESHOLD}
+    # Deliberated but never once acted: a weaker signal than a storm (a real
+    # villager CAN fail every action), so it is recorded, not gated on.
+    mute = [n for n in roster if decisions.get(n, 0) > 0 and completed.get(n, 0) == 0]
+    return {
+        "spawns": {n: spawns.get(n, 0) for n in roster},
+        "completed": {n: completed.get(n, 0) for n in roster},
+        "storming": storming,
+        "mute": mute,
+        "ok": not storming,
+    }
+
+
+def extract(attempt_id: str, label: str) -> tuple[dict, dict]:
+    """Tier A + Tier B off the live ledger, plus the fleet-health verdict; raw
+    slices dumped for offline re-extraction and the Tier B fixture."""
     name_of, team_of = bench_race.load_roster()
     attempt_events, villager_events = bench_race.fetch_attempt(
         attempt_id, bench_race.DEFAULT_LEDGER)
@@ -393,7 +443,7 @@ def extract(attempt_id: str, label: str) -> dict:
         json.dumps({"data": attempt_events}, indent=2) + "\n", encoding="utf-8")
     (slices_dir / f"{label}.window.json").write_text(
         json.dumps({"data": villager_events}, indent=2) + "\n", encoding="utf-8")
-    return result
+    return result, fleet_health(villager_events, name_of, team_of)
 
 
 def load_manifest() -> dict:
@@ -542,6 +592,7 @@ def main() -> int:
     manifest = load_manifest()
     preflight_failures = 0
     consecutive_dnf = 0
+    consecutive_contaminated = 0
 
     # Reflection temperature is a boot-time read and is model-independent:
     # once, before the blocks, then verified in the container.
@@ -674,7 +725,7 @@ def main() -> int:
 
             time.sleep(LEDGER_SETTLE_SECONDS)
             try:
-                result = extract(attempt_id, label)
+                result, health = extract(attempt_id, label)
             except Exception as exc:  # noqa: BLE001 — unattended sweep must outlive one bad attempt
                 manifest["runs"].append({
                     "model": model, "index": index, "label": label,
@@ -689,26 +740,59 @@ def main() -> int:
                 continue
             a = result["tierA"]
             honest = a.get("honestRace") or {}
-            clean = (honest.get("fakeProviderDelta") == 0
-                     and honest.get("budgetTrippedDelta") == 0)
+            honest_ok = (honest.get("fakeProviderDelta") == 0
+                         and honest.get("budgetTrippedDelta") == 0)
+            # TWO gates now. Honesty covers the brain (no fake provider, no
+            # budget trip); fleet health covers the body. A run that passes one
+            # and fails the other is not a benchmark row.
+            fleet_ok = health["ok"]
+            clean = honest_ok and fleet_ok
             record = {
                 "model": model, "index": index, "label": label,
                 "configVersion": config_version,
                 "worldSeed": world_seed, **record_axis,
                 "attemptId": attempt_id,
-                "outcome": a.get("outcome"),
+                "outcome": a.get("outcome") if clean else (
+                    a.get("outcome") if honest_ok is False else "contaminated"),
                 "winner": a["winner"]["team"] if a.get("outcome") == "won" else None,
                 "durationSeconds": a.get("durationSeconds"),
                 "honest": honest, "discarded": not clean,
+                "fleetHealth": {"spawns": health["spawns"],
+                                "storming": health["storming"],
+                                "mute": health["mute"]},
                 "resultFile": f"bench/results/race_{label}.json",
                 "at": now_iso(),
             }
-            if not clean:
+            if not honest_ok:
                 record["reason"] = "polluted honestRace deltas"
+            elif not fleet_ok:
+                who = ", ".join(f"{n} x{c}" for n, c in
+                                sorted(health["storming"].items(), key=lambda kv: -kv[1]))
+                record["reason"] = (
+                    f"bot session reconnect loop during the race ({who} spawns, "
+                    f"threshold {SPAWN_STORM_THRESHOLD}): that body was absent or "
+                    "thrashing and its team raced a member short")
             manifest["runs"].append(record)
             save_manifest(manifest)
+            verdict = ("KEPT" if clean else
+                       "DISCARDED (dirty)" if not honest_ok else
+                       "DISCARDED (fleet contaminated)")
             log(f"{label}: {a.get('outcome')} in {a.get('durationSeconds')}s, "
-                f"honest {honest} — {'KEPT' if clean else 'DISCARDED (dirty)'}")
+                f"honest {honest}, spawns {health['spawns']} — {verdict}")
+            if health["mute"]:
+                log(f"  note: deliberated but never acted: {', '.join(health['mute'])} "
+                    "(recorded, not gated on)")
+            if not fleet_ok:
+                consecutive_contaminated += 1
+                if consecutive_contaminated >= 2:
+                    log("two consecutive fleet-contaminated runs — the fleet is "
+                        "broken, not unlucky. Stopping with evidence intact; "
+                        "recreate minecraft-service to clear its in-memory "
+                        "sessions, re-seed, verify 6 racers by name, then resume.")
+                    return 7
+                log(f"  {label}: fleet contaminated — discarded, rerunning")
+                continue
+            consecutive_contaminated = 0
             if not clean and args.stop_on_dirty:
                 log("HONESTY GATE TRIPPED and --stop-on-dirty is set — stopping "
                     f"the sweep. Evidence preserved: {label} in the manifest, "

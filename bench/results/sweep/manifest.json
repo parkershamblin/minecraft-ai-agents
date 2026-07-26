@@ -1304,16 +1304,17 @@
       "stallMinutes": 75,
       "raceTimeoutSeconds": 6600,
       "attemptId": "019f9e06-7b5d-7055-a9ae-06bf07e88727",
-      "outcome": "won",
+      "outcome": "contaminated",
       "winner": "red",
       "durationSeconds": 660.5,
       "honest": {
         "fakeProviderDelta": 0,
         "budgetTrippedDelta": 0
       },
-      "discarded": false,
+      "discarded": true,
       "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r1.json",
-      "at": "2026-07-26T10:55:23.431378+00:00"
+      "at": "2026-07-26T10:55:23.431378+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x625 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
     },
     {
       "model": "llama3.1:8b",
@@ -1331,16 +1332,17 @@
       "stallMinutes": 75,
       "raceTimeoutSeconds": 6600,
       "attemptId": "019f9e11-2c5b-72dc-9df4-57836cc4cd3d",
-      "outcome": "won",
+      "outcome": "contaminated",
       "winner": "blue",
       "durationSeconds": 580.5,
       "honest": {
         "fakeProviderDelta": 0,
         "budgetTrippedDelta": 0
       },
-      "discarded": false,
+      "discarded": true,
       "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r2.json",
-      "at": "2026-07-26T11:05:44.080967+00:00"
+      "at": "2026-07-26T11:05:44.080967+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1008 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
     },
     {
       "model": "llama3.1:8b",
@@ -1358,16 +1360,17 @@
       "stallMinutes": 75,
       "raceTimeoutSeconds": 6600,
       "attemptId": "019f9e1a-bac9-74e7-be11-4b2f813d4ae8",
-      "outcome": "won",
+      "outcome": "contaminated",
       "winner": "red",
       "durationSeconds": 520.6,
       "honest": {
         "fakeProviderDelta": 0,
         "budgetTrippedDelta": 0
       },
-      "discarded": false,
+      "discarded": true,
       "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r3.json",
-      "at": "2026-07-26T11:15:10.464793+00:00"
+      "at": "2026-07-26T11:15:10.464793+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x958 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
     },
     {
       "model": "llama3.1:8b",
@@ -1385,16 +1388,17 @@
       "stallMinutes": 75,
       "raceTimeoutSeconds": 6600,
       "attemptId": "019f9e23-5124-72bd-b4fd-647878403a3e",
-      "outcome": "won",
+      "outcome": "contaminated",
       "winner": "blue",
       "durationSeconds": 580.4,
       "honest": {
         "fakeProviderDelta": 0,
         "budgetTrippedDelta": 0
       },
-      "discarded": false,
+      "discarded": true,
       "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r4.json",
-      "at": "2026-07-26T11:25:33.062653+00:00"
+      "at": "2026-07-26T11:25:33.062653+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1054 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
     },
     {
       "model": "llama3.1:8b",
@@ -1412,16 +1416,173 @@
       "stallMinutes": 75,
       "raceTimeoutSeconds": 6600,
       "attemptId": "019f9e2c-c972-7548-887b-d83337ab735b",
-      "outcome": "won",
+      "outcome": "contaminated",
       "winner": "blue",
       "durationSeconds": 480.4,
       "honest": {
         "fakeProviderDelta": 0,
         "budgetTrippedDelta": 0
       },
-      "discarded": false,
+      "discarded": true,
       "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r5.json",
-      "at": "2026-07-26T11:34:13.593281+00:00"
+      "at": "2026-07-26T11:34:13.593281+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x869 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ea4-5bb1-721e-a758-8a1cbce03cd6",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 600.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T13:46:50.422096+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1117 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9eae-45ef-73cf-880d-3f52af6d9184",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 500.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T13:56:00.026000+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x913 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9eb6-8775-71bf-b5e5-7177e531ac5c",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 560.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T14:06:00.722360+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1066 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ebf-d181-702c-9bd8-7560ea58d1e7",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 881,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T14:21:30.197539+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1655 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ecf-11ac-76ed-afef-7af40a21c184",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 1061.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-gemma3-12b-v3-r1.json",
+      "at": "2026-07-26T14:41:09.755949+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1962 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9edf-e450-72e8-8a97-b718077fd661",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 580.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-gemma3-12b-v3-r2.json",
+      "at": "2026-07-26T14:51:31.615241+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1037 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
     }
   ],
   "$worldProtocol": "Runs carrying worldSeed 1709071022456631449 predate the v3 world protocol: one shared, never-reset world, no time/weather freeze, and memory-service reflections at the 0.7 default (compose never passed LLM_TEMPERATURE). Seed verified via RCON on 2026-07-25 against the live pre-v3 world ('Seed: [1709071022456631449]') before that world was replaced. The world itself is archived, not lost: D:/backups/ai-civilization-engine/pre-v3-world-1709071022456631449.tgz (cold tar of the whole minecraft-data volume, taken immediately before the v3 wipe) - restore it to re-inspect the terrain any of these 30 runs was raced on. v3 runs restore pristine-6233701440491701965-v3.tgz per block instead (docs/runbooks/race-world-reset.md). Never pool the two: the aggregator keys on (model, configVersion)."
