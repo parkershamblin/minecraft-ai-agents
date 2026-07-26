@@ -13,7 +13,7 @@ and tokens/minute instead of tokens/run, and latency p50 is a true
 percentile of the run's pooled raw per-decision latencies. Window-sensitive
 totals are kept below in their own table.
 
-> **Rows span configVersions v1, v2, v3 — they are NOT comparable to each other.** Each model is reported at its
+> **Rows span configVersions v1, v2, v4 — they are NOT comparable to each other.** Each model is reported at its
 > own highest version (`cfg` column); a version bump changes the protocol,
 > not just the harness. What changed per version is listed in
 > `$versionHistory` in `bench/race/frozen-config.json`. Compare within a
@@ -21,25 +21,19 @@ totals are kept below in their own table.
 
 | Model | cfg | N | Win rate | Time-to-goal s (won) | Gather eff. (blocks/req) | Waste ratio | Tokens/decision | Tokens/min | Latency p50 ms |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| `llama3.1:8b` | v3 | 1 | 1/1 | 680.6 (n=1) | 2.06 (n=1) | 0.489 (n=1) | 2128 (n=1) | 24951 (n=1) | 1701 (n=1) |
-| `gemma4:latest` | v1 | 5 | 5/5 | 1001.3 ± 605.8 | 0.62 ± 0.56 | 0.745 ± 0.101 | 3121 ± 39 | 32676 ± 861 | 8518 ± 498 |
-| `gemma3:12b` | v1 | 5 | 4/5 | 650.9 ± 150.7 | 0.53 ± 0.24 | 0.763 ± 0.079 | 2556 ± 28 | 29323 ± 1067 | 3593 ± 155 |
+| `gemma4:latest` | v4 | 5 | 5/5 | 744.7 ± 593.6 | 2.16 ± 1.09 | 0.469 ± 0.188 | 2360 ± 39 | 28409 ± 1565 | 2156 ± 211 |
+| `llama3.1:8b` | v4 | 5 | 5/5 | 784.8 ± 392.4 | 1.32 ± 0.50 | 0.533 ± 0.195 | 2145 ± 15 | 25859 ± 932 | 1570 ± 196 |
+| `gemma3:12b` | v4 | 5 | 5/5 | 872.7 ± 276.4 | 2.82 ± 1.62 | 0.451 ± 0.181 | 2269 ± 33 | 26179 ± 895 | 3269 ± 208 |
 | `qwen3.5:4b` | v2 | 5 | 1/5 | 4225.4 (n=1) | 0.26 ± 0.46 | 0.603 ± 0.078 | 2689 ± 31 | 31476 ± 906 | 1576 ± 23 |
 | `lfm2.5:latest` | v1 | 5 | 0/5 | — | 0.14 ± 0.22 | 0.385 ± 0.117 | 2580 ± 40 | 18546 ± 1024 | 23780 ± 2820 |
-
-**Provisional rows (n < 3):** `llama3.1:8b` v3 (n=1). A version bump retires that model's older rows rather than
-pooling them, so a re-bench in progress shows here at its true N —
-which is not yet enough for a CI, let alone a ranking. The table is
-sorted by win rate and mean time regardless of N: read the N column
-before reading the order.
 
 ### Latency distribution (pooled raw per-decision, mean ± 95% CI across runs)
 
 | Model | p50 ms | p90 ms | p95 ms | p99 ms |
 |---|--:|--:|--:|--:|
-| `llama3.1:8b` | 1701 (n=1) | 8803 (n=1) | 12923 (n=1) | 14917 (n=1) |
-| `gemma4:latest` | 8518 ± 498 | 13146 ± 713 | 14422 ± 1563 | 16316 ± 1874 |
-| `gemma3:12b` | 3593 ± 155 | 4706 ± 443 | 5392 ± 591 | 6172 ± 762 |
+| `gemma4:latest` | 2156 ± 211 | 2812 ± 418 | 3318 ± 1039 | 5250 ± 4714 |
+| `llama3.1:8b` | 1570 ± 196 | 1927 ± 317 | 2314 ± 854 | 4108 ± 4824 |
+| `gemma3:12b` | 3269 ± 208 | 4336 ± 621 | 5351 ± 1557 | 10330 ± 10381 |
 | `qwen3.5:4b` | 1576 ± 23 | 2117 ± 255 | 2424 ± 341 | 3076 ± 484 |
 | `lfm2.5:latest` | 23780 ± 2820 | 35776 ± 3508 | 39584 ± 3925 | 44284 ± 3632 |
 
@@ -47,9 +41,9 @@ before reading the order.
 
 | Model | Tokens/run | Mean window s |
 |---|--:|--:|
-| `llama3.1:8b` | 283023 (n=1) | 681 (n=1) |
-| `gemma4:latest` | 548793 ± 344063 | 1001 ± 606 |
-| `gemma3:12b` | 772969 ± 1253815 | 1630 ± 2719 |
+| `gemma4:latest` | 345907 ± 250682 | 745 ± 594 |
+| `llama3.1:8b` | 336597 ± 160176 | 785 ± 392 |
+| `gemma3:12b` | 380805 ± 121051 | 873 ± 276 |
 | `qwen3.5:4b` | 2460691 ± 362739 | 4695 ± 732 |
 | `lfm2.5:latest` | 1392557 ± 76921 | 4505 ± 0 |
 
@@ -66,7 +60,7 @@ docker: `uv run python bench/bench_race.py --reextract` then
 ## Method caveats
 
 - **Greedy decoding held in the deliberation half of the loop only** for
-  the pre-v3 rows (`gemma4:latest` v1, `gemma3:12b` v1, `qwen3.5:4b` v2, `lfm2.5:latest` v1). Compose passed no `LLM_TEMPERATURE` to
+  the pre-v3 rows (`qwen3.5:4b` v2, `lfm2.5:latest` v1). Compose passed no `LLM_TEMPERATURE` to
   memory-service at the time, whose `llm_temperature` defaults to 0.7
   (`services/memory-service/src/memory_service/settings.py`) and is handed
   straight to the reflection summarizer (`memory_service/llm.py`).
@@ -99,15 +93,16 @@ docker: `uv run python bench/bench_race.py --reextract` then
   "What v3 does and does not fix".
 - **Blocked run order — a hygiene problem, not a demonstrated bias.**
   On a shared persistent world, blocks ran `llama3.1:8b` v1 → `gemma3:12b` v1 → `gemma4:latest` v1 → `qwen3.5:4b` v1 → `lfm2.5:latest` v1 → `qwen3.5:4b` v2 with no world reset between them, so within-block run index is confounded with world age there.
-  By contrast, blocks `llama3.1:8b` v3 ran at configVersion 3+, which restores a pristine pinned-seed world before each block: cross-block wear cannot reach them, and only within-block wear remains.
+  By contrast, blocks `llama3.1:8b` v3 → `llama3.1:8b` v4 → `gemma3:12b` v4 → `gemma4:latest` v4 ran at configVersion 3+, which restores a pristine pinned-seed world before each block: cross-block wear cannot reach them, and only within-block wear remains.
   Measured, that confound does not carry the model table:
-  - `gemma3:12b` v1: 4 won runs, indices 2-5, mean index 3.50; within-block slope +68.2 ± 19.1 s/step (t = +3.56), drift +204.6 s across the observed span; mean 650.9 s → 616.8 s detrended to index 3.0.
-  - `gemma4:latest` v1: 5 won runs, indices 1-5, mean index 3.00; within-block slope +20.0 ± 177.8 s/step (t = +0.11), drift +79.8 s across the observed span; mean 1001.3 s → 1001.3 s detrended to index 3.0.
-  - The one unbalanced block is `gemma3:12b` (mean index 3.50 — run 1 did not win), i.e. shifted toward LATER, more-worn indices. Under the posited positive wear that biases AGAINST it, not for it. Detrending WIDENS its gaps rather than dissolving them (see the per-block means above). Its drift is +204.6 s across indices 2→5; extrapolating the slope to a 1→5 span (+272.8 s) multiplies a 3-step observation by 4 and is wrong.
+  - `gemma4:latest` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope -238.2 ± 107.6 s/step (t = -2.21), drift -952.6 s across the observed span; mean 744.7 s → 744.7 s detrended to index 3.0.
+  - `llama3.1:8b` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope +148.0 ± 77.6 s/step (t = +1.91), drift +591.9 s across the observed span; mean 784.8 s → 784.8 s detrended to index 3.0.
+  - `gemma3:12b` v4: 5 won runs, indices 1-5, mean index 3.00; within-block slope -48.0 ± 76.4 s/step (t = -0.63), drift -192.1 s across the observed span; mean 872.7 s → 872.7 s detrended to index 3.0.
+  - Run index can only move a between-model mean if the blocks cover different indices. `gemma4:latest` and `llama3.1:8b` have the SAME mean index (3.00), so index cannot generate the 40.1 s gap between them at all.
   - No cumulative wear ACROSS the sweep: over the 14 winners in run order (configVersion 1 sweep, winners only), Pearson +0.142, Spearman -0.029, +10.7 s per step. Durations reset at every block boundary.
   The caution against reading adjacent winner rows as a ranking STANDS —
   but it rests on raw sampling noise at n=5, not on the wear mechanism:
-  `gemma4:latest`'s own sd is 488.0 s against a 350.4 s gap to `gemma3:12b`.
+  `gemma4:latest`'s own sd is 478.1 s against a 40.1 s gap to `llama3.1:8b`.
   Resetting the world per block (or interleaving run order) is still worth
   doing as hygiene; it is simply not what makes these rows unrankable, and
   the earlier claim that run index alone could account for the winner
@@ -142,11 +137,11 @@ docker: `uv run python bench/bench_race.py --reextract` then
 Derived from the same saved slices every run JSON is extracted from
 (`bench/results/sweep/slices`), roster villagers only.
 
-**Scope:** pooled over all 31 kept runs across `gemma3:12b` v1, `gemma4:latest` v1, `lfm2.5:latest` v1, `llama3.1:8b` v1, `llama3.1:8b` v3, `qwen3.5:4b` v1, `qwen3.5:4b` v2 — this is a WIDER set than the model table, which shows each model at
+**Scope:** pooled over all 47 kept runs across `gemma3:12b` v1, `gemma3:12b` v4, `gemma4:latest` v1, `gemma4:latest` v4, `lfm2.5:latest` v1, `llama3.1:8b` v1, `llama3.1:8b` v3, `llama3.1:8b` v4, `qwen3.5:4b` v1, `qwen3.5:4b` v2 — this is a WIDER set than the model table, which shows each model at
 its highest configVersion only. The per-model rows below carry their own
 `cfg`; the totals in this paragraph do not belong to any single version.
 
-6389 of 10906 resolved actions failed (58.6%). Restricted to `gather` — the
+7649 of 13379 resolved actions failed (57.2%). Restricted to `gather` — the
 verb that actually advances the ladder — failures over gather commands
 issued:
 
@@ -157,27 +152,33 @@ issued:
 | `lfm2.5:latest` | v1 | 1099 | 1031 | 93.8% |
 | `gemma4:latest` | v1 | 714 | 631 | 88.4% |
 | `llama3.1:8b` | v1 | 674 | 497 | 73.7% |
-| `llama3.1:8b` | v3 | 53 | 34 | 64.2% |
+| `llama3.1:8b` | v4 | 438 | 318 | 72.6% |
+| `gemma3:12b` | v4 | 410 | 248 | 60.5% |
+| `gemma4:latest` | v4 | 343 | 230 | 67.1% |
+| `llama3.1:8b` | v3 | 105 | 45 | 42.9% |
 
 Blocks issuing fewer than 50 gather commands are omitted above — no
 meaningful rate, and the orphan outcomes below can exceed the denominator: `qwen3.5:4b` v1 (3 issued, 5 failed).
 
-A SINGLE executor-side error string accounts for 4281 of 6389
-failures (67.0%): "Took to long to decide path to goal!",
+A SINGLE executor-side error string accounts for 4303 of 7649
+failures (56.3%): "Took to long to decide path to goal!",
 errorCode INTERNAL — a mineflayer pathfinder timeout. State that
-precisely: errorCode INTERNAL totals 4401, the specific string is
-4281; the two are NOT interchangeable.
+precisely: errorCode INTERNAL totals 4497, the specific string is
+4303; the two are NOT interchangeable.
 
-Full errorCode mix: INTERNAL 4401, RESOURCE_NOT_FOUND 694, TIMEOUT 576, TOOL_TIER_REQUIRED 458, TOOL_REQUIRED 207, PATH_NOT_FOUND 32, STALE_COMMAND 14, SMELT_FAILED 5, TARGET_ESCAPED 2.
+Full errorCode mix: INTERNAL 4497, RESOURCE_NOT_FOUND 1272, TIMEOUT 854, TOOL_TIER_REQUIRED 552, TOOL_REQUIRED 303, PATH_NOT_FOUND 122, SMELT_FAILED 32, STALE_COMMAND 14, TARGET_ESCAPED 2, SELF_DEFENSE_IN_PROGRESS 1.
 
 Per-run failure rate tracks time-to-goal within a block. Only blocks with
 wins are listed: for a 0-win block "time-to-goal" is the watchdog length,
 so the correlation there measures the watchdog, not the model.
 - `gemma3:12b` v1: r = +0.759 over all 5 kept runs; the won-only value r = +0.999 (n=4) is a selection artifact and should not be quoted.
+- `gemma3:12b` v4: r = +0.351 over all 5 kept runs.
 - `gemma4:latest` v1: r = +0.106 over all 5 kept runs.
+- `gemma4:latest` v4: r = +0.841 over all 5 kept runs.
 - `llama3.1:8b` v1: r = +0.966 over all 5 kept runs.
+- `llama3.1:8b` v4: r = +0.939 over all 5 kept runs.
 
-Bookkeeping caveat: 183 of 10906 outcome events (1.7%) reference a commandId
+Bookkeeping caveat: 281 of 13379 outcome events (2.1%) reference a commandId
 with no in-window `ActionRequested` (window-edge truncation), and the gather
 denominator is commands issued while the numerator is resolved outcomes —
 these rates are robust at roughly the 2% level, not tighter.
@@ -200,16 +201,19 @@ after an action that did NOT fail.
 | `lfm2.5:latest` | v1 | 1717 | 588 (34.2%) | 1096 |
 | `gemma3:12b` | v1 | 633 | 555 (87.7%) | 0 |
 | `llama3.1:8b` | v1 | 589 | 465 (78.9%) | 0 |
+| `llama3.1:8b` | v4 | 339 | 259 (76.4%) | 0 |
 | `gemma4:latest` | v1 | 325 | 291 (89.5%) | 0 |
+| `gemma3:12b` | v4 | 152 | 73 (48.0%) | 0 |
 | `qwen3.5:4b` | v1 | 143 | 0 (0.0%) | 143 |
-| `llama3.1:8b` | v3 | 66 | 43 (65.2%) | 0 |
+| `gemma4:latest` | v4 | 141 | 106 (75.2%) | 0 |
+| `llama3.1:8b` | v3 | 108 | 60 (55.6%) | 0 |
 
 Repeats in the three viable models are overwhelmingly RETRIES after the
 action failed, and true livelock is exactly 0 in all three. It appears only
 in `qwen3.5:4b` and `lfm2.5:latest`, where it is the `error == true`
 schema-violation fallback to idle rather than a sampling effect.
 
-The per-run repeat fraction IS higher in stalled runs than won ones (won 0.544 (n=16), stalled 0.749 (n=15)),
+The per-run repeat fraction IS higher in stalled runs than won ones (won 0.412 (n=32), stalled 0.749 (n=15)),
 but it is collinear with the failure rate in the section above and does not
 survive as an independent cause. **Temperature is not the next knob to turn.**
 
@@ -284,6 +288,22 @@ get future GPU-hours, not a retraction of data already collected.
 | `qwen3.5:4b` | v2 | 4 | stalled | 4505.8 | `019f98bd-1f56…` |
 | `qwen3.5:4b` | v2 | 5 | stalled | 4506.5 | `019f9902-9137…` |
 | `llama3.1:8b` | v3 | 1 | won | 680.6 | `019f9bf3-4634…` |
+| `llama3.1:8b` | v3 | 2 | won | 560.8 | `019f9f0d-e898…` |
+| `llama3.1:8b` | v4 | 1 | won | 541.1 | `019f9fab-a9ec…` |
+| `llama3.1:8b` | v4 | 2 | won | 520.5 | `019f9fb4-9677…` |
+| `llama3.1:8b` | v4 | 3 | won | 680.7 | `019f9fbd-3155…` |
+| `llama3.1:8b` | v4 | 4 | won | 1280.9 | `019f9fc8-3ef7…` |
+| `llama3.1:8b` | v4 | 5 | won | 900.8 | `019f9fdc-74f5…` |
+| `gemma3:12b` | v4 | 1 | won | 740.7 | `019f9fec-13e8…` |
+| `gemma3:12b` | v4 | 2 | won | 1261 | `019f9ff8-0296…` |
+| `gemma3:12b` | v4 | 3 | won | 860.6 | `019fa00b-e70f…` |
+| `gemma3:12b` | v4 | 4 | won | 740.7 | `019fa019-b699…` |
+| `gemma3:12b` | v4 | 5 | won | 760.7 | `019fa025-aad0…` |
+| `gemma4:latest` | v4 | 1 | won | 1581.3 | `019fa033-2b1b…` |
+| `gemma4:latest` | v4 | 2 | won | 700.7 | `019fa04b-ec1f…` |
+| `gemma4:latest` | v4 | 3 | won | 480.4 | `019fa057-47e1…` |
+| `gemma4:latest` | v4 | 4 | won | 440.4 | `019fa05f-3aec…` |
+| `gemma4:latest` | v4 | 5 | won | 520.7 | `019fa066-90e8…` |
 
 ## Discarded runs (never averaged in)
 
@@ -293,3 +313,10 @@ get future GPU-hours, not a retraction of data already collected.
 - `bench-llama3.1-8b-v3-r5` (llama3.1:8b): bot session reconnect loop during the race (Elara x1655 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live. — attempt `019f9ebf-d181-702c-9bd8-7560ea58d1e7`
 - `bench-gemma3-12b-v3-r1` (gemma3:12b): bot session reconnect loop during the race (Elara x1962 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live. — attempt `019f9ecf-11ac-76ed-afef-7af40a21c184`
 - `bench-gemma3-12b-v3-r2` (gemma3:12b): bot session reconnect loop during the race (Elara x1037 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live. — attempt `019f9edf-e450-72e8-8a97-b718077fd661`
+- `bench-llama3.1-8b-v4-r1` (llama3.1:8b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f1f-199a-77fb-bafb-c06866a6d87c`
+- `bench-llama3.1-8b-v4-r2` (llama3.1:8b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f2d-8529-7732-aaf6-0f80351901d8`
+- `bench-llama3.1-8b-v4-r3` (llama3.1:8b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f40-8401-761e-834e-af68486ed3b5`
+- `bench-llama3.1-8b-v4-r4` (llama3.1:8b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f4d-1e9b-761f-aaa1-21eccf7f5876`
+- `bench-llama3.1-8b-v4-r5` (llama3.1:8b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f55-b9cf-73ce-9e52-32ecd4106e0f`
+- `bench-gemma3-12b-v4-r1` (gemma3:12b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f5e-891c-715d-9a19-54b2cd041140`
+- `bench-gemma3-12b-v4-r2` (gemma3:12b): host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal — the two headline columns — by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box. — attempt `019f9f6f-f71e-742f-a11b-3e8750d2067d`

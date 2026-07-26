@@ -1622,6 +1622,833 @@
       },
       "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r2.json",
       "at": "2026-07-26T15:41:27.648567+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f1f-199a-77fb-bafb-c06866a6d87c",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 900.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r1.json",
+      "at": "2026-07-26T16:05:54.364685+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f2d-8529-7732-aaf6-0f80351901d8",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 1201.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T16:26:39.591924+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f40-8401-761e-834e-af68486ed3b5",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 780.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T16:40:23.966421+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f4d-1e9b-761f-aaa1-21eccf7f5876",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 520.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r4.json",
+      "at": "2026-07-26T16:49:49.793960+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f55-b9cf-73ce-9e52-32ecd4106e0f",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 460.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Petra"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r5.json",
+      "at": "2026-07-26T16:58:13.762162+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f5e-891c-715d-9a19-54b2cd041140",
+      "outcome": "host-contended",
+      "winner": "blue",
+      "durationSeconds": 1101.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r1.json",
+      "at": "2026-07-26T17:18:32.072550+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f6f-f71e-742f-a11b-3e8750d2067d",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 1361.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r2.json",
+      "at": "2026-07-26T17:41:54.710843+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fab-a9ec-71d3-81ed-65db669a8a6e",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 541.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r1.json",
+      "at": "2026-07-26T18:33:26.509449+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fb4-9677-7720-abe9-0aea0e6ffc2c",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 520.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T18:42:50.794640+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fbd-3155-7139-a2a0-50d475e9d6b9",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 680.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T18:54:54.907614+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fc8-3ef7-731c-b72c-b175e0fa3e44",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1280.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r4.json",
+      "at": "2026-07-26T19:16:59.535524+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fdc-74f5-73f5-b5ba-52c058535943",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 900.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r5.json",
+      "at": "2026-07-26T19:32:43.928708+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fec-13e8-752c-b940-5d73a39d34ea",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 740.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r1.json",
+      "at": "2026-07-26T19:47:07.549668+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ff8-0296-72dd-aec5-4a689886a1a1",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1261,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r2.json",
+      "at": "2026-07-26T20:08:49.967240+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 3,
+      "label": "bench-gemma3-12b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa00b-e70f-76b8-b4c8-8f505c3e1b39",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 860.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r3.json",
+      "at": "2026-07-26T20:23:53.234213+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 4,
+      "label": "bench-gemma3-12b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa019-b699-768f-9a61-0675fbb87c47",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 740.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r4.json",
+      "at": "2026-07-26T20:36:58.366718+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 5,
+      "label": "bench-gemma3-12b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa025-aad0-746d-b4f3-093d8deebf2c",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 760.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r5.json",
+      "at": "2026-07-26T20:50:21.740967+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 1,
+      "label": "bench-gemma4-latest-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa033-2b1b-74a5-94b2-023b2a5a35ae",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 1581.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r1.json",
+      "at": "2026-07-26T21:18:47.239972+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 2,
+      "label": "bench-gemma4-latest-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa04b-ec1f-7469-9337-ef5db054199f",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 700.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r2.json",
+      "at": "2026-07-26T21:31:08.932803+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 3,
+      "label": "bench-gemma4-latest-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa057-47e1-75ad-8b32-5f252176c058",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 480.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r3.json",
+      "at": "2026-07-26T21:39:52.934999+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 4,
+      "label": "bench-gemma4-latest-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa05f-3aec-7759-93d1-d5c5d3620c4c",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 440.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r4.json",
+      "at": "2026-07-26T21:47:53.924463+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 5,
+      "label": "bench-gemma4-latest-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa066-90e8-73db-b05e-8aed8ba007b2",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 520.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r5.json",
+      "at": "2026-07-26T21:57:14.970369+00:00"
     }
   ],
   "$worldProtocol": "Runs carrying worldSeed 1709071022456631449 predate the v3 world protocol: one shared, never-reset world, no time/weather freeze, and memory-service reflections at the 0.7 default (compose never passed LLM_TEMPERATURE). Seed verified via RCON on 2026-07-25 against the live pre-v3 world ('Seed: [1709071022456631449]') before that world was replaced. The world itself is archived, not lost: D:/backups/ai-civilization-engine/pre-v3-world-1709071022456631449.tgz (cold tar of the whole minecraft-data volume, taken immediately before the v3 wipe) - restore it to re-inspect the terrain any of these 30 runs was raced on. v3 runs restore pristine-6233701440491701965-v3.tgz per block instead (docs/runbooks/race-world-reset.md). Never pool the two: the aggregator keys on (model, configVersion)."
