@@ -105,6 +105,15 @@ const UNREACHABLE_REGION_RADIUS = 8
  *  practice, unreachable from where it stood. */
 const STUCK_EPSILON_BLOCKS = 2
 
+/** How far past the normal gather radius the body looks for somewhere better
+ *  to stand when nothing in reach is workable. */
+const RELOCATE_SEARCH_MULTIPLIER = 2
+const RELOCATE_SEARCH_CAP = 128
+
+/** Relocation is a courtesy inside someone else's trip budget — bounded hard
+ *  so it can never eat the 60s the mind asked to spend gathering. */
+const RELOCATE_TIMEOUT_MS = 20_000
+
 /** Process-global so no two spawns — across reconnects, death-respawns, OR
  *  brand-new BotSession instances for the same username — ever share a
  *  generation number (a collision would defeat the tracker's re-baseline). */
@@ -1037,6 +1046,63 @@ export class BotSession {
    * inherent (each dig changes the world), and is command-work the mind paid
    * for — the M2-2 skip gate governs the background survey, not this.
    */
+  /**
+   * Nothing workable in reach — carry the body somewhere it can work.
+   *
+   * Measured 2026-07-26: when every candidate in sight is blacklisted, or the
+   * resource simply is not within maxDistance, the executor says "move
+   * somewhere new" and the mind frequently does not. Three villagers spent
+   * whole races re-issuing gather from a spot that could never serve it
+   * (Fen twice with zero net travel, Ansel from 97 blocks off-post), and the
+   * message fired 488 times across 15 clean runs — so ignoring it is the
+   * common case, not an exotic one.
+   *
+   * This is the body looking after itself, the same contract as auto-eat and
+   * auto-fight: the mind's job is choosing WHAT to do, not noticing that its
+   * feet are in the wrong place. Fixing it here rather than in the prompt
+   * keeps it model-independent — no LLM is advantaged by reading a percept
+   * more diligently than another.
+   *
+   * Returns how far the body actually moved, or null if there was nowhere
+   * better to go (in which case the caller's failure stands unchanged).
+   */
+  private async relocateToward(
+    bot: Bot,
+    names: readonly string[],
+    maxDistance: number,
+    now: number,
+  ): Promise<{ moved: number; target: Position } | null> {
+    const reach = Math.min(maxDistance * RELOCATE_SEARCH_MULTIPLIER, RELOCATE_SEARCH_CAP)
+    const candidates = bot.findBlocks({
+      matching: (candidate) => names.includes(candidate.name),
+      maxDistance: reach,
+      count: 32,
+    })
+    // Same blacklist the picker honours: walking toward a cluster that already
+    // defeated this body would just restage the failure further away.
+    const target = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
+    if (!target) {
+      return null
+    }
+    const from = { ...(this.position as Position) }
+    // Stop short of the target: the point is to put it inside the NEXT trip's
+    // ordinary reach, not to arrive (arriving is the trip's job, and doing it
+    // here would spend the mind's budget on a walk it did not ask for).
+    const standOff = Math.max(4, Math.round(maxDistance / 4))
+    try {
+      await Promise.race([
+        bot.pathfinder.goto(new goals.GoalNear(target.x, target.y, target.z, standOff)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('relocation budget spent')), RELOCATE_TIMEOUT_MS),
+        ),
+      ])
+    } catch {
+      // A partial walk is still progress — report whatever ground was covered.
+    }
+    const moved = distance(from, this.position as Position)
+    return moved >= 1 ? { moved, target: { x: target.x, y: target.y, z: target.z } } : null
+  }
+
   private async harvestOneBlock(
     bot: Bot,
     resource: string,
@@ -1088,10 +1154,25 @@ export class BotSession {
     const targetPosition = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
     const block = targetPosition ? bot.blockAt(targetPosition) : null
     if (!block) {
-      const err = new Error(
+      // Before reporting "there is nothing here", put the feet somewhere there
+      // is something. The trip still fails — the mind asked for blocks and got
+      // none — but the next one starts from a spot that can succeed.
+      const relocated = await this.relocateToward(bot, names, maxDistance, now)
+      if (relocated) {
+        this.log.info(
+          { resource, moved: round1(relocated.moved), toward: relocated.target },
+          'nothing workable in reach — walked the body toward better ground',
+        )
+      }
+      const base =
         candidates.length > 0
           ? allTargetsBlacklistedMessage(resource)
-          : gatherFailureMessage(resource, maxDistance, this.position),
+          : gatherFailureMessage(resource, maxDistance, this.position)
+      const err = new Error(
+        relocated
+          ? `${base} — your legs carried you ${Math.round(relocated.moved)} blocks toward ` +
+            `${resource} at (${relocated.target.x}, ${relocated.target.y}, ${relocated.target.z}); ask again from here`
+          : base,
       )
       ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
       throw err

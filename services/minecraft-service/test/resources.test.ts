@@ -399,3 +399,30 @@ describe('unreachable cluster blacklisting', () => {
     expect(regionKey({ x: 1.4, y: 2.6, z: -3.5 }, 8)).toBe(regionKey({ x: 1, y: 3, z: -3 }, 8))
   })
 })
+
+describe('relocation target selection', () => {
+  // The executor walks the body toward workable ground when nothing in reach
+  // can be gathered. It must honour the SAME blacklist as the picker —
+  // otherwise it marches toward the cluster that just defeated the bot and
+  // restages the failure 30 blocks away.
+  const HERE = { x: 0, y: 64, z: 0 }
+
+  it('will not walk toward a cluster that already defeated the body', () => {
+    const blacklist = new Map<string, number>()
+    const defeated = { x: 20, y: 70, z: 0 }
+    blacklistRegion(blacklist, defeated, 8, 2_000)
+    const farButClean = { x: 100, y: 64, z: 0 }
+    const pick = pickGatherTarget([defeated, farButClean], HERE, blacklist, 1_000)
+    expect(pick).toBe(farButClean)
+  })
+
+  it('returns null when every candidate in the wider sweep is blacklisted', () => {
+    const blacklist = new Map<string, number>()
+    const cluster = [
+      { x: 20, y: 70, z: 0 },
+      { x: 24, y: 71, z: 2 },
+    ]
+    blacklistRegion(blacklist, cluster[0]!, 8, 2_000)
+    expect(pickGatherTarget(cluster, HERE, blacklist, 1_000)).toBeNull()
+  })
+})
