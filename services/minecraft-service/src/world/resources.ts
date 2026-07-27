@@ -266,6 +266,26 @@ export function blacklistRegion(
 }
 
 /**
+ * Drop every REGION mark, keeping per-block ones.
+ *
+ * A region means "this cluster defeated a dig from where I was standing" — it
+ * is a fact about a standpoint, not about the world. Once the body has moved,
+ * that fact has expired: the pathfinding that failed from the old spot may
+ * succeed from the new one. Without this, a relocation walks somewhere better
+ * and then refuses to work there.
+ */
+export function clearRegionMarks(blacklist: Map<string, number>): number {
+  let cleared = 0
+  for (const key of [...blacklist.keys()]) {
+    if (key.startsWith('R:')) {
+      blacklist.delete(key)
+      cleared += 1
+    }
+  }
+  return cleared
+}
+
+/**
  * Choose the nearest candidate that hasn't recently defeated this bot.
  * findBlock is deterministic from a standing position, so without memory a
  * failed target gets re-picked every tick — measured 2026-07-09: one

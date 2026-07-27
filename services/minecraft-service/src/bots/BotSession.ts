@@ -66,6 +66,7 @@ import {
   gatherStartAnnouncement,
   haulAnnouncement,
   blacklistRegion,
+  clearRegionMarks,
   pickGatherTarget,
   planHarvest,
   scanNearbyResources,
@@ -1078,9 +1079,16 @@ export class BotSession {
       maxDistance: reach,
       count: 32,
     })
-    // Same blacklist the picker honours: walking toward a cluster that already
-    // defeated this body would just restage the failure further away.
-    const target = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
+    // Prefer ground that has not defeated this body. But fall back to
+    // blacklisted ground rather than standing still: a mark records that a dig
+    // failed FROM A PARTICULAR SPOT, not that the block is unreachable in
+    // principle, and standing thirty blocks closer changes exactly the thing
+    // that failed. Measured 2026-07-27 — without this fallback the relocation
+    // never fired once in a whole sweep, because the same blacklist that
+    // emptied the picker also emptied the escape hatch, and two villagers went
+    // mute anyway (v5 r3 Ansel, v5 r3b Fen).
+    const clean = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
+    const target = clean ?? pickGatherTarget(candidates, this.position as Position, new Map(), now)
     if (!target) {
       return null
     }
@@ -1100,7 +1108,17 @@ export class BotSession {
       // A partial walk is still progress — report whatever ground was covered.
     }
     const moved = distance(from, this.position as Position)
-    return moved >= 1 ? { moved, target: { x: target.x, y: target.y, z: target.z } } : null
+    if (moved >= 1) {
+      // The standpoint that produced the region marks is gone, so the marks
+      // are stale — keep the per-block ones (a block that ate four attempts is
+      // still suspect) but let this body try the clusters again from here.
+      const cleared = clearRegionMarks(this.gatherBlacklist)
+      if (cleared > 0) {
+        this.log.info({ cleared, moved: round1(moved) }, 'relocated — cleared stale cluster marks')
+      }
+      return { moved, target: { x: target.x, y: target.y, z: target.z } }
+    }
+    return null
   }
 
   private async harvestOneBlock(
