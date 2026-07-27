@@ -9,14 +9,18 @@
  */
 
 /** slot names chosen to equal mineflayer equip destinations exactly */
-export type ArmorSlot = 'head' | 'torso' | 'legs' | 'feet'
+export type BodyArmorSlot = 'head' | 'torso' | 'legs' | 'feet'
+/** off-hand joined with phase A (ADR 11): a carried shield is worn armor in
+ *  every sense that matters to this reflex — free protection the mind
+ *  shouldn't have to remember. */
+export type ArmorSlot = BodyArmorSlot | 'off-hand'
 
-export const ARMOR_SLOTS: readonly ArmorSlot[] = ['head', 'torso', 'legs', 'feet']
+export const ARMOR_SLOTS: readonly BodyArmorSlot[] = ['head', 'torso', 'legs', 'feet']
 
 /** best first — index is rank */
 export const ARMOR_TIERS = ['netherite', 'diamond', 'iron', 'chainmail', 'golden', 'leather'] as const
 
-const SLOT_SUFFIX: Record<ArmorSlot, string> = {
+const SLOT_SUFFIX: Record<BodyArmorSlot, string> = {
   head: '_helmet',
   torso: '_chestplate',
   legs: '_leggings',
@@ -28,7 +32,7 @@ export const ARMOR_FAILURE_BLACKLIST_MS = 60_000
 
 /** rank of an armor item name for its slot; null = not armor we understand
  *  (turtle_helmet and friends stay ignored — never met, never worn) */
-export function armorRank(item: string, slot: ArmorSlot): number | null {
+export function armorRank(item: string, slot: BodyArmorSlot): number | null {
   if (!item.endsWith(SLOT_SUFFIX[slot])) {
     return null
   }
@@ -72,6 +76,14 @@ export function planArmorUpgrade(
     }
     if (best) {
       return { slot, item: best.item }
+    }
+  }
+  // Phase A: an empty off-hand with a shield in the pack is an upgrade too.
+  // No tiers — there is only the one shield; the same blacklist applies.
+  if (equipped('off-hand') === null && carried.includes('shield')) {
+    const until = blacklist.get('shield')
+    if (until === undefined || now >= until) {
+      return { slot: 'off-hand', item: 'shield' }
     }
   }
   return null

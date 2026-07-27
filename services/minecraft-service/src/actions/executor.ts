@@ -20,6 +20,20 @@ export interface SessionActions {
   craft(item: string): Promise<CraftResult>
   hunt(animal: string, maxDistance: number): Promise<HuntResult>
   stopMoving(): void
+  // Phase-A body extension (ADR 11, contract bump 1)
+  placeBlock(item: string, position?: Position): Promise<{ item: string; placed: string; position: Position }>
+  useBucket(
+    mode: 'fill' | 'pour',
+    liquid: 'water' | 'lava',
+    position?: Position,
+  ): Promise<{ mode: string; bucket: string; targetBlock: string; position: Position }>
+  equipItem(item: string, destination: 'hand' | 'off_hand'): Promise<{ item: string; destination: string }>
+  tossItem(item: string, count: number, toward?: Position): Promise<{ item: string; tossed: number }>
+  consumeItem(item: string): Promise<{ item: string; consumed: boolean }>
+  deposit(item: string, count: number): Promise<{ item: string; deposited: number; chestAt: Position }>
+  withdraw(item: string, count: number): Promise<{ item: string; withdrawn: number; chestAt: Position }>
+  /** total carried count — the give flow's receiver-side verification read */
+  countOf(item: string): number
 }
 
 export interface ExecutorDeps {
@@ -509,6 +523,123 @@ export class CommandExecutor {
           throw err
         }
       }
+      // ---- Phase-A body extension (ADR 11). Sessions throw coded errors
+      // (code + retryable, the craft/hunt convention) — passed through
+      // verbatim so the message lands as the villager's next percept.
+      case 'place_block': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, position } = payload.params as { item?: string; position?: Position }
+        if (!item) {
+          throw new ActionError('INVALID_PARAMS', 'place_block requires params.item — which carried block to set down', false)
+        }
+        return await this.passCoded(() => session.placeBlock(item, position))
+      }
+      case 'use_bucket': {
+        const session = this.requireSession(payload.villagerId)
+        const { mode, liquid, position } = payload.params as {
+          mode?: 'fill' | 'pour'
+          liquid?: 'water' | 'lava'
+          position?: Position
+        }
+        if (mode !== 'fill' && mode !== 'pour') {
+          throw new ActionError('INVALID_PARAMS', 'use_bucket requires params.mode — "fill" or "pour"', false)
+        }
+        return await this.passCoded(() => session.useBucket(mode, liquid ?? 'water', position))
+      }
+      case 'equip': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, destination } = payload.params as { item?: string; destination?: 'hand' | 'off_hand' }
+        if (!item) {
+          throw new ActionError('INVALID_PARAMS', 'equip requires params.item — which carried item to hold', false)
+        }
+        return await this.passCoded(() => session.equipItem(item, destination ?? 'hand'))
+      }
+      case 'toss': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, count } = payload.params as { item?: string; count?: number }
+        if (!item) {
+          throw new ActionError('INVALID_PARAMS', 'toss requires params.item — which carried item to drop', false)
+        }
+        return await this.passCoded(() => session.tossItem(item, clampCount(count)))
+      }
+      case 'consume': {
+        const session = this.requireSession(payload.villagerId)
+        const { item } = payload.params as { item?: string }
+        if (!item) {
+          throw new ActionError('INVALID_PARAMS', 'consume requires params.item — which carried item to eat or drink', false)
+        }
+        return await this.passCoded(() => session.consumeItem(item))
+      }
+      case 'deposit': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, count } = payload.params as { item?: string; count?: number }
+        if (!item) {
+          throw new ActionError('INVALID_PARAMS', 'deposit requires params.item — what to put in the chest', false)
+        }
+        return await this.passCoded(() => session.deposit(item, clampCount(count)))
+      }
+      case 'withdraw': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, count } = payload.params as { item?: string; count?: number }
+        if (!item) {
+          throw new ActionError('INVALID_PARAMS', 'withdraw requires params.item — what to take from the chest', false)
+        }
+        return await this.passCoded(() => session.withdraw(item, clampCount(count)))
+      }
+      case 'give': {
+        // Orchestrated here because BOTH bodies are in-process: walk to the
+        // receiver, aim the toss at them, then VERIFY the receiver's pack
+        // grew. An unverified toss is GIVE_FAILED, never a silent success —
+        // the MINDcraft givePlayer flake ("it was never received") is the
+        // exact failure this read-back exists for.
+        const session = this.requireSession(payload.villagerId)
+        const { targetVillagerId, item, count } = payload.params as {
+          targetVillagerId?: string
+          item?: string
+          count?: number
+        }
+        if (!targetVillagerId || !item) {
+          throw new ActionError('INVALID_PARAMS', 'give requires params.targetVillagerId and params.item', false)
+        }
+        const receiver = this.deps.getSession(targetVillagerId)
+        if (!receiver?.active || !receiver.position) {
+          throw new ActionError('PATH_NOT_FOUND', `villager ${targetVillagerId} is not in the world to receive anything`, true)
+        }
+        const wanted = clampCount(count)
+        const before = receiver.countOf(item)
+        await session.moveTo(receiver.position, 2)
+        const dropAt = receiver.position
+        const { tossed } = await this.passCoded(() => session.tossItem(item, wanted, dropAt))
+        // Step back so the receiver wins the pickup race — dropped items go
+        // to the NEAREST body once the pickup delay ends, and the thrower
+        // starts closer to the drop (the gift-ping-pong failure).
+        const from = session.position
+        if (from && dropAt) {
+          let dx = from.x - dropAt.x
+          let dz = from.z - dropAt.z
+          if (dx === 0 && dz === 0) {
+            dx = 3 // standing on the drop — any direction beats staying
+          }
+          const away = { x: from.x + dx * 2, y: from.y, z: from.z + dz * 2 }
+          await session.moveTo(away, 2).catch(() => undefined) // best effort — verification decides the outcome
+        }
+        const deadline = Date.now() + 8_000
+        while (Date.now() < deadline) {
+          if (receiver.countOf(item) > before) {
+            break
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500))
+        }
+        const received = receiver.countOf(item) - before
+        if (received <= 0) {
+          throw new ActionError(
+            'GIVE_FAILED',
+            `you tossed ${tossed} ${item.replace(/_/g, ' ')} but ${targetVillagerId}'s pack never grew — the drop lies near (${Math.round(dropAt.x)}, ${Math.round(dropAt.y)}, ${Math.round(dropAt.z)}); they may be busy or too far`,
+            true,
+          )
+        }
+        return { targetVillagerId, item, tossed, received }
+      }
       default: {
         throw new ActionError('UNKNOWN_ACTION', `no handler for action '${payload.action}'`, false)
       }
@@ -522,4 +653,23 @@ export class CommandExecutor {
     }
     return session
   }
+
+  /** Re-throw a session's coded failure as an ActionError verbatim — the
+   *  craft/hunt passthrough convention, shared by every phase-A verb. */
+  private async passCoded<T>(run: () => Promise<T>): Promise<T> {
+    try {
+      return await run()
+    } catch (err) {
+      const { code, retryable } = err as Error & { code?: string; retryable?: boolean }
+      if (code) {
+        throw new ActionError(code, (err as Error).message, retryable ?? false)
+      }
+      throw err
+    }
+  }
+}
+
+/** Wire counts arrive unvalidated; the contract clamps 1..64. */
+function clampCount(count: number | undefined): number {
+  return Math.min(Math.max(Math.trunc(count ?? 1), 1), 64)
 }
