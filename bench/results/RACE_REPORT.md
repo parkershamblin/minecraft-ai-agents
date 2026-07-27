@@ -13,7 +13,7 @@ and tokens/minute instead of tokens/run, and latency p50 is a true
 percentile of the run's pooled raw per-decision latencies. Window-sensitive
 totals are kept below in their own table.
 
-> **Rows span configVersions v1, v2, v6 — they are NOT comparable to each other.** Each model is reported at its
+> **Rows span configVersions v1, v2, v7 — they are NOT comparable to each other.** Each model is reported at its
 > own highest version (`cfg` column); a version bump changes the protocol,
 > not just the harness. What changed per version is listed in
 > `$versionHistory` in `bench/race/frozen-config.json`. Compare within a
@@ -21,9 +21,9 @@ totals are kept below in their own table.
 
 | Model | cfg | N | Win rate | Time-to-goal s (won) | Gather eff. (blocks/req) | Waste ratio | Tokens/decision | Tokens/min | Latency p50 ms |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| `gemma4:latest` | v6 | 5 | 5/5 | 716.8 ± 394.0 | 2.01 ± 0.57 | 0.409 ± 0.177 | 2309 ± 40 | 27776 ± 893 | 2189 ± 74 |
-| `llama3.1:8b` | v6 | 5 | 5/5 | 788.8 ± 548.2 | 2.02 ± 1.30 | 0.414 ± 0.212 | 2117 ± 28 | 26493 ± 1932 | 1548 ± 193 |
-| `gemma3:12b` | v6 | 5 | 5/5 | 816.8 ± 294.3 | 3.05 ± 0.81 | 0.367 ± 0.158 | 2251 ± 16 | 26840 ± 1300 | 3129 ± 305 |
+| `gemma4:latest` | v7 | 5 | 5/5 | 696.8 ± 255.6 | 3.11 ± 1.32 | 0.438 ± 0.134 | 2301 ± 12 | 28014 ± 1629 | 2273 ± 207 |
+| `llama3.1:8b` | v7 | 5 | 5/5 | 864.8 ± 180.3 | 1.53 ± 0.87 | 0.571 ± 0.157 | 2102 ± 32 | 25425 ± 599 | 1523 ± 113 |
+| `gemma3:12b` | v7 | 5 | 5/5 | 944.9 ± 296.3 | 2.61 ± 0.76 | 0.436 ± 0.159 | 2243 ± 16 | 26248 ± 1097 | 3321 ± 135 |
 | `qwen3.5:4b` | v2 | 5 | 1/5 | 4225.4 (n=1) | 0.26 ± 0.46 | 0.603 ± 0.078 | 2689 ± 31 | 31476 ± 906 | 1576 ± 23 |
 | `lfm2.5:latest` | v1 | 5 | 0/5 | — | 0.14 ± 0.22 | 0.385 ± 0.117 | 2580 ± 40 | 18546 ± 1024 | 23780 ± 2820 |
 
@@ -31,9 +31,9 @@ totals are kept below in their own table.
 
 | Model | p50 ms | p90 ms | p95 ms | p99 ms |
 |---|--:|--:|--:|--:|
-| `gemma4:latest` | 2189 ± 74 | 3179 ± 1053 | 4547 ± 4305 | 5896 ± 5302 |
-| `llama3.1:8b` | 1548 ± 193 | 2115 ± 730 | 3053 ± 2883 | 6710 ± 8689 |
-| `gemma3:12b` | 3129 ± 305 | 4272 ± 941 | 4948 ± 1680 | 8336 ± 7796 |
+| `gemma4:latest` | 2273 ± 207 | 2988 ± 404 | 3912 ± 1548 | 8892 ± 9379 |
+| `llama3.1:8b` | 1523 ± 113 | 1894 ± 139 | 2064 ± 286 | 2375 ± 468 |
+| `gemma3:12b` | 3321 ± 135 | 4892 ± 1188 | 6521 ± 2821 | 9883 ± 4614 |
 | `qwen3.5:4b` | 1576 ± 23 | 2117 ± 255 | 2424 ± 341 | 3076 ± 484 |
 | `lfm2.5:latest` | 23780 ± 2820 | 35776 ± 3508 | 39584 ± 3925 | 44284 ± 3632 |
 
@@ -41,9 +41,9 @@ totals are kept below in their own table.
 
 | Model | Tokens/run | Mean window s |
 |---|--:|--:|
-| `gemma4:latest` | 329504 ± 170236 | 717 ± 394 |
-| `llama3.1:8b` | 339999 ± 209225 | 789 ± 548 |
-| `gemma3:12b` | 362138 ± 112055 | 817 ± 294 |
+| `gemma4:latest` | 323554 ± 113805 | 697 ± 256 |
+| `llama3.1:8b` | 366312 ± 76354 | 865 ± 180 |
+| `gemma3:12b` | 411375 ± 116677 | 945 ± 296 |
 | `qwen3.5:4b` | 2460691 ± 362739 | 4695 ± 732 |
 | `lfm2.5:latest` | 1392557 ± 76921 | 4505 ± 0 |
 
@@ -93,16 +93,16 @@ docker: `uv run python bench/bench_race.py --reextract` then
   "What v3 does and does not fix".
 - **Blocked run order — a hygiene problem, not a demonstrated bias.**
   On a shared persistent world, blocks ran `llama3.1:8b` v1 → `gemma3:12b` v1 → `gemma4:latest` v1 → `qwen3.5:4b` v1 → `lfm2.5:latest` v1 → `qwen3.5:4b` v2 with no world reset between them, so within-block run index is confounded with world age there.
-  By contrast, blocks `llama3.1:8b` v3 → `llama3.1:8b` v4 → `gemma3:12b` v4 → `gemma4:latest` v4 → `llama3.1:8b` v5 → `llama3.1:8b` v6 → `gemma3:12b` v6 → `gemma4:latest` v6 ran at configVersion 3+, which restores a pristine pinned-seed world before each block: cross-block wear cannot reach them, and only within-block wear remains.
+  By contrast, blocks `llama3.1:8b` v3 → `llama3.1:8b` v4 → `gemma3:12b` v4 → `gemma4:latest` v4 → `llama3.1:8b` v5 → `llama3.1:8b` v6 → `gemma3:12b` v6 → `gemma4:latest` v6 → `llama3.1:8b` v7 → `gemma3:12b` v7 → `gemma4:latest` v7 ran at configVersion 3+, which restores a pristine pinned-seed world before each block: cross-block wear cannot reach them, and only within-block wear remains.
   Measured, that confound does not carry the model table:
-  - `gemma4:latest` v6: 5 won runs, indices 1-5, mean index 3.00; within-block slope -90.0 ± 103.6 s/step (t = -0.87), drift -360.1 s across the observed span; mean 716.8 s → 716.8 s detrended to index 3.0.
-  - `llama3.1:8b` v6: 5 won runs, indices 1-5, mean index 3.00; within-block slope -162.2 ± 131.3 s/step (t = -1.24), drift -648.6 s across the observed span; mean 788.8 s → 788.8 s detrended to index 3.0.
-  - `gemma3:12b` v6: 5 won runs, indices 1-5, mean index 3.00; within-block slope +92.1 ± 68.3 s/step (t = +1.35), drift +368.5 s across the observed span; mean 816.8 s → 816.8 s detrended to index 3.0.
-  - Run index can only move a between-model mean if the blocks cover different indices. `gemma4:latest` and `llama3.1:8b` have the SAME mean index (3.00), so index cannot generate the 71.9 s gap between them at all.
+  - `gemma4:latest` v7: 5 won runs, indices 1-5, mean index 3.00; within-block slope -92.1 ± 53.1 s/step (t = -1.73), drift -368.4 s across the observed span; mean 696.8 s → 696.8 s detrended to index 3.0.
+  - `llama3.1:8b` v7: 5 won runs, indices 1-5, mean index 3.00; within-block slope -0.0 ± 53.0 s/step (t = -0.00), drift -0.2 s across the observed span; mean 864.8 s → 864.8 s detrended to index 3.0.
+  - `gemma3:12b` v7: 5 won runs, indices 1-5, mean index 3.00; within-block slope -8.0 ± 87.0 s/step (t = -0.09), drift -32.0 s across the observed span; mean 944.9 s → 944.9 s detrended to index 3.0.
+  - Run index can only move a between-model mean if the blocks cover different indices. `gemma4:latest` and `llama3.1:8b` have the SAME mean index (3.00), so index cannot generate the 168.0 s gap between them at all.
   - No cumulative wear ACROSS the sweep: over the 14 winners in run order (configVersion 1 sweep, winners only), Pearson +0.142, Spearman -0.029, +10.7 s per step. Durations reset at every block boundary.
   The caution against reading adjacent winner rows as a ranking STANDS —
   but it rests on raw sampling noise at n=5, not on the wear mechanism:
-  `llama3.1:8b`'s own sd is 441.6 s against a 28.0 s gap to `gemma3:12b`.
+  `gemma3:12b`'s own sd is 238.7 s against a 80.1 s gap to `llama3.1:8b`.
   Resetting the world per block (or interleaving run order) is still worth
   doing as hygiene; it is simply not what makes these rows unrankable, and
   the earlier claim that run index alone could account for the winner
@@ -137,11 +137,11 @@ docker: `uv run python bench/bench_race.py --reextract` then
 Derived from the same saved slices every run JSON is extracted from
 (`bench/results/sweep/slices`), roster villagers only.
 
-**Scope:** pooled over all 64 kept runs across `gemma3:12b` v1, `gemma3:12b` v4, `gemma3:12b` v6, `gemma4:latest` v1, `gemma4:latest` v4, `gemma4:latest` v6, `lfm2.5:latest` v1, `llama3.1:8b` v1, `llama3.1:8b` v3, `llama3.1:8b` v4, `llama3.1:8b` v5, `llama3.1:8b` v6, `qwen3.5:4b` v1, `qwen3.5:4b` v2 — this is a WIDER set than the model table, which shows each model at
+**Scope:** pooled over all 79 kept runs across `gemma3:12b` v1, `gemma3:12b` v4, `gemma3:12b` v6, `gemma3:12b` v7, `gemma4:latest` v1, `gemma4:latest` v4, `gemma4:latest` v6, `gemma4:latest` v7, `lfm2.5:latest` v1, `llama3.1:8b` v1, `llama3.1:8b` v3, `llama3.1:8b` v4, `llama3.1:8b` v5, `llama3.1:8b` v6, `llama3.1:8b` v7, `qwen3.5:4b` v1, `qwen3.5:4b` v2 — this is a WIDER set than the model table, which shows each model at
 its highest configVersion only. The per-model rows below carry their own
 `cfg`; the totals in this paragraph do not belong to any single version.
 
-9259 of 16541 resolved actions failed (56.0%). Restricted to `gather` — the
+10502 of 19034 resolved actions failed (55.2%). Restricted to `gather` — the
 verb that actually advances the ladder — failures over gather commands
 issued:
 
@@ -153,24 +153,27 @@ issued:
 | `llama3.1:8b` | v4 | 785 | 603 | 76.8% |
 | `gemma4:latest` | v1 | 714 | 631 | 88.4% |
 | `llama3.1:8b` | v1 | 674 | 497 | 73.7% |
+| `llama3.1:8b` | v7 | 468 | 322 | 68.8% |
+| `gemma3:12b` | v7 | 461 | 287 | 62.3% |
 | `gemma3:12b` | v4 | 410 | 248 | 60.5% |
 | `gemma3:12b` | v6 | 399 | 224 | 56.1% |
 | `llama3.1:8b` | v6 | 395 | 220 | 55.7% |
 | `gemma4:latest` | v4 | 343 | 230 | 67.1% |
 | `gemma4:latest` | v6 | 322 | 205 | 63.7% |
+| `gemma4:latest` | v7 | 293 | 145 | 49.5% |
 | `llama3.1:8b` | v5 | 218 | 120 | 55.0% |
 | `llama3.1:8b` | v3 | 105 | 45 | 42.9% |
 
 Blocks issuing fewer than 50 gather commands are omitted above — no
 meaningful rate, and the orphan outcomes below can exceed the denominator: `qwen3.5:4b` v1 (3 issued, 5 failed).
 
-A SINGLE executor-side error string accounts for 4337 of 9259
-failures (46.8%): "Took to long to decide path to goal!",
+A SINGLE executor-side error string accounts for 4361 of 10502
+failures (41.5%): "Took to long to decide path to goal!",
 errorCode INTERNAL — a mineflayer pathfinder timeout. State that
-precisely: errorCode INTERNAL totals 4599, the specific string is
-4337; the two are NOT interchangeable.
+precisely: errorCode INTERNAL totals 4698, the specific string is
+4361; the two are NOT interchangeable.
 
-Full errorCode mix: INTERNAL 4599, RESOURCE_NOT_FOUND 1880, TIMEOUT 1178, TOOL_TIER_REQUIRED 880, TOOL_REQUIRED 479, PATH_NOT_FOUND 145, SMELT_FAILED 81, STALE_COMMAND 14, TARGET_ESCAPED 2, SELF_DEFENSE_IN_PROGRESS 1.
+Full errorCode mix: INTERNAL 4698, RESOURCE_NOT_FOUND 2233, TIMEOUT 1447, TOOL_TIER_REQUIRED 1028, TOOL_REQUIRED 573, SUPERSEDED 191, PATH_NOT_FOUND 184, SMELT_FAILED 131, STALE_COMMAND 14, TARGET_ESCAPED 2, SELF_DEFENSE_IN_PROGRESS 1.
 
 Per-run failure rate tracks time-to-goal within a block. Only blocks with
 wins are listed: for a 0-win block "time-to-goal" is the watchdog length,
@@ -178,14 +181,17 @@ so the correlation there measures the watchdog, not the model.
 - `gemma3:12b` v1: r = +0.759 over all 5 kept runs; the won-only value r = +0.999 (n=4) is a selection artifact and should not be quoted.
 - `gemma3:12b` v4: r = +0.351 over all 5 kept runs.
 - `gemma3:12b` v6: r = +0.877 over all 5 kept runs.
+- `gemma3:12b` v7: r = +0.934 over all 5 kept runs.
 - `gemma4:latest` v1: r = +0.106 over all 5 kept runs.
 - `gemma4:latest` v4: r = +0.841 over all 5 kept runs.
 - `gemma4:latest` v6: r = +0.997 over all 5 kept runs.
+- `gemma4:latest` v7: r = +0.594 over all 5 kept runs.
 - `llama3.1:8b` v1: r = +0.966 over all 5 kept runs.
 - `llama3.1:8b` v4: r = +0.778 over all 5 kept runs.
 - `llama3.1:8b` v6: r = +0.836 over all 5 kept runs.
+- `llama3.1:8b` v7: r = +0.605 over all 5 kept runs.
 
-Bookkeeping caveat: 372 of 16541 outcome events (2.2%) reference a commandId
+Bookkeeping caveat: 427 of 19034 outcome events (2.2%) reference a commandId
 with no in-window `ActionRequested` (window-edge truncation), and the gather
 denominator is commands issued while the numerator is resolved outcomes —
 these rates are robust at roughly the 2% level, not tighter.
@@ -210,12 +216,15 @@ after an action that did NOT fail.
 | `llama3.1:8b` | v1 | 589 | 465 (78.9%) | 0 |
 | `llama3.1:8b` | v4 | 508 | 416 (81.9%) | 2 |
 | `gemma4:latest` | v1 | 325 | 291 (89.5%) | 0 |
+| `llama3.1:8b` | v7 | 274 | 198 (72.3%) | 0 |
 | `llama3.1:8b` | v6 | 227 | 103 (45.4%) | 0 |
 | `gemma4:latest` | v6 | 190 | 131 (68.9%) | 0 |
 | `gemma3:12b` | v4 | 152 | 73 (48.0%) | 0 |
+| `gemma3:12b` | v7 | 146 | 65 (44.5%) | 0 |
 | `qwen3.5:4b` | v1 | 143 | 0 (0.0%) | 143 |
 | `gemma4:latest` | v4 | 141 | 106 (75.2%) | 0 |
 | `gemma3:12b` | v6 | 126 | 41 (32.5%) | 0 |
+| `gemma4:latest` | v7 | 112 | 78 (69.6%) | 0 |
 | `llama3.1:8b` | v3 | 108 | 60 (55.6%) | 0 |
 | `llama3.1:8b` | v5 | 108 | 69 (63.9%) | 0 |
 
@@ -224,7 +233,7 @@ action failed, and true livelock is exactly 0 in all three. It appears only
 in `qwen3.5:4b` and `lfm2.5:latest`, where it is the `error == true`
 schema-violation fallback to idle rather than a sampling effect.
 
-The per-run repeat fraction IS higher in stalled runs than won ones (won 0.351 (n=49), stalled 0.749 (n=15)),
+The per-run repeat fraction IS higher in stalled runs than won ones (won 0.321 (n=64), stalled 0.749 (n=15)),
 but it is collinear with the failure rate in the section above and does not
 survive as an independent cause. **Temperature is not the next knob to turn.**
 
@@ -332,6 +341,21 @@ get future GPU-hours, not a retraction of data already collected.
 | `gemma4:latest` | v6 | 3 | won | 580.6 | `019fa3ab-18eb…` |
 | `gemma4:latest` | v6 | 4 | won | 581 | `019fa3b4-afc7…` |
 | `gemma4:latest` | v6 | 5 | won | 520.7 | `019fa3be-3383…` |
+| `llama3.1:8b` | v7 | 1 | won | 720.8 | `019fa425-6788…` |
+| `llama3.1:8b` | v7 | 2 | won | 1100.9 | `019fa431-1612…` |
+| `llama3.1:8b` | v7 | 3 | won | 840.7 | `019fa442-9368…` |
+| `llama3.1:8b` | v7 | 4 | won | 780.7 | `019fa462-4136…` |
+| `llama3.1:8b` | v7 | 5 | won | 880.7 | `019fa46e-d0e2…` |
+| `gemma3:12b` | v7 | 1 | won | 780.6 | `019fa47e-2216…` |
+| `gemma3:12b` | v7 | 2 | won | 1261.1 | `019fa48a-ab2a…` |
+| `gemma3:12b` | v7 | 3 | won | 740.9 | `019fa49e-87d1…` |
+| `gemma3:12b` | v7 | 4 | won | 1141 | `019fa4aa-762b…` |
+| `gemma3:12b` | v7 | 5 | won | 800.7 | `019fa4bc-81e5…` |
+| `gemma4:latest` | v7 | 1 | won | 921.3 | `019fa4ca-9dc4…` |
+| `gemma4:latest` | v7 | 2 | won | 780.6 | `019fa4d9-4c2a…` |
+| `gemma4:latest` | v7 | 3 | won | 520.4 | `019fa4e5-d404…` |
+| `gemma4:latest` | v7 | 4 | won | 820.9 | `019fa4ee-6544…` |
+| `gemma4:latest` | v7 | 5 | won | 440.6 | `019fa4fb-9215…` |
 
 ## Discarded runs (never averaged in)
 
@@ -354,3 +378,4 @@ get future GPU-hours, not a retraction of data already collected.
 - `bench-llama3.1-8b-v5-r3` (llama3.1:8b): Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it — attempt `019fa131-430b-727a-bc39-c1f9175b6b32`
 - `bench-llama3.1-8b-v5-r3b` (llama3.1:8b): Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it — attempt `019fa139-8bda-77d9-b58a-14201ad1b386`
 - `bench-llama3.1-8b-v6-r4` (llama3.1:8b): Wren deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it — attempt `019fa328-a727-71c3-91a3-689ea14551b2`
+- `bench-llama3.1-8b-v7-r4` (llama3.1:8b): Elara, Petra deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it — attempt `019fa450-24a0-70b2-8ecf-9fbe5d874a0a`

@@ -104,6 +104,23 @@ gate now probes `execute if entity <name>` per name. Fleet recovery:
 spawns ALL 20 — for the race fleet use spawn-fleet then
 `despawn-fleet.mjs 6` (racers are villagers.json[0:6]).
 
+**Update (2026-07-27, v7 — latest-intent-wins, model table re-benched):**
+`configVersion 7`, 15/15 kept, zero mute among kept rows, one run
+discarded+re-raced (llama r4: Elara AND Petra mute). gemma4:latest
+696.8±255.6 · llama3.1:8b 864.8±180.3 · gemma3:12b 944.9±296.3 — means
+still overlap, so still RELIABILITY not ranking. **The fix worked on its
+own terms: `STALE_COMMAND` 0.44/run at v6 -> 0.00/run at v7, replaced by
+~13 `SUPERSEDED`/run** (a villager dropping its own older intent, logged
+to the ledger instead of vanishing). sd tightened for llama (441.6 ->
+180.3) and gemma4 — plausible but n=5, not established. Muteness still
+occurred once, so stale queues were A cause not THE cause; the 60s-trip-
+inside-30s-tick ceiling stands, gate costs ~1 re-race per 16 runs.
+GOTCHA THE DEPLOY CAUGHT (unit tests were green): superseding must NEVER
+apply to lifecycle actions — the first live deploy dropped `spawn` for
+Bram and Ansel in favour of a newer gather, leaving them bodiless and
+every later command `BOT_DISCONNECTED`. `LIFECYCLE_ACTIONS` exempts
+spawn/despawn; regression test in `test/executor.test.ts`.
+
 **Update (2026-07-27, v6 SHIPPED — model table final):** `configVersion 6`,
 15/15 kept, all won, all honest, zero mute among kept rows. gemma4:latest
 716.8±394.0 · llama3.1:8b 788.8±548.2 · gemma3:12b 816.8±294.3 — three
