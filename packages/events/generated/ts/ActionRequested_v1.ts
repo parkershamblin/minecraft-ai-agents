@@ -14,11 +14,28 @@ export interface ActionRequestedPayload {
   commandId: string;
   villagerId: string;
   /**
-   * spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent).
+   * spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent). Phase-A additions (ADR 11, contract bump 1): place_block/use_bucket/equip/give/deposit/withdraw/toss/consume — the body-extension verbs of the beat-the-game arc. give is villager-to-villager item transfer (the collaboration primitive); deposit/withdraw are chest I/O; consume covers deliberate eating/drinking of a NAMED item (golden apple, later potions) — the hunger reflex still owns routine meals.
    */
-  action: "spawn" | "despawn" | "move" | "gather" | "chat" | "follow" | "idle" | "craft" | "hunt";
+  action:
+    | "spawn"
+    | "despawn"
+    | "move"
+    | "gather"
+    | "chat"
+    | "follow"
+    | "idle"
+    | "craft"
+    | "hunt"
+    | "place_block"
+    | "use_bucket"
+    | "equip"
+    | "give"
+    | "deposit"
+    | "withdraw"
+    | "toss"
+    | "consume";
   /**
-   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {}).
+   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams, place_block: PlaceBlockParams, use_bucket: UseBucketParams, equip: EquipParams, give: GiveParams, deposit: DepositParams, withdraw: WithdrawParams, toss: TossParams, consume: ConsumeParams; despawn/idle take {}).
    */
   params: {
     [k: string]: unknown;

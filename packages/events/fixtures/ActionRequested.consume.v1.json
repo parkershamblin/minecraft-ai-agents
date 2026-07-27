@@ -1,0 +1,19 @@
+{
+  "eventId": "019fc200-000f-7000-8000-00000000c10f",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-27T21:01:10.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000d0002",
+  "correlationId": "019fc200-0002-7000-8000-c0de00000021",
+  "causationId": "019fc200-000d-7000-8000-00000000c10d",
+  "payload": {
+    "commandId": "019fc200-000f-7000-8000-00000000c10f",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000d0002",
+    "action": "consume",
+    "params": { "item": "golden_apple" },
+    "priority": 5,
+    "timeoutMs": 15000
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "eventId": "019fc200-0009-7000-8000-00000000c109",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-27T21:00:40.000Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000b2a44",
+  "correlationId": "019fc200-0002-7000-8000-c0de00000021",
+  "causationId": "019fc200-0007-7000-8000-00000000c107",
+  "payload": {
+    "commandId": "019fc200-0009-7000-8000-00000000c109",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "action": "withdraw",
+    "params": { "item": "coal", "count": 4 },
+    "priority": 5,
+    "timeoutMs": 30000
+  }
+}

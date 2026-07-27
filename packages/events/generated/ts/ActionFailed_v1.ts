@@ -15,7 +15,7 @@ export interface ActionFailedPayload {
   villagerId: string;
   action: string;
   /**
-   * Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it). RB-1 additions (additive): TOOL_TIER_REQUIRED = the ore only drops to a higher tool tier than anything carried (the message names the tier — craft it first); SMELT_FAILED = the craft chain's furnace flow broke (no furnace placeable, no fuel, or the smelt yielded nothing — the message teaches the missing link).
+   * Machine-readable failure class; consumers branch on this, never on errorMessage. Survival additions (additive): BODY_BUSY = a reflex (eat) owns the body briefly, retry shortly; SELF_DEFENSE_IN_PROGRESS = the body is fighting or fleeing a hostile, retry after; TARGET_ESCAPED = a hunt's quarry got away (wounded game keeps its damage — a later hunt can finish it). RB-1 additions (additive): TOOL_TIER_REQUIRED = the ore only drops to a higher tool tier than anything carried (the message names the tier — craft it first); SMELT_FAILED = the craft chain's furnace flow broke (no furnace placeable, no fuel, or the smelt yielded nothing — the message teaches the missing link). Phase-A additions (ADR 11, additive): ITEM_NOT_CARRIED = the named item isn't in the pack (place/equip/give/toss/consume/deposit); PLACE_FAILED = no legal spot or the world rejected the placement (post-place world read, the ghost-place lesson); CONTAINER_NOT_FOUND = no chest stands within the search range; LIQUID_NOT_FOUND = bucket fill found no reachable source of the named liquid; GIVE_FAILED = the handoff toss landed but never reached the receiver's pack (the message names where the drop fell).
    */
   errorCode:
     | "TIMEOUT"
@@ -33,6 +33,11 @@ export interface ActionFailedPayload {
     | "TARGET_ESCAPED"
     | "TOOL_TIER_REQUIRED"
     | "SMELT_FAILED"
+    | "ITEM_NOT_CARRIED"
+    | "PLACE_FAILED"
+    | "CONTAINER_NOT_FOUND"
+    | "LIQUID_NOT_FOUND"
+    | "GIVE_FAILED"
     | "INTERNAL";
   errorMessage: string;
   retryable: boolean;

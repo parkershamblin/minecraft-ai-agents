@@ -18,8 +18,26 @@ from jsonschema import Draft202012Validator
 
 # Villagers may not spawn/despawn themselves — those are platform commands.
 # craft + hunt joined with the survival cluster (there is deliberately NO eat
-# verb — eating is a body reflex; acquisition is the mind's job).
-DELIBERATE_ACTIONS = ("move", "gather", "chat", "follow", "idle", "craft", "hunt")
+# verb — eating is a body reflex; acquisition is the mind's job). Phase-A
+# verbs (ADR 11): body extension for the beat-the-game arc — consume is
+# deliberate, named consumption (golden apple), not the hunger reflex.
+DELIBERATE_ACTIONS = (
+    "move",
+    "gather",
+    "chat",
+    "follow",
+    "idle",
+    "craft",
+    "hunt",
+    "place_block",
+    "use_bucket",
+    "equip",
+    "give",
+    "deposit",
+    "withdraw",
+    "toss",
+    "consume",
+)
 
 # The civic verbs (M2-7). Laws (M3) and factions (M4) are deliberately absent.
 GOVERNANCE_ACTIONS = ("declare_candidacy", "vote")
@@ -102,6 +120,14 @@ _PARAMS_DEF_BY_ACTION = {
     "gather": "GatherParams",
     "craft": "CraftParams",
     "hunt": "HuntParams",
+    "place_block": "PlaceBlockParams",
+    "use_bucket": "UseBucketParams",
+    "equip": "EquipParams",
+    "give": "GiveParams",
+    "deposit": "DepositParams",
+    "withdraw": "WithdrawParams",
+    "toss": "TossParams",
+    "consume": "ConsumeParams",
 }
 
 
@@ -115,6 +141,7 @@ class MalformedDecision(Exception):
 _PARAM_ALIASES: dict[str, dict[str, str]] = {
     "chat": {"villagerId": "targetVillagerId"},
     "follow": {"villagerId": "targetVillagerId"},
+    "give": {"villagerId": "targetVillagerId"},
 }
 
 
