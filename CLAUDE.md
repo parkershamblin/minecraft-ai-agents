@@ -168,13 +168,30 @@ identity; plumbing codes SUPERSEDED/STALE_COMMAND/BODY_BUSY/… never count;
 section, cleared by success or 10 quiet ticks — expiry so a stale ban can't
 block a race win).
 
-**Next session: decide deploy/A-B of `feedback-loop-close`, then candidate
-2.** The branch is local-only, uncommitted-to-main; an A/B under the race
-harness costs GPU and is the owner's call (do NOT fold into configVersion
-churn casually — see the batching note below). Candidate 2 (governance
-quota arc) needs owner sign-off on contract additions (broadcast
-announcement event → percept). The full argument for every candidate and
-the dead-end list live in the synthesis doc; per-paper page refs there.
+**Update (2026-07-27, same branch — DEEP RESEARCH PASS, north star
+reframed to beat-the-game):** Owner reframed the goal: long-horizon
+collaborative play + fast reaction, up to beating the game — and asked for
+much deeper research first. Done via 12-agent workflow: 6 papers re-read IN
+FULL (every prompt template + mechanic, verbatim extractions in
+`docs/research/2026-07-27-deep-sweep/`), 5 web scans (~40 sources, all
+cited), 1 repo capability audit (exact verb/skill/reflex inventory,
+file:line). Deliverable: `docs/reports/capability-roadmap-2026-07-27.md`.
+Headlines: NO published agent has killed the dragon from a fresh world
+(Manifold resolved NO 2026-01; SOTA stalls at diamond) — from diamond on
+we'd be EXTENDING SOTA and the blockers are verbs, not model scale; the
+field's convergent small-model answer is exactly our architecture (Odyssey:
+8B LoRA + composed skills = diamond 100%@15min; GITM/Plan4MC/Optimus-1 all
+move planning into code); our biggest gap is a persistent Project/goal-DAG
+system (generalize the proven race.py checklist pattern); reactivity can
+never come from the deliberation loop (TickingCollab 0.62→0.05) — extend
+reflexes (shield/bow/gaze-aversion) + multi-step intents; collaboration =
+code-side dispatcher + claims in ledger (MindAgent: 70B as LLM-dispatcher
+scored 0.0 — never LLM-dispatch); SFT flywheel recipe fully specified
+(ledger exporter → QLoRA overnight → A/B, self-improving via win-vs-DNF
+DPO, no bigger teacher needed per AgentEvol). Phases: A body/verbs → B
+Project system → C Nether → D End; missing-verb ladder dependency-ordered
+in the roadmap §2. Owner decisions pending: adopt as ADR 11, contract bump
+1 scope, plugin adoption (minecrafthawkeye), SFT timing.
 
 **Benchmark: DONE and merged** (PR #93 v3-v6, PR #94 v7, both on `main`).
 No benchmark work is queued. Open items carried forward, none blocking:
