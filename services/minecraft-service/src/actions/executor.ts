@@ -33,6 +33,10 @@ export interface ExecutorDeps {
   /** watchdog ceiling: payload.timeoutMs is clamped to this — an oversized
    *  wire value must never pin the partition behind one body */
   maxTimeoutMs: number
+  /** far-target gate: a move destination farther than this (horizontal
+   *  blocks) fails fast with PATH_NOT_FOUND — an LLM-hallucinated coordinate
+   *  must not burn the whole trip watchdog discovering it's unreachable */
+  maxMoveDistance: number
   publishOutcome(
     command: EventEnvelope,
     eventType: 'ActionCompleted' | 'ActionFailed',
@@ -386,6 +390,24 @@ export class CommandExecutor {
         const { to, range } = payload.params as { to?: Position; range?: number }
         if (!to || typeof to.x !== 'number' || typeof to.y !== 'number' || typeof to.z !== 'number') {
           throw new ActionError('INVALID_PARAMS', 'move requires params.to {x,y,z}', false)
+        }
+        // Far-target gate (2026-07-27): move targets come off an LLM and can
+        // be hallucinated anywhere (a villager once asked for a point ~570
+        // blocks across the map). Pathfinding toward one burns the whole trip
+        // watchdog and an event-loop's worth of A* discovering the obvious.
+        // Reject deterministically; the message is the villager's next
+        // percept, so it teaches staging instead of just refusing. Gather and
+        // hunt need no gate — their maxDistance is contract-clamped (64/48).
+        const from = session.position
+        if (from) {
+          const distance = Math.hypot(to.x - from.x, to.z - from.z)
+          if (distance > this.deps.maxMoveDistance) {
+            throw new ActionError(
+              'PATH_NOT_FOUND',
+              `the destination (${Math.round(to.x)}, ${Math.round(to.z)}) is ~${Math.round(distance)} blocks away — beyond the ${this.deps.maxMoveDistance}-block range of one errand; break the journey into stages: pick a waypoint within ${this.deps.maxMoveDistance} blocks in that direction and move there first`,
+              false,
+            )
+          }
         }
         return await session.moveTo(to, range ?? 1)
       }

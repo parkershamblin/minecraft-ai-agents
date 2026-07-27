@@ -142,6 +142,12 @@ const schema = z.object({
   // oversized value pins its partition (and every partition-mate) for the
   // duration. Matches the contract's per-verb ceiling (TIMEOUT_TABLE_MAX_MS).
   COMMAND_TIMEOUT_MAX_MS: z.coerce.number().int().min(1000).default(60000),
+  // Far-target gate: a move destination farther than this (horizontal blocks)
+  // fails fast with PATH_NOT_FOUND instead of burning the trip watchdog
+  // pathfinding toward a hallucinated coordinate. Gather (64) and hunt (48)
+  // carry their own contract clamps; move had none until this. 128 = 2x the
+  // widest gather sweep, ~30s of walking.
+  MOVE_MAX_DISTANCE: z.coerce.number().int().min(16).default(128),
   // Per-player inventory metrics: one process-wide poll — in-memory reads for
   // bots, per-slot RCON `data get` for humans. 0 disables the poller entirely.
   INVENTORY_POLL_INTERVAL_MS: z.coerce.number().int().min(0).default(15000),

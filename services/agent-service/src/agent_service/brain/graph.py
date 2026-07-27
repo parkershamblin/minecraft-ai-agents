@@ -69,7 +69,7 @@ class TickDeps:
     publish: Any  # async (topic, envelope) -> None (fire-and-forget; flush confirms)
     flush: Any = None  # async () -> None: awaits delivery of the tick's publishes (None: publish is synchronous, e.g. tests)
     relationships: Any = None  # RelationshipRepo-shaped: apply_updates() (None: feature off, e.g. old tests)
-    awareness: Any = None  # ActionAwareness-shaped: recall()/remember() (None: feature off)
+    awareness: Any = None  # ActionAwareness-shaped: recall()/remember(), optionally note_outcomes() (None: feature off)
     civics: Any = None  # CivicState-shaped: snapshot(villager_id) (None: feature off)
     race: Any = None  # RaceState-shaped: snapshot(villager_id) (None: feature off) — RB-2
     llm_for: Any = None  # (villager_id) -> LLMProvider: per-team routing (None: everyone on `llm`)
@@ -132,6 +132,13 @@ def build_tick_graph(deps: TickDeps):
         # aim, and "the village talk keeps returning to one shared aim" reads
         # as a civic affair — the 2026-07-22 regression showed blind llama
         # turning that line into phantom elections named after the goal.
+        # Failure streaks fold in BEFORE the prompt so this tick's outcome
+        # percepts count toward abandonment the same turn they're voiced.
+        # getattr keeps old recall/remember-only fakes in tests valid.
+        note_outcomes = getattr(deps.awareness, "note_outcomes", None) if deps.awareness else None
+        failure_streaks = (
+            note_outcomes(villager.id, state.get("percepts", [])) if note_outcomes else None
+        )
         outcome = await decide_safely(
             llm,
             system_prompt(villager.name, villager.personality, villager.backstory,
@@ -142,6 +149,7 @@ def build_tick_graph(deps: TickDeps):
                 state.get("memories", []),
                 feelings,
                 last_decision=deps.awareness.recall(villager.id) if deps.awareness else None,
+                failure_streaks=failure_streaks,
                 civic=deps.civics.snapshot(str(villager.id)) if deps.civics else None,
                 race=race_view,
             ),

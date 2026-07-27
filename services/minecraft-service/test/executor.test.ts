@@ -97,6 +97,7 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
     },
     maxCommandAgeMs: 600_000,
     maxTimeoutMs: 60_000,
+    maxMoveDistance: 128,
     ...overrides,
   }
   return { executor: new CommandExecutor(deps), outcomes, session, seen }
@@ -124,6 +125,30 @@ describe('CommandExecutor', () => {
     await h.executor.execute(command('chat', { message: 'hello' })) // same commandId redelivered
     expect(h.session.chat).toHaveBeenCalledTimes(1)
     expect(h.outcomes).toHaveLength(1) // and only one outcome
+  })
+
+  it('far move targets fail fast with PATH_NOT_FOUND before pathfinding starts', async () => {
+    const h = harness() // body at (0, 64, 0), gate at 128
+    await h.executor.execute(command('move', { to: { x: -203.5, y: 65, z: -200 } }))
+    expect(h.session.moveTo).not.toHaveBeenCalled()
+    expect(h.outcomes).toHaveLength(1)
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('PATH_NOT_FOUND')
+    expect(h.outcomes[0]!.extra.retryable).toBe(false)
+    expect(String(h.outcomes[0]!.extra.errorMessage)).toContain('waypoint') // the percept teaches staging
+  })
+
+  it('move targets inside the gate pathfind normally', async () => {
+    const h = harness()
+    await h.executor.execute(command('move', { to: { x: 100, y: 64, z: 0 } }))
+    expect(h.session.moveTo).toHaveBeenCalledWith({ x: 100, y: 64, z: 0 }, 1)
+    expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
+  })
+
+  it('far-target gate is skipped when the body position is unknown', async () => {
+    const h = harness({}, { position: null })
+    await h.executor.execute(command('move', { to: { x: 500, y: 64, z: 500 } }))
+    expect(h.session.moveTo).toHaveBeenCalled() // the pathfinder owns the verdict then
   })
 
   it('watchdog emits ActionFailed{TIMEOUT} and cancels the action', async () => {
