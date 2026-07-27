@@ -511,6 +511,125 @@ describe('dispatch lanes (RB-2)', () => {
     return envelope
   }
 
+  it('a newer command supersedes one still waiting behind a slow body', async () => {
+    // The 2026-07-27 muteness: a gather trip can hold the body for 60s while
+    // the mind speaks every 30s, so intents arrive twice as fast as they can
+    // run. Unbounded, the lane aged a command to 617s and it landed as
+    // STALE_COMMAND — the villager completed nothing all race while asking
+    // constantly. Latest intent wins instead.
+    let session: SessionActions | undefined
+    const h = harness({ getSession: () => session })
+    let release: (() => void) | undefined
+    session = {
+      ...h.session,
+      busy: null,
+      gather: vi.fn(
+        () =>
+          new Promise<ReturnType<typeof gatherResult>>((resolve) => {
+            release = () => resolve(gatherResult())
+          }),
+      ),
+      chat: vi.fn(),
+    }
+
+    h.executor.dispatch(commandFor('elara-id', 'slow', 'gather', { resource: 'wood' }, 120_000))
+    await vi.advanceTimersByTimeAsync(0)
+    // two more intents arrive while the body is still gathering
+    h.executor.dispatch(commandFor('elara-id', 'stale-intent', 'chat', { message: 'first' }))
+    h.executor.dispatch(commandFor('elara-id', 'latest-intent', 'chat', { message: 'second' }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    release?.()
+    await vi.advanceTimersByTimeAsync(0)
+    await h.executor.drain()
+
+    const superseded = h.outcomes.filter((o) => o.extra.errorCode === 'SUPERSEDED')
+    expect(superseded).toHaveLength(1)
+    expect(superseded[0]!.extra.commandId).toBe('stale-intent')
+    // the newest intent actually ran; the middle one did not
+    expect(session.chat).toHaveBeenCalledTimes(1)
+    expect(session.chat).toHaveBeenCalledWith('second')
+  })
+
+  it('never supersedes a spawn — losing it costs the villager its body', async () => {
+    // 2026-07-27, minutes after supersede first shipped: seeding published
+    // spawns for all six racers, agent-service's next tick landed behind two
+    // of them, and Bram and Ansel never existed. Every later command for them
+    // failed BOT_DISCONNECTED, forever.
+    let session: SessionActions | undefined
+    const h = harness({ getSession: () => session })
+    let release: (() => void) | undefined
+    session = {
+      ...h.session,
+      busy: null,
+      chat: vi.fn(() => new Promise<void>((resolve) => { release = resolve })),
+    }
+
+    h.executor.dispatch(commandFor('elara-id', 'running', 'chat', { message: 'busy' }))
+    await vi.advanceTimersByTimeAsync(0)
+    h.executor.dispatch(commandFor('elara-id', 'the-spawn', 'spawn', { minecraftUsername: 'Elara' }))
+    h.executor.dispatch(commandFor('elara-id', 'later-intent', 'chat', { message: 'newer' }))
+    release?.()
+    await vi.advanceTimersByTimeAsync(0)
+    await h.executor.drain()
+
+    const spawnOutcomes = h.outcomes.filter((o) => o.extra.commandId === 'the-spawn')
+    expect(spawnOutcomes).toHaveLength(1)
+    expect(spawnOutcomes[0]!.extra.errorCode).toBeUndefined()
+    expect(spawnOutcomes[0]!.eventType).toBe('ActionCompleted')
+  })
+
+  it('never supersedes a command that is already running', async () => {
+    let session: SessionActions | undefined
+    const h = harness({ getSession: () => session })
+    let release: (() => void) | undefined
+    session = {
+      ...h.session,
+      busy: null,
+      chat: vi.fn(() => new Promise<void>((resolve) => { release = resolve })),
+    }
+
+    h.executor.dispatch(commandFor('elara-id', 'running', 'chat', { message: 'in flight' }))
+    await vi.advanceTimersByTimeAsync(0)
+    h.executor.dispatch(commandFor('elara-id', 'next', 'chat', { message: 'queued' }))
+    await vi.advanceTimersByTimeAsync(0)
+
+    release?.()
+    await vi.advanceTimersByTimeAsync(0)
+    await h.executor.drain()
+
+    // the in-flight command completed normally — cancelling mid-action would
+    // strand half-finished work and break exactly-one-outcome
+    const ran = h.outcomes.filter((o) => o.extra.commandId === 'running')
+    expect(ran).toHaveLength(1)
+    expect(ran[0]!.eventType).toBe('ActionCompleted')
+  })
+
+  it('every superseded command still gets exactly one outcome', async () => {
+    let session: SessionActions | undefined
+    const h = harness({ getSession: () => session })
+    let release: (() => void) | undefined
+    session = {
+      ...h.session,
+      busy: null,
+      chat: vi.fn(() => new Promise<void>((resolve) => { release = resolve })),
+    }
+
+    h.executor.dispatch(commandFor('elara-id', 'c-run', 'chat', { message: 'a' }))
+    await vi.advanceTimersByTimeAsync(0)
+    for (const id of ['c-1', 'c-2', 'c-3']) {
+      h.executor.dispatch(commandFor('elara-id', id, 'chat', { message: id }))
+    }
+    release?.()
+    await vi.advanceTimersByTimeAsync(0)
+    await h.executor.drain()
+
+    for (const id of ['c-run', 'c-1', 'c-2', 'c-3']) {
+      const forId = h.outcomes.filter((o) => o.extra.commandId === id)
+      expect(forId, `${id} must have exactly one outcome`).toHaveLength(1)
+    }
+  })
+
   it('a hung action on one villager does not delay another villager (the rb2-exit-3 stall)', async () => {
     let hungSession: SessionActions | undefined
     let fastSession: SessionActions | undefined

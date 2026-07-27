@@ -6,188 +6,188 @@
   "models": [
     {
       "model": "gemma4:latest",
-      "configVersion": 6,
+      "configVersion": 7,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 716.8199999999999,
-        "ci95Half": 394.0477623661456
+        "mean": 696.76,
+        "ci95Half": 255.61736909265298
       },
       "windowSeconds": {
         "n": 5,
-        "mean": 716.8199999999999,
-        "ci95Half": 394.0477623661456
+        "mean": 696.76,
+        "ci95Half": 255.61736909265298
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 2.011114107181334,
-        "ci95Half": 0.5655378819283021
+        "mean": 3.1068165764329447,
+        "ci95Half": 1.323750193189483
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.40935312290691445,
-        "ci95Half": 0.17732021097684514
+        "mean": 0.4381188033782311,
+        "ci95Half": 0.13422826245200015
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 329504.2,
-        "ci95Half": 170236.3475217778
+        "mean": 323553.6,
+        "ci95Half": 113805.49594581056
       },
       "tokensPerDecision": {
         "n": 5,
-        "mean": 2309.44,
-        "ci95Half": 39.81587294124794
+        "mean": 2301.04,
+        "ci95Half": 11.765983570003835
       },
       "tokensPerMinute": {
         "n": 5,
-        "mean": 27776.379999999997,
-        "ci95Half": 893.3265927219609
+        "mean": 28014.1,
+        "ci95Half": 1629.1528136396175
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 2189.2,
-        "ci95Half": 74.00083957793991
+        "mean": 2272.7,
+        "ci95Half": 206.6757634495153
       },
       "latencyMsP90": {
         "n": 5,
-        "mean": 3178.92,
-        "ci95Half": 1053.2004372274243
+        "mean": 2987.96,
+        "ci95Half": 403.52665514594406
       },
       "latencyMsP95": {
         "n": 5,
-        "mean": 4546.76,
-        "ci95Half": 4304.7568665913195
+        "mean": 3911.6800000000003,
+        "ci95Half": 1548.2766135104328
       },
       "latencyMsP99": {
         "n": 5,
-        "mean": 5896.06,
-        "ci95Half": 5302.456995050022
+        "mean": 8891.72,
+        "ci95Half": 9379.134166463125
       }
     },
     {
       "model": "llama3.1:8b",
-      "configVersion": 6,
+      "configVersion": 7,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 788.76,
-        "ci95Half": 548.1697732785141
+        "mean": 864.76,
+        "ci95Half": 180.31784882024743
       },
       "windowSeconds": {
         "n": 5,
-        "mean": 788.76,
-        "ci95Half": 548.1697732785141
+        "mean": 864.76,
+        "ci95Half": 180.31784882024743
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 2.017912669813396,
-        "ci95Half": 1.3029871143569576
+        "mean": 1.5267564773534923,
+        "ci95Half": 0.8704467081809678
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.4142000183674027,
-        "ci95Half": 0.21213102323349456
+        "mean": 0.5709090546557577,
+        "ci95Half": 0.15749825539509138
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 339999.0,
-        "ci95Half": 209224.91317517345
+        "mean": 366312.4,
+        "ci95Half": 76353.94784619709
       },
       "tokensPerDecision": {
         "n": 5,
-        "mean": 2116.8,
-        "ci95Half": 28.273665615904747
+        "mean": 2101.6,
+        "ci95Half": 32.081121172427785
       },
       "tokensPerMinute": {
         "n": 5,
-        "mean": 26493.46,
-        "ci95Half": 1932.3303436054923
+        "mean": 25425.02,
+        "ci95Half": 598.8896514888658
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 1547.7,
-        "ci95Half": 192.9837185356319
+        "mean": 1523.2,
+        "ci95Half": 113.17571902417937
       },
       "latencyMsP90": {
         "n": 5,
-        "mean": 2114.7200000000003,
-        "ci95Half": 730.4831532429848
+        "mean": 1894.28,
+        "ci95Half": 138.88420939924876
       },
       "latencyMsP95": {
         "n": 5,
-        "mean": 3052.94,
-        "ci95Half": 2882.7596964857676
+        "mean": 2064.44,
+        "ci95Half": 285.9480592653035
       },
       "latencyMsP99": {
         "n": 5,
-        "mean": 6709.639999999999,
-        "ci95Half": 8689.475023474266
+        "mean": 2374.96,
+        "ci95Half": 468.19863752628066
       }
     },
     {
       "model": "gemma3:12b",
-      "configVersion": 6,
+      "configVersion": 7,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 816.78,
-        "ci95Half": 294.29231360081144
+        "mean": 944.86,
+        "ci95Half": 296.29282772148497
       },
       "windowSeconds": {
         "n": 5,
-        "mean": 816.78,
-        "ci95Half": 294.29231360081144
+        "mean": 944.86,
+        "ci95Half": 296.29282772148497
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 3.052471639040353,
-        "ci95Half": 0.8095053837212617
+        "mean": 2.6074737327881343,
+        "ci95Half": 0.7624424894044013
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.3674992662915183,
-        "ci95Half": 0.15753032251215887
+        "mean": 0.4363063574819093,
+        "ci95Half": 0.15901484830170862
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 362138.2,
-        "ci95Half": 112054.96725288153
+        "mean": 411374.8,
+        "ci95Half": 116676.78305726877
       },
       "tokensPerDecision": {
         "n": 5,
-        "mean": 2251.34,
-        "ci95Half": 16.455991259890656
+        "mean": 2242.88,
+        "ci95Half": 15.556353280843087
       },
       "tokensPerMinute": {
         "n": 5,
-        "mean": 26840.26,
-        "ci95Half": 1299.6317275218637
+        "mean": 26247.76,
+        "ci95Half": 1097.2140530266909
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 3128.8,
-        "ci95Half": 304.5154960376236
+        "mean": 3320.6,
+        "ci95Half": 134.94144280598158
       },
       "latencyMsP90": {
         "n": 5,
-        "mean": 4271.54,
-        "ci95Half": 940.7086442131304
+        "mean": 4892.3,
+        "ci95Half": 1188.488264342914
       },
       "latencyMsP95": {
         "n": 5,
-        "mean": 4948.36,
-        "ci95Half": 1679.9275637112717
+        "mean": 6521.3,
+        "ci95Half": 2821.41263878888
       },
       "latencyMsP99": {
         "n": 5,
-        "mean": 8336.16,
-        "ci95Half": 7795.638002273695
+        "mean": 9883.32,
+        "ci95Half": 4613.76984332645
       }
     },
     {
@@ -979,6 +979,47 @@
       "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r4.json",
       "at": "2026-07-27T10:51:08.969817+00:00",
       "reason": "Wren deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v7-r4",
+      "configVersion": 7,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa450-24a0-70b2-8ecf-9fbe5d874a0a",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 1141.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Elara",
+          "Petra"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v7-r4.json",
+      "at": "2026-07-27T16:21:34.730965+00:00",
+      "reason": "Elara, Petra deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
     }
   ],
   "excludedUnresetRuns": []

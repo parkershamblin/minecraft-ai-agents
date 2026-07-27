@@ -54,6 +54,19 @@ class ActionError extends Error {
  *  reflex holds the body fast-fail with an honest, retryable, named reason.
  *  The messages are the villager's next percept — each teaches what the body
  *  is doing and when to try again. */
+/**
+ * Actions that are STATE TRANSITIONS, not intent — never superseded.
+ *
+ * Latest-intent-wins is right for "what should I do next": a gather asked ten
+ * minutes ago is dead. It is catastrophically wrong for lifecycle. A spawn
+ * dropped in favour of a newer gather leaves the villager with no body at all,
+ * and every command after it fails BOT_DISCONNECTED forever. Measured
+ * 2026-07-27, minutes after the supersede logic first ran: seeding published
+ * spawns for all six racers, agent-service's next tick landed behind two of
+ * them, and Bram and Ansel simply never existed.
+ */
+const LIFECYCLE_ACTIONS = new Set(['spawn', 'despawn'])
+
 const BUSY_BOUNCE = {
   escape: {
     errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
@@ -108,6 +121,9 @@ export class CommandExecutor {
 
   /** villagerId -> tail of that villager's serial execution chain (RB-2). */
   private readonly lanes = new Map<string, Promise<void>>()
+  /** Per villager: the command WAITING in its lane, if any. A command that has
+   *  started running is not here — only one that has not had its turn yet. */
+  private readonly waiting = new Map<string, { superseded: boolean }>()
 
   /**
    * Enqueue and return — consumption decoupled from execution. kafkajs's
@@ -125,11 +141,66 @@ export class CommandExecutor {
    * time spent waiting in a lane counts against maxCommandAgeMs.
    */
   dispatch(command: EventEnvelope): void {
-    const villagerId = String((command.payload as unknown as ActionRequestedPayload).villagerId ?? '')
+    const payload = command.payload as unknown as ActionRequestedPayload
+    const villagerId = String(payload.villagerId ?? '')
+
+    // LATEST INTENT WINS. A lane is a queue, and a queue behind a body that is
+    // slower than the tick grows without bound: the mind speaks every 30s
+    // while a gather trip may hold the body for 60, so two intents arrive per
+    // one executed. Measured 2026-07-27: a villager's lane aged a command to
+    // 617s (max 600) and it landed as STALE_COMMAND — he deliberated a whole
+    // race and completed nothing, because everything he asked for was already
+    // dead by the time his body was free.
+    //
+    // So a newly arrived command supersedes one still WAITING for its turn.
+    // The running command is never touched — cancelling mid-dig would strand
+    // half-finished work and break the exactly-one-outcome invariant — and the
+    // superseded one still gets its own outcome, so the ledger shows the mind
+    // changed its mind rather than an intent vanishing.
+    const isLifecycle = LIFECYCLE_ACTIONS.has(String(payload.action))
+    const waiting = this.waiting.get(villagerId)
+    if (waiting) {
+      waiting.superseded = true
+    }
+    const token = { superseded: false }
+    // Only a command with something AHEAD of it can be superseded. With an
+    // idle lane this one runs next, and marking it waiting would let a command
+    // dispatched in the same tick cancel a body that was free to act. A
+    // lifecycle command is never registered as supersedable at all — losing a
+    // spawn costs the villager its body, not just one turn.
+    const busyLane = this.lanes.has(villagerId)
+    if (busyLane && !isLifecycle) {
+      this.waiting.set(villagerId, token)
+    }
+
     const tail = this.lanes.get(villagerId) ?? Promise.resolve()
     commandLaneDepth.inc()
     const next = tail
-      .then(() => this.execute(command))
+      .then(async () => {
+        // Its turn has come: it is running now, so a later arrival must not
+        // supersede it.
+        if (this.waiting.get(villagerId) === token) {
+          this.waiting.delete(villagerId)
+        }
+        if (token.superseded) {
+          commandsProcessed.inc({ action: payload.action, outcome: 'superseded' })
+          logger.info(
+            { villagerId, action: payload.action },
+            'command superseded — the mind asked for something newer before this had its turn',
+          )
+          await this.deps.publishOutcome(command, 'ActionFailed', {
+            commandId: payload.commandId,
+            villagerId: payload.villagerId,
+            action: payload.action,
+            errorCode: 'SUPERSEDED',
+            errorMessage:
+              'you changed your mind before your body was free — this older intent was dropped in favour of your latest one',
+            retryable: false,
+          })
+          return
+        }
+        await this.execute(command)
+      })
       .catch((err) => {
         // execute() settles its own failures; reaching here means the outcome
         // publish itself threw. Producer-level crash handling owns kafka-wide
@@ -143,6 +214,9 @@ export class CommandExecutor {
         commandLaneDepth.dec()
         if (this.lanes.get(villagerId) === next) {
           this.lanes.delete(villagerId)
+        }
+        if (this.waiting.get(villagerId) === token) {
+          this.waiting.delete(villagerId)
         }
       })
     this.lanes.set(villagerId, next)
