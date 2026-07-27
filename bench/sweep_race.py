@@ -43,8 +43,6 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-import httpx
-
 import bench_race
 
 BENCH_DIR = Path(__file__).resolve().parent
@@ -96,6 +94,20 @@ class SeedGateError(RuntimeError):
     unattended sweep outlives one bad block, but a wrong world is not a bad
     block — every number produced after it would be measured on different
     terrain. This one escapes the handler and stops the sweep."""
+
+
+def _httpx():
+    """Imported lazily so the module's pure logic stays importable without it.
+
+    Only the container-recreate and model-warm paths speak HTTP; the resume
+    keys, fleet-health verdicts, frozen-env construction and timeout scaling do
+    not. Requiring httpx at import time meant `pytest` could not load this
+    module at all without the extra — which is exactly how nine tests went red
+    in CI while passing locally under `uv run --with httpx`.
+    """
+    import httpx
+
+    return httpx
 
 
 def now_iso() -> str:
@@ -261,9 +273,9 @@ def recreate_memory_service(env: dict[str, str]) -> None:
     deadline = time.monotonic() + 180
     while time.monotonic() < deadline:
         try:
-            if httpx.get(MEMORY_HEALTH, timeout=5).status_code == 200:
+            if _httpx().get(MEMORY_HEALTH, timeout=5).status_code == 200:
                 break
-        except httpx.HTTPError:
+        except _httpx().HTTPError:
             pass
         time.sleep(5)
     else:
@@ -296,9 +308,9 @@ def recreate_agent_service(env: dict[str, str]) -> None:
     deadline = time.monotonic() + 180
     while time.monotonic() < deadline:
         try:
-            if httpx.get(AGENT_HEALTH, timeout=5).status_code == 200:
+            if _httpx().get(AGENT_HEALTH, timeout=5).status_code == 200:
                 break
-        except httpx.HTTPError:
+        except _httpx().HTTPError:
             pass
         time.sleep(5)
     else:
@@ -336,7 +348,7 @@ def warm_model(model: str, num_ctx: int) -> None:
     axis changes this value, so warming at a hardcoded 8192 would leave every
     non-baseline ctx arm paying a runner reload inside its first race."""
     log(f"warming {model} (num_ctx {num_ctx})")
-    r = httpx.post(
+    r = _httpx().post(
         f"{OLLAMA}/api/generate",
         json={"model": model, "prompt": "ok", "stream": False,
               "options": {"num_ctx": num_ctx}, "keep_alive": "15m"},
