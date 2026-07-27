@@ -144,18 +144,36 @@ depth-scaled trip budget. Discards on record, none silent: 11 v3 (Elara
 reconnect storm, 625-1962 spawns/race), 7 v4 (host contention — honest,
 healthy, correct seed, still not comparable), 2 v4 + 1 v6 (mute).
 
-**Next session:** finish the v3 re-baseline — llama3.1:8b needs runs 2-5,
-then gemma3:12b and gemma4:latest at N=5 (`--world-snapshot
-D:/backups/ai-civilization-engine/pristine-6233701440491701965-v3.tgz`,
-~4-8h per model). Only then is the v3 model table readable. After that
-the 3b tick and ctx sweeps (`docs/runbooks/race-sensitivity-sweep.md`);
-stance stays blocked until someone decides whether a mobs-ON config is
-worth its own baseline. Cross-block wear is fixed by v3; WITHIN-block
-wear is not, and villager memory/relationships still accumulate across
-every block (postgres is untouched by the restore) — both documented as
-threats, neither fixed. Also still open: the OpenAI `params` strict-mode
-reshape before any OpenAI filming run. SV-14 row unchanged. Roadmap
-beyond T1 unchanged per `docs/architecture/10-red-vs-blue.md`.
+**Next session (2026-07-27): READ `papers/` FIRST, then pick the next
+build.** Six PDFs — `GovSim` (already load-bearing: the N-runs + mean/95%
+CI shape and greedy decoding come from it, cited in `bench/race/
+README.md`), `voyager`, `MineDojo`, `MineLand`, `MINDcraft`,
+`MindsEyeofLLMs`. Owner's intent is to decide what to build next from
+them, NOT to re-open the benchmark — that just had a full audit and is
+merged. Reading six papers serially will eat the window before the
+decision gets made; one subagent per paper returning {claim, method,
+what transfers here, what conflicts with this stack} keeps the main
+thread free for synthesis (ask the owner before spawning agents). The
+likely question is "what capability next", so weigh findings against
+`docs/architecture/10-red-vs-blue.md` (roadmap beyond T1 unchanged).
+
+**Benchmark: DONE and merged** (PR #93 v3-v6, PR #94 v7, both on `main`).
+No benchmark work is queued. Open items carried forward, none blocking:
+- Accepted ceiling: 60s gather trip inside a 30s tick; `iron_ore` exceeds
+  it for every villager. ~1 mute run per 16; the gate catches and
+  re-races it. Fix would be a depth-scaled trip budget.
+- Unfixed threat: villager memory/relationships accumulate across blocks
+  (the restore touches `minecraft-data` only; postgres is untouched).
+  Within-block wear also survives.
+- Deferred: stance axis — design approved, needs a mobs-ON variant
+  config (`docs/runbooks/race-sensitivity-sweep.md`).
+- Stale: the Elara persona×model finding was computed on pre-v6 data;
+  recompute before citing it.
+- Still open: the OpenAI `params` strict-mode reshape before any OpenAI
+  filming run. SV-14 row unchanged.
+- Decision worth making: the published table moved twice in two days
+  because every executor fix bumped `configVersion`. If that churn is
+  unwanted, batch executor fixes behind one bump instead.
 
 # AI Civilization Engine — project guide
 
