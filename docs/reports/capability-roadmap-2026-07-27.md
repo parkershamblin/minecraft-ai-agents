@@ -150,7 +150,55 @@ the 8B to do anything the literature shows it can't.
   win-vs-DNF DPO pairs. Each new capability phase generates its own training
   data through the same pipeline.
 
-## 3. Phased plan
+## 3. Driver modes: directed and open-ended (lifelong learning)
+
+The substrate in §2 serves two interchangeable top-level drivers. Directed
+mode is Spine A as written: the beat-the-game Project DAG. **Open-ended mode
+is the Voyager loop rebuilt from the components that survive 8B-local** —
+"continuously explores, acquires diverse skills, makes novel discoveries
+without human intervention," on a consumer GPU with zero paid services:
+
+- **Automatic curriculum — survives nearly verbatim.** Voyager's curriculum
+  prompt (verbatim extraction:
+  `docs/research/2026-07-27-deep-sweep/voyager.md` §1) is constraint-style,
+  not reasoning-style: single-phrase task grammar ("Mine [qty] [block]" ≙
+  our verbs), completed/failed task lists as the greedy-decoding
+  loop-breaker, warm-up schedule (staged prompt disclosure, Table A.1), and
+  criterion 8 — inventory-verifiable tasks only — which our ledger already
+  enforces rule-based. Mandatory guards: mcData validity filter on
+  proposals (GPT-4 hallucinated "copper sword"; an 8B will do worse) and
+  the shipped failure-streak ban. Novelty metric = unique items obtained /
+  distinct skills committed — ledger-native.
+- **Skill acquisition — NOT code-gen** (Voyager's GPT-3.5 ablation: 5.7x
+  collapse; "open-source LLMs cannot provide"). The 8B-survivable form is
+  the verb-plan skill library: LLM-authored named JSON sequences of
+  existing verbs, schema-validated, committed to pgvector ONLY after
+  ledger-verified success, retrieved later as macro-verbs or plan hints.
+  Evidence: Odyssey (composed skills + 8B LoRA = diamond 100%@15min);
+  Voyager's library lifting plans-based AutoGPT 0/3 → 2/4 (library value
+  does not require code composition). Skills persist in Postgres across
+  episodes and restarts — genuinely lifelong.
+- **Self-verification — already stronger than Voyager's.** Their −73%
+  component was a GPT-4 JSON critic over inventory; ours is rule-based
+  ledger truth + the shipped abandon-and-repropose loop. Zero LLM cost, no
+  critic misjudgments.
+- **Two upgrades Voyager never had:** (1) in-weights lifelong learning —
+  Spine B retrains the 8B on its own winning trajectories overnight
+  (AgentEvol: self-improvement without a bigger teacher), so the agent
+  improves across weeks, affordable only because the GPU is local and
+  free; (2) a society — shared skill library, divided exploration, memory
+  and relationships. Open-ended multi-agent lifelong learning on consumer
+  hardware is unpublished territory, and it is the natural fit for the
+  RTX-3000-5000 local-free audience: Voyager needed GPT-4's API meter;
+  this runs indefinitely on a gaming PC.
+- **Honest ceiling:** discovery breadth = executor verb surface. Voyager's
+  63 items came from GPT-4 writing arbitrary code; our villagers discover
+  only what verbs express. With today's 9 verbs an open-ended curriculum
+  saturates around 15-20 items — each phase-A/C/D verb multiplies the
+  composable skill space, so open-ended mode lands AFTER phase B and gets
+  richer with every rung of the ladder.
+
+## 4. Phased plan
 
 Contract note: every phase-A/C/D verb is a schema change — per house rules
 these are additive, fixture-backed, and (per the owner's batching decision)
@@ -180,8 +228,15 @@ should land in ONE contract bump per phase, not per verb.
 - **Parallel track (any time, zero contract risk):** the exporter + first
   QLoRA run — it improves reliability of everything above and the recipe is
   fully specified (scan-small-model.md "Recipe we should run").
+- **Phase E — open-ended mode (3-5 sessions, any time after phase B;
+  richer after C/D).** Curriculum proposer (Voyager prompt adapted to our
+  verb grammar + mcData validity filter + novelty tracking), verb-plan
+  skill library (commit gate = ledger-verified success; shared retrieval
+  across villagers), unattended long-run harness (budget breakers +
+  honesty gates already exist). Exit: the fleet runs a week unattended and
+  the unique-items and committed-skills curves are still climbing.
 
-## 4. What we explicitly do NOT build (evidence says dead)
+## 5. What we explicitly do NOT build (evidence says dead)
 
 - LLM-generated code skills (Voyager 5.7x GPT-3.5 collapse; our executor
   stance) — skills are hand-written, verb-addressable.
@@ -195,7 +250,7 @@ should land in ONE contract bump per phase, not per verb.
 - Generic "world changed" LLM wake triggers (no paper found value; keep
   progress-referenced triggers + reflexes).
 
-## 5. Risks and open questions
+## 6. Risks and open questions
 
 - **Plugin risk:** minecrafthawkeye / custom-pvp on 1.21.6 — exact-pin +
   `task smoke` gate before any phase-C/D dependency.
@@ -210,9 +265,11 @@ should land in ONE contract bump per phase, not per verb.
   gets the race.py hard-check treatment.
 - **Owner decisions needed:** (1) adopt beat-the-game as the north-star arc
   (this doc → ADR 11); (2) contract bump 1 scope sign-off; (3) plugin
-  adoption; (4) whether the SFT track runs before or alongside phase A.
+  adoption; (4) whether the SFT track runs before or alongside phase A;
+  (5) open-ended mode (phase E) priority relative to phases C/D — dragon
+  first or lifelong-learning story first.
 
-## 6. Source map
+## 7. Source map
 
 `docs/research/2026-07-27-deep-sweep/`: repo-audit.md ·
 scan-beat-the-game.md · scan-long-horizon.md · scan-multi-agent.md ·

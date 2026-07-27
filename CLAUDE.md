@@ -192,6 +192,12 @@ DPO, no bigger teacher needed per AgentEvol). Phases: A body/verbs → B
 Project system → C Nether → D End; missing-verb ladder dependency-ordered
 in the roadmap §2. Owner decisions pending: adopt as ADR 11, contract bump
 1 scope, plugin adoption (minecrafthawkeye), SFT timing.
+Follow-up (same day, branch `roadmap-open-ended`): owner asked for a
+Voyager-style open-ended lifelong-learning mode — added to the roadmap as
+§3 "Driver modes" + phase E (curriculum proposer + verb-plan skill library
++ unattended long-run harness; lands after phase B, discovery ceiling =
+verb surface). Decision (5) added: dragon first vs lifelong-learning story
+first.
 
 **Benchmark: DONE and merged** (PR #93 v3-v6, PR #94 v7, both on `main`).
 No benchmark work is queued. Open items carried forward, none blocking:
