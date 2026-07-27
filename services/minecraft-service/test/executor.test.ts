@@ -551,6 +551,34 @@ describe('dispatch lanes (RB-2)', () => {
     expect(session.chat).toHaveBeenCalledWith('second')
   })
 
+  it('never supersedes a spawn — losing it costs the villager its body', async () => {
+    // 2026-07-27, minutes after supersede first shipped: seeding published
+    // spawns for all six racers, agent-service's next tick landed behind two
+    // of them, and Bram and Ansel never existed. Every later command for them
+    // failed BOT_DISCONNECTED, forever.
+    let session: SessionActions | undefined
+    const h = harness({ getSession: () => session })
+    let release: (() => void) | undefined
+    session = {
+      ...h.session,
+      busy: null,
+      chat: vi.fn(() => new Promise<void>((resolve) => { release = resolve })),
+    }
+
+    h.executor.dispatch(commandFor('elara-id', 'running', 'chat', { message: 'busy' }))
+    await vi.advanceTimersByTimeAsync(0)
+    h.executor.dispatch(commandFor('elara-id', 'the-spawn', 'spawn', { minecraftUsername: 'Elara' }))
+    h.executor.dispatch(commandFor('elara-id', 'later-intent', 'chat', { message: 'newer' }))
+    release?.()
+    await vi.advanceTimersByTimeAsync(0)
+    await h.executor.drain()
+
+    const spawnOutcomes = h.outcomes.filter((o) => o.extra.commandId === 'the-spawn')
+    expect(spawnOutcomes).toHaveLength(1)
+    expect(spawnOutcomes[0]!.extra.errorCode).toBeUndefined()
+    expect(spawnOutcomes[0]!.eventType).toBe('ActionCompleted')
+  })
+
   it('never supersedes a command that is already running', async () => {
     let session: SessionActions | undefined
     const h = harness({ getSession: () => session })

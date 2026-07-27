@@ -54,6 +54,19 @@ class ActionError extends Error {
  *  reflex holds the body fast-fail with an honest, retryable, named reason.
  *  The messages are the villager's next percept — each teaches what the body
  *  is doing and when to try again. */
+/**
+ * Actions that are STATE TRANSITIONS, not intent — never superseded.
+ *
+ * Latest-intent-wins is right for "what should I do next": a gather asked ten
+ * minutes ago is dead. It is catastrophically wrong for lifecycle. A spawn
+ * dropped in favour of a newer gather leaves the villager with no body at all,
+ * and every command after it fails BOT_DISCONNECTED forever. Measured
+ * 2026-07-27, minutes after the supersede logic first ran: seeding published
+ * spawns for all six racers, agent-service's next tick landed behind two of
+ * them, and Bram and Ansel simply never existed.
+ */
+const LIFECYCLE_ACTIONS = new Set(['spawn', 'despawn'])
+
 const BUSY_BOUNCE = {
   escape: {
     errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
@@ -144,6 +157,7 @@ export class CommandExecutor {
     // half-finished work and break the exactly-one-outcome invariant — and the
     // superseded one still gets its own outcome, so the ledger shows the mind
     // changed its mind rather than an intent vanishing.
+    const isLifecycle = LIFECYCLE_ACTIONS.has(String(payload.action))
     const waiting = this.waiting.get(villagerId)
     if (waiting) {
       waiting.superseded = true
@@ -151,9 +165,11 @@ export class CommandExecutor {
     const token = { superseded: false }
     // Only a command with something AHEAD of it can be superseded. With an
     // idle lane this one runs next, and marking it waiting would let a command
-    // dispatched in the same tick cancel a body that was free to act.
+    // dispatched in the same tick cancel a body that was free to act. A
+    // lifecycle command is never registered as supersedable at all — losing a
+    // spawn costs the villager its body, not just one turn.
     const busyLane = this.lanes.has(villagerId)
-    if (busyLane) {
+    if (busyLane && !isLifecycle) {
       this.waiting.set(villagerId, token)
     }
 
