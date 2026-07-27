@@ -8,6 +8,47 @@ reactive/hybrid architectures, small-model agent recipes, beat-the-game
 requirements), plus a file-level audit of our current capabilities. Every
 claim below carries its source; per-source detail lives in the research dir.
 
+## The formula (design test for every feature)
+
+> **8B + structure (+ own-data SFT) ≥ frontier + free-form**
+
+Wherever *structure fully absorbs the work the model can't do*, a small
+local model matches or beats a frontier model doing the same job free-form.
+Applied to the Voyager loop (Fig 2), term by term:
+
+| Frontier free-form job (Voyager/GPT-4) | Our structural substitute | Evidence for ≥ |
+|---|---|---|
+| Propose next task | Curriculum constrained to verb grammar + mcData validity filter | Voyager's criteria are constraint-style; DEPS fine-tuned 13B planner beat prompted 70B |
+| Write JS skills | Schema-validated verb-plans over the trusted executor | Odyssey: 8B + composed skills = diamond 100%@15min vs Voyager GPT-4 diamond 1/3; GITM 67.5% with GPT-3.5-class |
+| Judge success (LLM critic) | Ledger rules | Strictly better — their critic misjudged; rules can't |
+| Remember/retrieve skills | pgvector embeddings | Model-free |
+| Refine on failure | Failure-context reprompt + abandon streaks | DEPS explainer loop, rule-based here |
+
+Fine print — the three ways to misread the formula:
+
+1. **Per-task-family, not universal.** Structure must REMOVE the reasoning
+   burden, not merely format it — MindAgent is the counterexample: 70B
+   inside a perfectly structured dispatch protocol still scored 0.0,
+   because dispatching still required frontier reasoning. Jobs that stay
+   free-form-hard (NL negotiation, code-gen, spatial imagination) stay
+   dead at 8B regardless of scaffolding — that is what the dead-end
+   section below enumerates.
+2. **Breadth is bounded by verb surface, not by the formula.** Voyager's 63
+   unique items came from unbounded code-gen; on 9 verbs an open-ended run
+   caps near 15-20 items. The formula predicts parity per REACHABLE
+   milestone (already true at diamond, via Odyssey); breadth parity comes
+   from the verb ladder, each rung multiplying the composable skill space.
+3. **The strongest form includes the third term.** The heaviest evidence
+   sits at 8B + structure + own-data SFT (MINDcraft 0.00→0.28 beating
+   gpt-4o; TeamCraft 7B SFT beating GPT-4o zero-shot; AgentEvol 7B
+   surpassing GPT-4-Turbo). Structure makes the 8B viable; the flywheel
+   makes it climb — and every ledger-verified skill commit is flywheel
+   training data as a side effect.
+
+**The design test:** every proposed feature must answer — *does this move
+reasoning into structure, or does it ask the 8B to be a frontier model?*
+If the latter, it goes to the dead-end list, not the backlog.
+
 ## 1. Headline findings
 
 **1.1 Nobody has beaten the game.** No autonomous agent — LLM or RL — has a
