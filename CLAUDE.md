@@ -104,6 +104,29 @@ gate now probes `execute if entity <name>` per name. Fleet recovery:
 spawns ALL 20 — for the race fleet use spawn-fleet then
 `despawn-fleet.mjs 6` (racers are villagers.json[0:6]).
 
+**Update (2026-07-27, v6 SHIPPED — model table final):** `configVersion 6`,
+15/15 kept, all won, all honest, zero mute among kept rows. gemma4:latest
+716.8±394.0 · llama3.1:8b 788.8±548.2 · gemma3:12b 816.8±294.3 — three
+means inside each other's CIs, so the table shows RELIABILITY, not a
+ranking. Path here cost four protocol bumps: v4 cluster-blacklist (a
+per-block mark cannot escape a tree), v5 relocation (built the escape
+hatch, locked it with the same blacklist — fired ZERO times, two mutes,
+guard halted the sweep), v6 relocation fallback (walk toward blacklisted
+ground when nothing else exists; clear region marks on arrival) —
+validated by replaying real mute-run coordinates BEFORE spending GPU
+(`services/minecraft-service/test/relocationReplay.test.ts`). Gates now:
+honesty + seed + fleet-health (spawn storms AND mute villagers) +
+2-consecutive halts. **Known and accepted (owner's call): the 60s gather
+trip budget sits inside a 30s tick, and iron_ore trips routinely exceed
+it — top timeout source for ALL SIX villagers (Wren 19% iron success vs
+roster 32-41%). Dense timeouts saturate one villager's command queue
+(`STALE_COMMAND`, aged 617s) and that villager goes mute. Uniform across
+models, so it caps absolute performance without biasing the comparison.**
+Open if revisited: latest-intent-wins in the command consumer, or a
+depth-scaled trip budget. Discards on record, none silent: 11 v3 (Elara
+reconnect storm, 625-1962 spawns/race), 7 v4 (host contention — honest,
+healthy, correct seed, still not comparable), 2 v4 + 1 v6 (mute).
+
 **Next session:** finish the v3 re-baseline — llama3.1:8b needs runs 2-5,
 then gemma3:12b and gemma4:latest at N=5 (`--world-snapshot
 D:/backups/ai-civilization-engine/pristine-6233701440491701965-v3.tgz`,

@@ -6,188 +6,188 @@
   "models": [
     {
       "model": "gemma4:latest",
-      "configVersion": 4,
+      "configVersion": 6,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 744.7,
-        "ci95Half": 593.591808021263
+        "mean": 716.8199999999999,
+        "ci95Half": 394.0477623661456
       },
       "windowSeconds": {
         "n": 5,
-        "mean": 744.7,
-        "ci95Half": 593.591808021263
+        "mean": 716.8199999999999,
+        "ci95Half": 394.0477623661456
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 2.1637364875625744,
-        "ci95Half": 1.0887269544841183
+        "mean": 2.011114107181334,
+        "ci95Half": 0.5655378819283021
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.4685608628777896,
-        "ci95Half": 0.18819957194660533
+        "mean": 0.40935312290691445,
+        "ci95Half": 0.17732021097684514
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 345906.6,
-        "ci95Half": 250681.7028606376
+        "mean": 329504.2,
+        "ci95Half": 170236.3475217778
       },
       "tokensPerDecision": {
         "n": 5,
-        "mean": 2359.54,
-        "ci95Half": 39.164293619898174
+        "mean": 2309.44,
+        "ci95Half": 39.81587294124794
       },
       "tokensPerMinute": {
         "n": 5,
-        "mean": 28408.940000000002,
-        "ci95Half": 1564.7462497303331
+        "mean": 27776.379999999997,
+        "ci95Half": 893.3265927219609
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 2156.5,
-        "ci95Half": 211.2306174095034
+        "mean": 2189.2,
+        "ci95Half": 74.00083957793991
       },
       "latencyMsP90": {
         "n": 5,
-        "mean": 2811.84,
-        "ci95Half": 418.38301998144425
+        "mean": 3178.92,
+        "ci95Half": 1053.2004372274243
       },
       "latencyMsP95": {
         "n": 5,
-        "mean": 3317.54,
-        "ci95Half": 1038.6104178027222
+        "mean": 4546.76,
+        "ci95Half": 4304.7568665913195
       },
       "latencyMsP99": {
         "n": 5,
-        "mean": 5250.04,
-        "ci95Half": 4714.3112216482705
-      }
-    },
-    {
-      "model": "gemma3:12b",
-      "configVersion": 4,
-      "n": 5,
-      "wins": 5,
-      "winRate": 1.0,
-      "timeToGoalSeconds": {
-        "n": 5,
-        "mean": 872.74,
-        "ci95Half": 276.42834004886254
-      },
-      "windowSeconds": {
-        "n": 5,
-        "mean": 872.74,
-        "ci95Half": 276.42834004886254
-      },
-      "gatherEfficiency": {
-        "n": 5,
-        "mean": 2.8153985536559896,
-        "ci95Half": 1.6164156983234432
-      },
-      "wasteRatio": {
-        "n": 5,
-        "mean": 0.4510927068575974,
-        "ci95Half": 0.18078145918177269
-      },
-      "tokensUsed": {
-        "n": 5,
-        "mean": 380805.4,
-        "ci95Half": 121050.98418565732
-      },
-      "tokensPerDecision": {
-        "n": 5,
-        "mean": 2269.0600000000004,
-        "ci95Half": 32.72909886339064
-      },
-      "tokensPerMinute": {
-        "n": 5,
-        "mean": 26179.02,
-        "ci95Half": 894.6358340258038
-      },
-      "latencyMsP50": {
-        "n": 5,
-        "mean": 3269.1,
-        "ci95Half": 207.56072362024565
-      },
-      "latencyMsP90": {
-        "n": 5,
-        "mean": 4335.86,
-        "ci95Half": 621.1313033228785
-      },
-      "latencyMsP95": {
-        "n": 5,
-        "mean": 5351.24,
-        "ci95Half": 1556.885833505281
-      },
-      "latencyMsP99": {
-        "n": 5,
-        "mean": 10330.380000000001,
-        "ci95Half": 10381.265978900734
+        "mean": 5896.06,
+        "ci95Half": 5302.456995050022
       }
     },
     {
       "model": "llama3.1:8b",
-      "configVersion": 4,
+      "configVersion": 6,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 1249.1399999999999,
-        "ci95Half": 722.1830057080169
+        "mean": 788.76,
+        "ci95Half": 548.1697732785141
       },
       "windowSeconds": {
         "n": 5,
-        "mean": 1249.1399999999999,
-        "ci95Half": 722.1830057080169
+        "mean": 788.76,
+        "ci95Half": 548.1697732785141
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 1.2292941278619582,
-        "ci95Half": 0.4252599428140196
+        "mean": 2.017912669813396,
+        "ci95Half": 1.3029871143569576
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.634292910721943,
-        "ci95Half": 0.15767620270773047
+        "mean": 0.4142000183674027,
+        "ci95Half": 0.21213102323349456
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 528525.2,
-        "ci95Half": 302493.0332347615
+        "mean": 339999.0,
+        "ci95Half": 209224.91317517345
       },
       "tokensPerDecision": {
         "n": 5,
-        "mean": 2131.6400000000003,
-        "ci95Half": 20.660901017951854
+        "mean": 2116.8,
+        "ci95Half": 28.273665615904747
       },
       "tokensPerMinute": {
         "n": 5,
-        "mean": 25410.7,
-        "ci95Half": 515.4354100176824
+        "mean": 26493.46,
+        "ci95Half": 1932.3303436054923
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 1582.8,
-        "ci95Half": 151.7520147735772
+        "mean": 1547.7,
+        "ci95Half": 192.9837185356319
       },
       "latencyMsP90": {
         "n": 5,
-        "mean": 1993.6799999999998,
-        "ci95Half": 209.1364485022504
+        "mean": 2114.7200000000003,
+        "ci95Half": 730.4831532429848
       },
       "latencyMsP95": {
         "n": 5,
-        "mean": 2447.16,
-        "ci95Half": 711.2986602929108
+        "mean": 3052.94,
+        "ci95Half": 2882.7596964857676
       },
       "latencyMsP99": {
         "n": 5,
-        "mean": 4730.5,
-        "ci95Half": 4533.840351814769
+        "mean": 6709.639999999999,
+        "ci95Half": 8689.475023474266
+      }
+    },
+    {
+      "model": "gemma3:12b",
+      "configVersion": 6,
+      "n": 5,
+      "wins": 5,
+      "winRate": 1.0,
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 816.78,
+        "ci95Half": 294.29231360081144
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 816.78,
+        "ci95Half": 294.29231360081144
+      },
+      "gatherEfficiency": {
+        "n": 5,
+        "mean": 3.052471639040353,
+        "ci95Half": 0.8095053837212617
+      },
+      "wasteRatio": {
+        "n": 5,
+        "mean": 0.3674992662915183,
+        "ci95Half": 0.15753032251215887
+      },
+      "tokensUsed": {
+        "n": 5,
+        "mean": 362138.2,
+        "ci95Half": 112054.96725288153
+      },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2251.34,
+        "ci95Half": 16.455991259890656
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 26840.26,
+        "ci95Half": 1299.6317275218637
+      },
+      "latencyMsP50": {
+        "n": 5,
+        "mean": 3128.8,
+        "ci95Half": 304.5154960376236
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 4271.54,
+        "ci95Half": 940.7086442131304
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 4948.36,
+        "ci95Half": 1679.9275637112717
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 8336.16,
+        "ci95Half": 7795.638002273695
       }
     },
     {
@@ -859,6 +859,126 @@
       "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
       "at": "2026-07-26T22:13:15.902073+00:00",
       "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v5-r3",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa131-430b-727a-bc39-c1f9175b6b32",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 500.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r3.json",
+      "at": "2026-07-27T01:38:18.509267+00:00",
+      "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v5-r3b",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa139-8bda-77d9-b58a-14201ad1b386",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 920.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r3b.json",
+      "at": "2026-07-27T01:54:21.790492+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v6-r4",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa328-a727-71c3-91a3-689ea14551b2",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 680.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Wren"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r4.json",
+      "at": "2026-07-27T10:51:08.969817+00:00",
+      "reason": "Wren deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
     }
   ],
   "excludedUnresetRuns": []
