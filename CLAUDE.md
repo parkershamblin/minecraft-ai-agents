@@ -144,18 +144,37 @@ depth-scaled trip budget. Discards on record, none silent: 11 v3 (Elara
 reconnect storm, 625-1962 spawns/race), 7 v4 (host contention — honest,
 healthy, correct seed, still not comparable), 2 v4 + 1 v6 (mute).
 
-**Next session (2026-07-27): READ `papers/` FIRST, then pick the next
-build.** Six PDFs — `GovSim` (already load-bearing: the N-runs + mean/95%
-CI shape and greedy decoding come from it, cited in `bench/race/
-README.md`), `voyager`, `MineDojo`, `MineLand`, `MINDcraft`,
-`MindsEyeofLLMs`. Owner's intent is to decide what to build next from
-them, NOT to re-open the benchmark — that just had a full audit and is
-merged. Reading six papers serially will eat the window before the
-decision gets made; one subagent per paper returning {claim, method,
-what transfers here, what conflicts with this stack} keeps the main
-thread free for synthesis (ask the owner before spawning agents). The
-likely question is "what capability next", so weigh findings against
-`docs/architecture/10-red-vs-blue.md` (roadmap beyond T1 unchanged).
+**Update (2026-07-27, branch `feedback-loop-close` — papers READ, top
+candidate BUILT):** Six-paper sweep done (one subagent per paper);
+synthesis + ranked shortlist: `docs/reports/papers-synthesis-2026-07-27.md`.
+Convergent verdicts: NL negotiation/coordination is DEAD at 8B (GovSim,
+MINDcraft, MineLand independently — structured state, not chat, must carry
+coordination); GovSim's oracle universalization hint is the ONE finding
+proven on our model class (llama-3-8B 1.0→8.0 months, temp 0); Voyager's
+self-verification is the −73% component and our ledger does it rule-based
+for free; VoT REGRESSES at 8B (spatial truth stays code-side); MINDcraft's
+success-filtered SFT lifts llama3-8b 0.00→0.28 (beats gpt-4o) from ~200
+winning trajectories — our ledger already logs that raw material. Shortlist:
+(1) close-the-loop BUILT, (2) governance-quota arc (universalization as
+elected policy), (3) ledger→SFT exporter, (4) verb-plan skill library,
+(5) prompt-wins bundle. BUILT this session, tests green (minecraft-service
+379 + tsc clean, agent-service 228), NOT deployed, zero contract changes:
+far-target move gate (`MOVE_MAX_DISTANCE` env, default 128 horizontal
+blocks; fast PATH_NOT_FOUND with a staging-waypoint message BEFORE
+pathfinding — gather/hunt already had contract clamps 64/48, move had none)
++ abandon-and-repropose (`ActionAwareness` failure streaks keyed by intent
+identity; plumbing codes SUPERSEDED/STALE_COMMAND/BODY_BUSY/… never count;
+3 consecutive substantive refusals → standing "CHANGE COURSE" prompt
+section, cleared by success or 10 quiet ticks — expiry so a stale ban can't
+block a race win).
+
+**Next session: decide deploy/A-B of `feedback-loop-close`, then candidate
+2.** The branch is local-only, uncommitted-to-main; an A/B under the race
+harness costs GPU and is the owner's call (do NOT fold into configVersion
+churn casually — see the batching note below). Candidate 2 (governance
+quota arc) needs owner sign-off on contract additions (broadcast
+announcement event → percept). The full argument for every candidate and
+the dead-end list live in the synthesis doc; per-paper page refs there.
 
 **Benchmark: DONE and merged** (PR #93 v3-v6, PR #94 v7, both on `main`).
 No benchmark work is queued. Open items carried forward, none blocking:
