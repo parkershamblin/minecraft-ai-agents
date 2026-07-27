@@ -26,6 +26,14 @@ Modes:
                                         <dir>/<label>.slice.json +
                                         <dir>/<label>.window.json — fixture
                                         capture and offline re-extraction.
+  --reextract [dir]                     stdlib-only batch re-extraction: every
+                                        <label>.slice.json / <label>.window.json
+                                        pair under dir (default the sweep's
+                                        results/sweep/slices) is recomputed and
+                                        race_<label>.json/.csv rewritten in
+                                        place. No ledger, no docker, no httpx —
+                                        the metric layer can be fixed and every
+                                        past run re-derived from the raw slices.
 
 Output: bench/results/race_<label>.json + .csv + one summary line — the
 convention the Phase 2 N-run aggregation feeds into stats.py.
@@ -52,6 +60,15 @@ MILESTONES = ["first_coal", "first_iron_ore", "furnace_placed", "first_ingot", "
 
 DEFAULT_LEDGER = "http://localhost:8081"
 PAGE_LIMIT = 100  # EventFilter.MAX_LIMIT — the ledger 400s above it
+
+SWEEP_SLICES_DIR = RESULTS_DIR / "sweep" / "slices"
+
+# tier_b keys the per-team blocks by teamId ("red"/"blue" — straight from the
+# seed roster's `team` field). The run-level block rides in the SAME dict under
+# a leading-underscore key, which no roster team id can ever collide with, so
+# adding it did not reshape the per-team contract other consumers read.
+RUN_BLOCK_KEY = "_run"
+POOLED_LATENCY_QUANTILES = (50, 90, 95, 99)
 
 
 def parse_ts(ts: str) -> datetime:
@@ -136,10 +153,42 @@ def tier_a(events: list[dict], name_of: dict[str, str]) -> dict:
 # Tier B — villager event window (golden fixture lands in Phase 2)
 # --------------------------------------------------------------------------
 
-def tier_b(events: list[dict], team_of: dict[str, str]) -> dict:
-    """Per-team behavioural metrics from the attempt's villager-event window.
-    Events from villagers outside the race roster are ignored."""
+def tier_b(events: list[dict], team_of: dict[str, str],
+           duration_seconds: float | None = None) -> dict:
+    """Per-team behavioural metrics from the attempt's villager-event window,
+    plus a run-level block under RUN_BLOCK_KEY. Events from villagers outside
+    the race roster are ignored.
+
+    Two validity fixes live in the run-level block (2026-07-25):
+
+    * **Pooled raw latency percentiles.** The per-team `latencyMsP50/P95` are
+      percentiles of that team's own sample; the aggregator used to reconstruct
+      a per-run number by decision-weighting the two team p50s, which is a mean
+      of medians and not a percentile of anything. The raw per-decision
+      latencies are right here in the window, so the honest pooled percentile is
+      computed at extraction time and retained — the ledger fetch is the only
+      place the raw sample is ever available cheaply. The per-team fields keep
+      their old meaning byte-for-byte (the golden fixture and the CSV depend on
+      it); `_run.latencyMs` is the number to aggregate.
+    * **Window-normalised token metrics.** A DNF's window is the 75-minute stall
+      watchdog while a win's is 10-30 minutes, so tokens/run partly measures how
+      long the model failed for. `tokensPerDecision` is invariant to window
+      length; `tokensPerMinute` is a rate rather than a total. Pass
+      `duration_seconds` (Tier A's `durationSeconds`) to get the rate — without
+      it `tokensPerMinute` is None rather than silently wrong.
+
+    Included in the pooled sample: EVERY DecisionMade carrying a latency,
+    schema-violation fallbacks (`payload.error == true`) included. Those rows
+    are real deliberations that really cost that latency and those tokens — for
+    qwen3.5:4b under v1 they ARE the run — so excluding them would flatter the
+    models that fail loudest. `_run.decisionsWithError` reports how much of the
+    sample they are, so any downstream reader can see the mix.
+    """
     counters: dict[str, dict] = {}
+    pooled_latencies: list[float] = []
+    pooled_tokens = 0
+    pooled_decisions = 0
+    pooled_errors = 0
 
     def team_bucket(villager_id: str | None) -> dict | None:
         team = team_of.get(villager_id or "")
@@ -175,8 +224,13 @@ def tier_b(events: list[dict], team_of: dict[str, str]) -> dict:
         elif et == "DecisionMade":
             c["decisions"] += 1
             c["tokens"] += p.get("tokensUsed", 0)
+            pooled_decisions += 1
+            pooled_tokens += p.get("tokensUsed", 0)
+            if p.get("error"):
+                pooled_errors += 1
             if p.get("latencyMs") is not None:
                 c["latencies_ms"].append(p["latencyMs"])
+                pooled_latencies.append(p["latencyMs"])
 
     out: dict[str, dict] = {}
     for team, c in sorted(counters.items()):
@@ -197,6 +251,26 @@ def tier_b(events: list[dict], team_of: dict[str, str]) -> dict:
                 "latencyMsP95": round(percentile(c["latencies_ms"], 95), 1) if c["latencies_ms"] else None,
             },
         }
+
+    minutes = (duration_seconds / 60.0) if duration_seconds else None
+    out[RUN_BLOCK_KEY] = {
+        "durationSeconds": duration_seconds,
+        "llm": {
+            "decisions": pooled_decisions,
+            "decisionsWithError": pooled_errors,
+            "tokensUsed": pooled_tokens,
+            # The window-length-invariant token column.
+            "tokensPerDecision": (round(pooled_tokens / pooled_decisions, 1)
+                                  if pooled_decisions else None),
+            "tokensPerMinute": (round(pooled_tokens / minutes, 1) if minutes else None),
+            "latencyMs": {
+                "n": len(pooled_latencies),
+                **{f"p{q}": (round(percentile(pooled_latencies, q), 1)
+                             if pooled_latencies else None)
+                   for q in POOLED_LATENCY_QUANTILES},
+            },
+        },
+    }
     return out
 
 
@@ -259,11 +333,21 @@ def write_results(result: dict, label: str) -> Path:
             if m in rungs:
                 rows.append(("tierA", team, f"offset.{m}", rungs[m]["offsetSeconds"]))
     for team, metrics in (result.get("tierB") or {}).items():
+        if team == RUN_BLOCK_KEY:
+            continue  # run-level block emitted below under the team column "_run"
         for key in ("gatherEfficiency", "wasteRatio"):
             rows.append(("tierB", team, key, metrics[key]))
         rows.append(("tierB", team, "tokensUsed", metrics["llm"]["tokensUsed"]))
         rows.append(("tierB", team, "latencyMsP50", metrics["llm"]["latencyMsP50"]))
         rows.append(("tierB", team, "latencyMsP95", metrics["llm"]["latencyMsP95"]))
+    run_block = (result.get("tierB") or {}).get(RUN_BLOCK_KEY)
+    if run_block:
+        llm = run_block["llm"]
+        rows.append(("tierB", RUN_BLOCK_KEY, "tokensUsed", llm["tokensUsed"]))
+        rows.append(("tierB", RUN_BLOCK_KEY, "tokensPerDecision", llm["tokensPerDecision"]))
+        rows.append(("tierB", RUN_BLOCK_KEY, "tokensPerMinute", llm["tokensPerMinute"]))
+        for q in POOLED_LATENCY_QUANTILES:
+            rows.append(("tierB", RUN_BLOCK_KEY, f"pooledLatencyMsP{q}", llm["latencyMs"][f"p{q}"]))
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
         writer.writerow(["tier", "team", "metric", "value"])
@@ -271,11 +355,48 @@ def write_results(result: dict, label: str) -> Path:
     return json_path
 
 
+def extract_pair(attempt_events: list[dict], villager_events: list[dict] | None,
+                 name_of: dict[str, str], team_of: dict[str, str]) -> dict:
+    """Tier A + Tier B for one run. Tier A runs first because Tier B's
+    window-normalised token rate needs the attempt's durationSeconds — the two
+    tiers are no longer independent, and this is the single place that pairs
+    them so --slice, --attempt and --reextract cannot drift apart."""
+    a = tier_a(attempt_events, name_of)
+    b = (tier_b(villager_events, team_of, a.get("durationSeconds"))
+         if villager_events is not None else None)
+    return {"tierA": a, "tierB": b}
+
+
+def reextract_dir(slices_dir: Path, name_of: dict[str, str],
+                  team_of: dict[str, str]) -> list[str]:
+    """Recompute race_<label>.json/.csv for every saved slice pair in a
+    directory — the offline replay path. The sweep dumps
+    <label>.slice.json + <label>.window.json for exactly this: when the metric
+    layer is corrected, past runs are re-derived from the raw ledger events
+    instead of being re-raced on the GPU. A .slice.json with no .window.json
+    yields Tier A only (same as --slice without --window-slice)."""
+    labels = sorted(p.name[: -len(".slice.json")] for p in slices_dir.glob("*.slice.json"))
+    if not labels:
+        raise SystemExit(f"no *.slice.json under {slices_dir}")
+    for label in labels:
+        window = slices_dir / f"{label}.window.json"
+        result = extract_pair(
+            load_slice(slices_dir / f"{label}.slice.json"),
+            load_slice(window) if window.exists() else None,
+            name_of, team_of,
+        )
+        write_results(result, label)
+    return labels
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument("--slice", help="attempt slice JSON file (Tier A only, offline)")
     src.add_argument("--attempt", help="attempt id — fetch slice + villager window from the ledger")
+    src.add_argument("--reextract", nargs="?", const=str(SWEEP_SLICES_DIR), metavar="DIR",
+                     help="re-extract EVERY saved slice pair in DIR offline, rewriting "
+                          f"race_<label>.json/.csv in place (default {SWEEP_SLICES_DIR})")
     ap.add_argument("--window-slice", help="villager-window slice JSON file (offline Tier B; needs --slice)")
     ap.add_argument("--save-slices", help="dir to dump fetched raw slices into (needs --attempt)")
     ap.add_argument("--ledger", default=DEFAULT_LEDGER, help=f"event-service base URL (default {DEFAULT_LEDGER})")
@@ -287,14 +408,19 @@ def main() -> int:
         ap.error("--save-slices needs --attempt")
 
     name_of, team_of = load_roster()
+    if args.reextract:
+        labels = reextract_dir(Path(args.reextract), name_of, team_of)
+        print(f"re-extracted {len(labels)} runs from {args.reextract} -> {RESULTS_DIR}")
+        return 0
+
     if args.slice:
         attempt_events = load_slice(args.slice)
         villager_events = load_slice(args.window_slice) if args.window_slice else None
     else:
         attempt_events, villager_events = fetch_attempt(args.attempt, args.ledger)
 
-    a = tier_a(attempt_events, name_of)
-    result = {"tierA": a, "tierB": tier_b(villager_events, team_of) if villager_events is not None else None}
+    result = extract_pair(attempt_events, villager_events, name_of, team_of)
+    a = result["tierA"]
 
     label = args.label or a["label"] or a["attemptId"][:8]
     json_path = write_results(result, label)

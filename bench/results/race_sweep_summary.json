@@ -2,101 +2,192 @@
   "benchmark": "rb-race-sweep",
   "frozenConfig": "bench/race/frozen-config.json",
   "startedAt": "2026-07-24T12:01:21.897084+00:00",
+  "latencyMethod": "pooled raw per-decision latencies per run (schema-violation fallbacks included), then mean \u00b1 95% CI across runs",
   "models": [
     {
-      "model": "llama3.1:8b",
-      "configVersion": 1,
+      "model": "gemma4:latest",
+      "configVersion": 6,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 945.28,
-        "ci95Half": 329.16944146533166
+        "mean": 716.8199999999999,
+        "ci95Half": 394.0477623661456
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 716.8199999999999,
+        "ci95Half": 394.0477623661456
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 1.1443315086800367,
-        "ci95Half": 0.8234486241707818
+        "mean": 2.011114107181334,
+        "ci95Half": 0.5655378819283021
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.602331670231716,
-        "ci95Half": 0.19783933284243846
+        "mean": 0.40935312290691445,
+        "ci95Half": 0.17732021097684514
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 454226.8,
-        "ci95Half": 149529.21149890605
+        "mean": 329504.2,
+        "ci95Half": 170236.3475217778
+      },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2309.44,
+        "ci95Half": 39.81587294124794
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 27776.379999999997,
+        "ci95Half": 893.3265927219609
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 1678.0665247277375,
-        "ci95Half": 105.8917884358398
+        "mean": 2189.2,
+        "ci95Half": 74.00083957793991
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 3178.92,
+        "ci95Half": 1053.2004372274243
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 4546.76,
+        "ci95Half": 4304.7568665913195
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 5896.06,
+        "ci95Half": 5302.456995050022
       }
     },
     {
-      "model": "gemma4:latest",
-      "configVersion": 1,
+      "model": "llama3.1:8b",
+      "configVersion": 6,
       "n": 5,
       "wins": 5,
       "winRate": 1.0,
       "timeToGoalSeconds": {
         "n": 5,
-        "mean": 1001.26,
-        "ci95Half": 605.7970966326411
+        "mean": 788.76,
+        "ci95Half": 548.1697732785141
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 788.76,
+        "ci95Half": 548.1697732785141
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 0.621972873157499,
-        "ci95Half": 0.5571800150261075
+        "mean": 2.017912669813396,
+        "ci95Half": 1.3029871143569576
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.7446403391037022,
-        "ci95Half": 0.10061755060999472
+        "mean": 0.4142000183674027,
+        "ci95Half": 0.21213102323349456
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 548793.2,
-        "ci95Half": 344062.6993368357
+        "mean": 339999.0,
+        "ci95Half": 209224.91317517345
+      },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2116.8,
+        "ci95Half": 28.273665615904747
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 26493.46,
+        "ci95Half": 1932.3303436054923
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 8528.63237927746,
-        "ci95Half": 500.6992706716025
+        "mean": 1547.7,
+        "ci95Half": 192.9837185356319
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 2114.7200000000003,
+        "ci95Half": 730.4831532429848
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 3052.94,
+        "ci95Half": 2882.7596964857676
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 6709.639999999999,
+        "ci95Half": 8689.475023474266
       }
     },
     {
       "model": "gemma3:12b",
-      "configVersion": 1,
+      "configVersion": 6,
       "n": 5,
-      "wins": 4,
-      "winRate": 0.8,
+      "wins": 5,
+      "winRate": 1.0,
       "timeToGoalSeconds": {
-        "n": 4,
-        "mean": 650.875,
-        "ci95Half": 150.72922598492914
+        "n": 5,
+        "mean": 816.78,
+        "ci95Half": 294.29231360081144
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 816.78,
+        "ci95Half": 294.29231360081144
       },
       "gatherEfficiency": {
         "n": 5,
-        "mean": 0.5284900112555275,
-        "ci95Half": 0.24022757359500124
+        "mean": 3.052471639040353,
+        "ci95Half": 0.8095053837212617
       },
       "wasteRatio": {
         "n": 5,
-        "mean": 0.7627574615713111,
-        "ci95Half": 0.07914948506629994
+        "mean": 0.3674992662915183,
+        "ci95Half": 0.15753032251215887
       },
       "tokensUsed": {
         "n": 5,
-        "mean": 772969.2,
-        "ci95Half": 1253815.0770307642
+        "mean": 362138.2,
+        "ci95Half": 112054.96725288153
+      },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2251.34,
+        "ci95Half": 16.455991259890656
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 26840.26,
+        "ci95Half": 1299.6317275218637
       },
       "latencyMsP50": {
         "n": 5,
-        "mean": 3596.454379616075,
-        "ci95Half": 142.40684681270506
+        "mean": 3128.8,
+        "ci95Half": 304.5154960376236
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 4271.54,
+        "ci95Half": 940.7086442131304
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 4948.36,
+        "ci95Half": 1679.9275637112717
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 8336.16,
+        "ci95Half": 7795.638002273695
       }
     },
     {
@@ -109,6 +200,11 @@
         "n": 1,
         "mean": 4225.4,
         "ci95Half": NaN
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 4694.7,
+        "ci95Half": 732.0476484310567
       },
       "gatherEfficiency": {
         "n": 5,
@@ -125,10 +221,35 @@
         "mean": 2460691.4,
         "ci95Half": 362739.4687766083
       },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2689.38,
+        "ci95Half": 30.988093966141243
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 31475.6,
+        "ci95Half": 905.6990124579104
+      },
       "latencyMsP50": {
         "n": 5,
-        "mean": 1575.386230986565,
-        "ci95Half": 23.673080118133605
+        "mean": 1576.0,
+        "ci95Half": 23.456789345517855
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 2117.38,
+        "ci95Half": 254.51291499824208
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 2424.18,
+        "ci95Half": 341.31933637001936
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 3076.46,
+        "ci95Half": 484.2703126013089
       }
     },
     {
@@ -141,6 +262,11 @@
         "n": 0,
         "mean": NaN,
         "ci95Half": NaN
+      },
+      "windowSeconds": {
+        "n": 5,
+        "mean": 4505.280000000001,
+        "ci95Half": 0.25442460258377186
       },
       "gatherEfficiency": {
         "n": 5,
@@ -157,12 +283,703 @@
         "mean": 1392557.4,
         "ci95Half": 76920.59990096086
       },
+      "tokensPerDecision": {
+        "n": 5,
+        "mean": 2579.8,
+        "ci95Half": 39.81784705460604
+      },
+      "tokensPerMinute": {
+        "n": 5,
+        "mean": 18545.68,
+        "ci95Half": 1023.9684956051688
+      },
       "latencyMsP50": {
         "n": 5,
-        "mean": 23646.959286304627,
-        "ci95Half": 2537.4786106784927
+        "mean": 23780.3,
+        "ci95Half": 2820.1794631324865
+      },
+      "latencyMsP90": {
+        "n": 5,
+        "mean": 35776.44,
+        "ci95Half": 3507.75139716993
+      },
+      "latencyMsP95": {
+        "n": 5,
+        "mean": 39584.36,
+        "ci95Half": 3925.1208769216973
+      },
+      "latencyMsP99": {
+        "n": 5,
+        "mean": 44283.9,
+        "ci95Half": 3631.7146938253186
       }
     }
   ],
-  "discardedRuns": []
+  "discardedRuns": [
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ea4-5bb1-721e-a758-8a1cbce03cd6",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 600.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T13:46:50.422096+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1117 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9eae-45ef-73cf-880d-3f52af6d9184",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 500.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T13:56:00.026000+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x913 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9eb6-8775-71bf-b5e5-7177e531ac5c",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 560.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T14:06:00.722360+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1066 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ebf-d181-702c-9bd8-7560ea58d1e7",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 881,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T14:21:30.197539+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1655 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ecf-11ac-76ed-afef-7af40a21c184",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 1061.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-gemma3-12b-v3-r1.json",
+      "at": "2026-07-26T14:41:09.755949+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1962 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9edf-e450-72e8-8a97-b718077fd661",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 580.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-gemma3-12b-v3-r2.json",
+      "at": "2026-07-26T14:51:31.615241+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1037 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f1f-199a-77fb-bafb-c06866a6d87c",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 900.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r1.json",
+      "at": "2026-07-26T16:05:54.364685+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f2d-8529-7732-aaf6-0f80351901d8",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 1201.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T16:26:39.591924+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f40-8401-761e-834e-af68486ed3b5",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 780.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T16:40:23.966421+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f4d-1e9b-761f-aaa1-21eccf7f5876",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 520.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r4.json",
+      "at": "2026-07-26T16:49:49.793960+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f55-b9cf-73ce-9e52-32ecd4106e0f",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 460.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Petra"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r5.json",
+      "at": "2026-07-26T16:58:13.762162+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f5e-891c-715d-9a19-54b2cd041140",
+      "outcome": "host-contended",
+      "winner": "blue",
+      "durationSeconds": 1101.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r1.json",
+      "at": "2026-07-26T17:18:32.072550+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f6f-f71e-742f-a11b-3e8750d2067d",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 1361.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r2.json",
+      "at": "2026-07-26T17:41:54.710843+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fb4-9677-7720-abe9-0aea0e6ffc2c",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T18:42:50.794640+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only \u2014 v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fbd-3155-7139-a2a0-50d475e9d6b9",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 680.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T18:54:54.907614+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only \u2014 v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa075-3ac9-7408-a3fc-fd1f8bfb2a97",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T22:13:15.902073+00:00",
+      "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v5-r3",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa131-430b-727a-bc39-c1f9175b6b32",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 500.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r3.json",
+      "at": "2026-07-27T01:38:18.509267+00:00",
+      "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v5-r3b",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa139-8bda-77d9-b58a-14201ad1b386",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 920.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r3b.json",
+      "at": "2026-07-27T01:54:21.790492+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v6-r4",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa328-a727-71c3-91a3-689ea14551b2",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 680.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Wren"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r4.json",
+      "at": "2026-07-27T10:51:08.969817+00:00",
+      "reason": "Wren deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    }
+  ],
+  "excludedUnresetRuns": []
 }

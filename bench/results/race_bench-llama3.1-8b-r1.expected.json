@@ -123,6 +123,23 @@
         "latencyMsP50": 1690.0,
         "latencyMsP95": 2295.5
       }
+    },
+    "_run": {
+      "durationSeconds": 700.9,
+      "llm": {
+        "decisions": 139,
+        "decisionsWithError": 0,
+        "tokensUsed": 335181,
+        "tokensPerDecision": 2411.4,
+        "tokensPerMinute": 28692.9,
+        "latencyMs": {
+          "n": 139,
+          "p50": 1623.0,
+          "p90": 2088.4,
+          "p95": 2223.9,
+          "p99": 3032.9
+        }
+      }
     }
   }
 }

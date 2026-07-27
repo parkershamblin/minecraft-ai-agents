@@ -116,7 +116,17 @@ check(practice || budget >= 100_000_000, 'LLM_DAILY_TOKEN_BUDGET at the Ollama r
 const villagerCount = Number((agentEnv.match(/^VILLAGER_COUNT=(.*)$/m) ?? [])[1] ?? 0)
 check(villagerCount >= 6, 'VILLAGER_COUNT covers both rosters (>=6)', String(villagerCount))
 const tick = Number((agentEnv.match(/^TICK_INTERVAL_SECONDS=(.*)$/m) ?? [])[1] ?? 0)
-check(practice || tick <= 30, 'race tick (TICK_INTERVAL_SECONDS <= 30)', String(tick))
+// --expect-tick <n>: assert EQUALITY with the tick the caller intends (the
+// Phase 3b sensitivity sweep passes its arm value). Without it, the default
+// race bound applies unchanged. A relaxed "<= arm" bound would only ever
+// restate what the caller asked for, which is not a check.
+const expectTick = flag('expect-tick', '')
+if (expectTick) {
+  check(tick === Number(expectTick),
+    `race tick equals the requested arm (TICK_INTERVAL_SECONDS == ${expectTick})`, String(tick))
+} else {
+  check(practice || tick <= 30, 'race tick (TICK_INTERVAL_SECONDS <= 30)', String(tick))
+}
 
 // Gamerules: set, then read back — level.dat can override assumptions.
 rcon('gamerule keepInventory true')
@@ -125,6 +135,23 @@ rcon('gamerule mobGriefing false') // protects placed furnaces from creepers
 check(rcon('gamerule keepInventory').includes('true'), 'keepInventory true (lossless respawn)')
 check(rcon('gamerule doInsomnia').includes('false'), 'doInsomnia false (no phantom swarms)')
 check(rcon('gamerule mobGriefing').includes('false'), 'mobGriefing false (furnaces survive creepers)')
+
+// Time + weather freeze (v3 world protocol, bench/race/frozen-config.json).
+// A race runs 10-70 minutes: with the cycles ON, one attempt could sit in
+// daylight while the next spent half its length in the dark or in rain —
+// light level gates spawns and visibility, so it lands straight in the
+// duration column. Freeze the clock FIRST, then stamp the value.
+rcon('gamerule doDaylightCycle false')
+rcon('gamerule doWeatherCycle false')
+rcon('time set day')
+const weatherEcho = rcon('weather clear')
+check(rcon('gamerule doDaylightCycle').includes('false'), 'doDaylightCycle false (clock frozen)')
+check(rcon('gamerule doWeatherCycle').includes('false'), 'doWeatherCycle false (weather frozen)')
+const daytime = Number(rcon('time query daytime').match(/-?\d+/)?.[0] ?? -1)
+check(daytime === 1000, 'time is day (daytime 1000)', String(daytime))
+// No vanilla query command reads weather back — the command echo is the only
+// available evidence, so it is what gets checked.
+check(/clear/i.test(weatherEcho), 'weather clear (command echo — vanilla has no weather query)', weatherEcho)
 
 // Hostiles: OFF by default. Attempt-4 measured the threat tax: 254 commands
 // failed SELF_DEFENSE_IN_PROGRESS in 32 minutes — the fleet spent more wall
@@ -203,9 +230,21 @@ function locateForest(anchorX, anchorZ) {
   }
   return [Number(m[1]), null, Number(m[3])]
 }
+// --red/--blue accept "x,z" (station via spreadplayers, same as an auto-located
+// post) or "x,y,z" (exact tp). The two-value form exists so a pinned-seed
+// benchmark can fix the ANCHOR without also fixing the exact spawn block and
+// stacking a whole team on one coordinate.
+const parsePost = (raw) => {
+  const n = raw.split(',').map(Number)
+  if (n.some(Number.isNaN) || (n.length !== 2 && n.length !== 3)) {
+    console.error(`bad post "${raw}" — expected x,z or x,y,z`)
+    process.exit(3)
+  }
+  return n.length === 2 ? [n[0], null, n[1]] : n
+}
 const posts = {
-  red: flag('red') ? flag('red').split(',').map(Number) : locateForest(-separation / 2, 0),
-  blue: flag('blue') ? flag('blue').split(',').map(Number) : locateForest(separation / 2, 0),
+  red: flag('red') ? parsePost(flag('red')) : locateForest(-separation / 2, 0),
+  blue: flag('blue') ? parsePost(flag('blue')) : locateForest(separation / 2, 0),
 }
 {
   const [rx, , rz] = posts.red

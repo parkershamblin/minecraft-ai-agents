@@ -1,0 +1,95 @@
+{
+  "benchmark": "rb-race-sensitivity",
+  "arms": [
+    {
+      "model": "llama3.1:8b",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "n": 0,
+      "wins": 0,
+      "baseline": "8192",
+      "timeToGoalSeconds": {
+        "n": 0,
+        "mean": NaN,
+        "ci95Half": NaN
+      },
+      "holes": [
+        "setup-llama3.1-8b-ctx-16384"
+      ]
+    },
+    {
+      "model": "llama3.1:8b",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "n": 5,
+      "wins": 5,
+      "baseline": "8192",
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 749.14,
+        "ci95Half": 339.4622108103015
+      },
+      "holes": [
+        "setup-llama3.1-8b-ctx-4096"
+      ]
+    },
+    {
+      "model": "llama3.1:8b",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "n": 5,
+      "wins": 5,
+      "baseline": "8192",
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 788.5600000000001,
+        "ci95Half": 636.5325421610758
+      },
+      "holes": [
+        "setup-llama3.1-8b-ctx-8192"
+      ]
+    },
+    {
+      "model": "llama3.1:8b",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "n": 5,
+      "wins": 5,
+      "baseline": "30",
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 533.1,
+        "ci95Half": 152.56929841301624
+      },
+      "holes": []
+    },
+    {
+      "model": "llama3.1:8b",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "n": 5,
+      "wins": 5,
+      "baseline": "30",
+      "timeToGoalSeconds": {
+        "n": 5,
+        "mean": 608.64,
+        "ci95Half": 136.73169894414974
+      },
+      "holes": []
+    },
+    {
+      "model": "llama3.1:8b",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "n": 5,
+      "wins": 3,
+      "baseline": "30",
+      "timeToGoalSeconds": {
+        "n": 3,
+        "mean": 1181.1333333333334,
+        "ci95Half": 1077.4019537674976
+      },
+      "holes": []
+    }
+  ]
+}

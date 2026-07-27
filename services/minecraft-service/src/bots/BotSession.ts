@@ -65,6 +65,8 @@ import {
   gatherFailureMessage,
   gatherStartAnnouncement,
   haulAnnouncement,
+  blacklistRegion,
+  clearRegionMarks,
   pickGatherTarget,
   planHarvest,
   scanNearbyResources,
@@ -94,6 +96,24 @@ const { pathfinder, Movements, goals } = mineflayerPathfinder
  *  the every-tick re-pick loop, short enough that shifted world state gets
  *  its retry (a block that defeated four attempts fell on the fifth). */
 const GATHER_TARGET_BLACKLIST_MS = 10 * 60_000
+
+/** Radius blacklisted when a gather trip left the body where it started.
+ *  Sized to swallow a whole tree or ore pocket — the point is to stop the bot
+ *  re-picking the next block of the cluster that just defeated it. */
+const UNREACHABLE_REGION_RADIUS = 8
+
+/** Below this, a trip moved the body so little that the target was, in
+ *  practice, unreachable from where it stood. */
+const STUCK_EPSILON_BLOCKS = 2
+
+/** How far past the normal gather radius the body looks for somewhere better
+ *  to stand when nothing in reach is workable. */
+const RELOCATE_SEARCH_MULTIPLIER = 2
+const RELOCATE_SEARCH_CAP = 128
+
+/** Relocation is a courtesy inside someone else's trip budget — bounded hard
+ *  so it can never eat the 60s the mind asked to spend gathering. */
+const RELOCATE_TIMEOUT_MS = 20_000
 
 /** Process-global so no two spawns — across reconnects, death-respawns, OR
  *  brand-new BotSession instances for the same username — ever share a
@@ -164,6 +184,10 @@ export class BotSession {
   private lastScan: { position: Position; at: number } | null = null
   /** gather targets that recently defeated this bot: targetKey → expiry ms */
   private readonly gatherBlacklist = new Map<string, number>()
+  /** where the last gather trip aimed, and where the body stood when it set
+   *  off — read at the START of the next trip, because the trip watchdog
+   *  abandons the promise and no code after the walk is guaranteed to run. */
+  private lastGatherAttempt: { target: Position; origin: Position } | null = null
   private movement: MovementTracker
   private spawnWaiters: Array<(reason: SpawnReason) => void> = []
   private log
@@ -1023,6 +1047,80 @@ export class BotSession {
    * inherent (each dig changes the world), and is command-work the mind paid
    * for — the M2-2 skip gate governs the background survey, not this.
    */
+  /**
+   * Nothing workable in reach — carry the body somewhere it can work.
+   *
+   * Measured 2026-07-26: when every candidate in sight is blacklisted, or the
+   * resource simply is not within maxDistance, the executor says "move
+   * somewhere new" and the mind frequently does not. Three villagers spent
+   * whole races re-issuing gather from a spot that could never serve it
+   * (Fen twice with zero net travel, Ansel from 97 blocks off-post), and the
+   * message fired 488 times across 15 clean runs — so ignoring it is the
+   * common case, not an exotic one.
+   *
+   * This is the body looking after itself, the same contract as auto-eat and
+   * auto-fight: the mind's job is choosing WHAT to do, not noticing that its
+   * feet are in the wrong place. Fixing it here rather than in the prompt
+   * keeps it model-independent — no LLM is advantaged by reading a percept
+   * more diligently than another.
+   *
+   * Returns how far the body actually moved, or null if there was nowhere
+   * better to go (in which case the caller's failure stands unchanged).
+   */
+  private async relocateToward(
+    bot: Bot,
+    names: readonly string[],
+    maxDistance: number,
+    now: number,
+  ): Promise<{ moved: number; target: Position } | null> {
+    const reach = Math.min(maxDistance * RELOCATE_SEARCH_MULTIPLIER, RELOCATE_SEARCH_CAP)
+    const candidates = bot.findBlocks({
+      matching: (candidate) => names.includes(candidate.name),
+      maxDistance: reach,
+      count: 32,
+    })
+    // Prefer ground that has not defeated this body. But fall back to
+    // blacklisted ground rather than standing still: a mark records that a dig
+    // failed FROM A PARTICULAR SPOT, not that the block is unreachable in
+    // principle, and standing thirty blocks closer changes exactly the thing
+    // that failed. Measured 2026-07-27 — without this fallback the relocation
+    // never fired once in a whole sweep, because the same blacklist that
+    // emptied the picker also emptied the escape hatch, and two villagers went
+    // mute anyway (v5 r3 Ansel, v5 r3b Fen).
+    const clean = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
+    const target = clean ?? pickGatherTarget(candidates, this.position as Position, new Map(), now)
+    if (!target) {
+      return null
+    }
+    const from = { ...(this.position as Position) }
+    // Stop short of the target: the point is to put it inside the NEXT trip's
+    // ordinary reach, not to arrive (arriving is the trip's job, and doing it
+    // here would spend the mind's budget on a walk it did not ask for).
+    const standOff = Math.max(4, Math.round(maxDistance / 4))
+    try {
+      await Promise.race([
+        bot.pathfinder.goto(new goals.GoalNear(target.x, target.y, target.z, standOff)),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('relocation budget spent')), RELOCATE_TIMEOUT_MS),
+        ),
+      ])
+    } catch {
+      // A partial walk is still progress — report whatever ground was covered.
+    }
+    const moved = distance(from, this.position as Position)
+    if (moved >= 1) {
+      // The standpoint that produced the region marks is gone, so the marks
+      // are stale — keep the per-block ones (a block that ate four attempts is
+      // still suspect) but let this body try the clusters again from here.
+      const cleared = clearRegionMarks(this.gatherBlacklist)
+      if (cleared > 0) {
+        this.log.info({ cleared, moved: round1(moved) }, 'relocated — cleared stale cluster marks')
+      }
+      return { moved, target: { x: target.x, y: target.y, z: target.z } }
+    }
+    return null
+  }
+
   private async harvestOneBlock(
     bot: Bot,
     resource: string,
@@ -1037,6 +1135,35 @@ export class BotSession {
         this.gatherBlacklist.delete(key)
       }
     }
+
+    // Did the LAST trip move us at all? If the body is standing where it set
+    // off from, that target was unreachable from here — and so is the rest of
+    // its cluster. Blacklisting one block per trip cannot escape a tree (a
+    // column of logs) or an ore pocket: measured 2026-07-26, one bot burned ten
+    // consecutive 60s trips cycling logs of a single cliff-top oak 16 blocks
+    // away while his teammates gathered normally. Checked HERE, at the start of
+    // the next trip, because the executor's watchdog abandons the trip promise
+    // and nothing after the walk is guaranteed to run.
+    const previous = this.lastGatherAttempt
+    if (previous && distance(this.position as Position, previous.origin) < STUCK_EPSILON_BLOCKS) {
+      blacklistRegion(
+        this.gatherBlacklist,
+        previous.target,
+        UNREACHABLE_REGION_RADIUS,
+        now + GATHER_TARGET_BLACKLIST_MS,
+      )
+      this.log.warn(
+        { target: previous.target, radius: UNREACHABLE_REGION_RADIUS },
+        'gather trip left the body where it started — blacklisting the whole cluster',
+      )
+      // Cheap unstick before the next attempt: drop any stale control state
+      // and hop. Costs nothing when the body was merely blocked by geometry,
+      // and no teleport or operator command is involved.
+      bot.clearControlStates()
+      bot.setControlState('jump', true)
+      setTimeout(() => bot.setControlState('jump', false), 250)
+    }
+    this.lastGatherAttempt = null
     const candidates = bot.findBlocks({
       matching: (candidate) => names.includes(candidate.name),
       maxDistance,
@@ -1045,10 +1172,25 @@ export class BotSession {
     const targetPosition = pickGatherTarget(candidates, this.position as Position, this.gatherBlacklist, now)
     const block = targetPosition ? bot.blockAt(targetPosition) : null
     if (!block) {
-      const err = new Error(
+      // Before reporting "there is nothing here", put the feet somewhere there
+      // is something. The trip still fails — the mind asked for blocks and got
+      // none — but the next one starts from a spot that can succeed.
+      const relocated = await this.relocateToward(bot, names, maxDistance, now)
+      if (relocated) {
+        this.log.info(
+          { resource, moved: round1(relocated.moved), toward: relocated.target },
+          'nothing workable in reach — walked the body toward better ground',
+        )
+      }
+      const base =
         candidates.length > 0
           ? allTargetsBlacklistedMessage(resource)
-          : gatherFailureMessage(resource, maxDistance, this.position),
+          : gatherFailureMessage(resource, maxDistance, this.position)
+      const err = new Error(
+        relocated
+          ? `${base} — your legs carried you ${Math.round(relocated.moved)} blocks toward ` +
+            `${resource} at (${relocated.target.x}, ${relocated.target.y}, ${relocated.target.z}); ask again from here`
+          : base,
       )
       ;(err as Error & { code?: string }).code = 'RESOURCE_NOT_FOUND'
       throw err
@@ -1084,6 +1226,7 @@ export class BotSession {
     // the walk/dig never settles — the watchdog abandons this promise — the
     // mark survives and the next pick (this session or the next) moves on.
     this.gatherBlacklist.set(targetKey(target), now + GATHER_TARGET_BLACKLIST_MS)
+    this.lastGatherAttempt = { target, origin: { ...(this.position as Position) } }
     if (announceStart) {
       bot.chat(gatherStartAnnouncement(resource, block.name, target, count))
     }
@@ -1128,6 +1271,9 @@ export class BotSession {
       // standing), and clearing on completion re-exposed that ghost target
       // to every future scan.
       this.gatherBlacklist.delete(targetKey(target))
+      // A real haul proves the body reached it — the next trip must not read
+      // this attempt as evidence of a stuck cluster.
+      this.lastGatherAttempt = null
     }
     return { blockType, position: { x: block.position.x, y: block.position.y, z: block.position.z }, collected }
   }

@@ -6,6 +6,8 @@ results/*
 !results/*.expected.json
 !results/RACE_REPORT.md
 !results/race_sweep_summary.json
+!results/AXIS_REPORT.md
+!results/race_axis_summary.json
 !results/race_sweep_summary.csv
 !results/sweep/
 results/sweep/*

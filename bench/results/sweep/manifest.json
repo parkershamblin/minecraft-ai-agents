@@ -7,6 +7,7 @@
       "model": "llama3.1:8b",
       "index": 1,
       "label": "bench-llama3.1-8b-r1",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9400-fa5c-751a-8d79-10ae505c208e",
       "outcome": "won",
       "winner": "blue",
@@ -23,6 +24,7 @@
       "model": "llama3.1:8b",
       "index": 2,
       "label": "bench-llama3.1-8b-r2",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f940c-4b74-73c8-914b-bfcfa73469f5",
       "outcome": "won",
       "winner": "red",
@@ -39,6 +41,7 @@
       "model": "llama3.1:8b",
       "index": 3,
       "label": "bench-llama3.1-8b-r3",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9417-5049-760d-ae08-c834f7f5c20f",
       "outcome": "won",
       "winner": "red",
@@ -55,6 +58,7 @@
       "model": "llama3.1:8b",
       "index": 4,
       "label": "bench-llama3.1-8b-r4",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9428-cda9-707f-8f9e-7ca3d6542a5d",
       "outcome": "won",
       "winner": "red",
@@ -71,6 +75,7 @@
       "model": "llama3.1:8b",
       "index": 5,
       "label": "bench-llama3.1-8b-r5",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9437-c7b9-71cf-920e-c1a6c8941d8a",
       "outcome": "won",
       "winner": "blue",
@@ -87,6 +92,7 @@
       "model": "gemma3:12b",
       "index": 1,
       "label": "bench-gemma3-12b-r1",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f944e-1d39-7086-9d35-c4b49b984bfd",
       "outcome": "stalled",
       "winner": null,
@@ -103,6 +109,7 @@
       "model": "gemma3:12b",
       "index": 2,
       "label": "bench-gemma3-12b-r2",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94a3-67e1-72f0-9000-3abc9c1137f4",
       "outcome": "won",
       "winner": "red",
@@ -119,6 +126,7 @@
       "model": "gemma3:12b",
       "index": 3,
       "label": "bench-gemma3-12b-r3",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94ac-e843-71e6-92ad-c33b2f84b3eb",
       "outcome": "won",
       "winner": "blue",
@@ -135,6 +143,7 @@
       "model": "gemma3:12b",
       "index": 4,
       "label": "bench-gemma3-12b-r4",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94b6-620c-773b-9e86-2fa9d73f8903",
       "outcome": "won",
       "winner": "red",
@@ -151,6 +160,7 @@
       "model": "gemma3:12b",
       "index": 5,
       "label": "bench-gemma3-12b-r5",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94c1-1747-737d-8f58-b3acf2fb4d7d",
       "outcome": "won",
       "winner": "blue",
@@ -167,6 +177,7 @@
       "model": "gemma4:latest",
       "index": 1,
       "label": "bench-gemma4-latest-r1",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94ce-431a-736b-9e4e-45c394b1272f",
       "outcome": "won",
       "winner": "blue",
@@ -183,6 +194,7 @@
       "model": "gemma4:latest",
       "index": 2,
       "label": "bench-gemma4-latest-r2",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94dd-42e8-7566-be36-e6e0ffdeffda",
       "outcome": "won",
       "winner": "blue",
@@ -199,6 +211,7 @@
       "model": "gemma4:latest",
       "index": 3,
       "label": "bench-gemma4-latest-r3",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94ec-e90b-72f5-9472-2b3d2895d845",
       "outcome": "won",
       "winner": "red",
@@ -215,6 +228,7 @@
       "model": "gemma4:latest",
       "index": 4,
       "label": "bench-gemma4-latest-r4",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f94f7-5557-7536-8fcc-8c20e848d960",
       "outcome": "won",
       "winner": "blue",
@@ -231,6 +245,7 @@
       "model": "gemma4:latest",
       "index": 5,
       "label": "bench-gemma4-latest-r5",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9513-c413-721a-b840-046dce8ba143",
       "outcome": "won",
       "winner": "red",
@@ -247,6 +262,7 @@
       "model": "qwen3.5:4b",
       "index": 1,
       "label": "bench-qwen3.5-4b-r1",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f951e-e8d2-718a-8d7a-a95ab52bc7b5",
       "outcome": "stalled",
       "winner": null,
@@ -263,6 +279,7 @@
       "model": "qwen3.5:4b",
       "index": 2,
       "label": "bench-qwen3.5-4b-r2",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9564-48bb-76c4-8651-00cad4f56d0a",
       "outcome": "stalled",
       "winner": null,
@@ -279,6 +296,7 @@
       "model": "qwen3.5:4b",
       "index": 3,
       "label": "bench-qwen3.5-4b-r3",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f95a9-9fbf-74e1-b952-cb32d8bb0f95",
       "outcome": "stalled",
       "winner": null,
@@ -295,6 +313,7 @@
       "model": "qwen3.5:4b",
       "index": 4,
       "label": "bench-qwen3.5-4b-r4",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f95ee-fe1a-74a3-a0fc-3eeab261d958",
       "outcome": "stalled",
       "winner": null,
@@ -311,6 +330,7 @@
       "model": "qwen3.5:4b",
       "index": 5,
       "label": "bench-qwen3.5-4b-r5",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9634-5bdc-770b-858d-d564cb8bf8ca",
       "outcome": "stalled",
       "winner": null,
@@ -327,6 +347,7 @@
       "model": "lfm2.5:latest",
       "index": 1,
       "label": "bench-lfm2.5-latest-r1",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f967a-6085-709a-b9ed-f4d31a8230bb",
       "outcome": "stalled",
       "winner": null,
@@ -343,6 +364,7 @@
       "model": "lfm2.5:latest",
       "index": 2,
       "label": "bench-lfm2.5-latest-r2",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f96bf-c302-73b2-99eb-dba23e5ab5a4",
       "outcome": "stalled",
       "winner": null,
@@ -359,6 +381,7 @@
       "model": "lfm2.5:latest",
       "index": 3,
       "label": "bench-lfm2.5-latest-r3",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f9705-28c3-7161-9646-80629f10658e",
       "outcome": "stalled",
       "winner": null,
@@ -375,6 +398,7 @@
       "model": "lfm2.5:latest",
       "index": 4,
       "label": "bench-lfm2.5-latest-r4",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f974a-899b-711c-af78-f0c2a563e43c",
       "outcome": "stalled",
       "winner": null,
@@ -391,6 +415,7 @@
       "model": "lfm2.5:latest",
       "index": 5,
       "label": "bench-lfm2.5-latest-r5",
+      "worldSeed": "1709071022456631449",
       "attemptId": "019f978f-e7f3-73ca-b829-f47c63a855b7",
       "outcome": "stalled",
       "winner": null,
@@ -407,6 +432,7 @@
       "model": "qwen3.5:4b",
       "index": 1,
       "label": "bench-qwen3.5-4b-v2-r1",
+      "worldSeed": "1709071022456631449",
       "configVersion": 2,
       "attemptId": "019f97de-6bc7-710f-9063-e0b3c1be1b24",
       "outcome": "won",
@@ -424,6 +450,7 @@
       "model": "qwen3.5:4b",
       "index": 2,
       "label": "bench-qwen3.5-4b-v2-r2",
+      "worldSeed": "1709071022456631449",
       "configVersion": 2,
       "attemptId": "019f981f-9383-73b4-930a-510516b1cf30",
       "outcome": "stalled",
@@ -441,6 +468,7 @@
       "model": "qwen3.5:4b",
       "index": 3,
       "label": "bench-qwen3.5-4b-v2-r3",
+      "worldSeed": "1709071022456631449",
       "configVersion": 2,
       "attemptId": "019f9877-9f1a-7707-b394-236b88ec93c9",
       "outcome": "stalled",
@@ -458,6 +486,7 @@
       "model": "qwen3.5:4b",
       "index": 4,
       "label": "bench-qwen3.5-4b-v2-r4",
+      "worldSeed": "1709071022456631449",
       "configVersion": 2,
       "attemptId": "019f98bd-1f56-7678-98d8-5fbb715b4657",
       "outcome": "stalled",
@@ -475,6 +504,7 @@
       "model": "qwen3.5:4b",
       "index": 5,
       "label": "bench-qwen3.5-4b-v2-r5",
+      "worldSeed": "1709071022456631449",
       "configVersion": 2,
       "attemptId": "019f9902-9137-7079-a375-e63bb3071ca0",
       "outcome": "stalled",
@@ -487,6 +517,2804 @@
       "discarded": false,
       "resultFile": "bench/results/race_bench-qwen3.5-4b-v2-r5.json",
       "at": "2026-07-25T12:37:06.838734+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9bf3-4634-776b-a333-c937c97a5e32",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 680.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T01:15:30.259926+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-tick-15-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9c02-9728-75c9-8c67-6fde8c5c6c9a",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 480.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T01:28:54.144687+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-tick-30-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9c0b-d19c-751f-a209-96856d685ee8",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 641,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T01:41:39.236580+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-tick-60-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9c17-853a-73cc-b4aa-f658ea409cbf",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1641.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T02:11:06.741306+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-tick-30-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9c32-72cb-73bd-919d-75cff2a6f91f",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 760.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T02:25:50.427626+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-tick-60-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9c3f-eceb-718a-9adc-493753ed44ba",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 5224.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T03:54:57.475782+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-tick-15-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9c91-7fdd-710d-a035-81b44ddfab51",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 581,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T04:06:40.181110+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-tick-60-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9c9c-4116-72b9-9c8b-f6a85e89c39e",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 780.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T04:21:44.506828+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-tick-15-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9caa-0fd7-765c-b1ca-842e3c2fc667",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 481.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T04:31:50.128709+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-tick-30-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9cb3-5731-7528-a3a1-a48c1b36b4a1",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 500.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T04:42:17.437128+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-tick-15-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9cbc-f10e-75ec-9a26-47353c18a9a8",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 401.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T04:51:07.540020+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-tick-30-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9cc5-02e8-7713-a87d-d08342977049",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 640.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T05:03:55.466050+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-tick-60-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9cd0-b0ec-7418-9c24-f75f9e2e4654",
+      "outcome": "stalled",
+      "winner": null,
+      "durationSeconds": 5124.2,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T06:31:24.751888+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-tick-30-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "30",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "30"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d20-b76e-7693-946f-70c00f913226",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 500.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-30-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T06:41:45.401473+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-tick-60-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "60",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "60"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 8700,
+      "attemptId": "019f9d2a-414b-706b-9ff8-d1c401b8283c",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1121.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-60-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T07:02:31.177451+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-tick-15-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "TICK_INTERVAL_SECONDS",
+      "axisValue": "15",
+      "axisBaseline": "30",
+      "frozenOverrides": {
+        "TICK_INTERVAL_SECONDS": "15"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 5550,
+      "attemptId": "019f9d3d-67e0-739d-8cb8-22d235df2e30",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 721.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-tick-15-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T07:16:46.276735+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r1",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": "019f9d4a-61d5-7198-a33c-5685af071653",
+      "outcome": "crashed",
+      "honest": null,
+      "discarded": true,
+      "reason": "host power loss ~10min into the race (both teams at furnace_placed); attempt orphaned live, closed as 'aborted' by the next take's preflight stale-attempt sweep. Log preserved: bench/results/sweep/logs/sens-ctx-4096-llama3.1-8b-v3-r1.log.crashed",
+      "at": "2026-07-26T07:28:00+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "setup-llama3.1-8b-ctx-4096",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": null,
+      "outcome": "block-setup-failed",
+      "honest": null,
+      "discarded": true,
+      "reason": "block setup failed: villagers still offline after 300s: Elara, Wren, Ansel \u2014 last list: 'There are 26 of a max of 30 players online: Bram, pov_cam_6, Dagny, pov_cam_2, Hollis, Maren, Gideon, Nils, Vesper, Tansy, Juniper, Fen, Cassia, pov_cam_4, ...'",
+      "at": "2026-07-26T08:10:54.082660+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "setup-llama3.1-8b-ctx-8192",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": null,
+      "outcome": "block-setup-failed",
+      "honest": null,
+      "discarded": true,
+      "reason": "block setup failed: villagers still offline after 300s: Elara, Ansel, Petra \u2014 last list: 'There are 26 of a max of 30 players online: pov_cam_4, Bram, Dagny, pov_cam_2, Gideon, Tansy, Juniper, pov_cam_1, Fen, Ines, Sable, Nils, Wren, Ulric, ...'",
+      "at": "2026-07-26T08:16:31.756541+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "setup-llama3.1-8b-ctx-16384",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "attemptId": null,
+      "outcome": "block-setup-failed",
+      "honest": null,
+      "discarded": true,
+      "reason": "block setup failed: villagers still offline after 300s: Elara, Wren, Ansel, Petra, Fen \u2014 last list: 'There are 26 of a max of 30 players online: Gideon, pov_cam_4, pov_cam_1, Bram, Juniper, Yara, Maren, Ines, Sable, Ulric, pov_cam_3, Cassia, Dagny, Hollis, ...'",
+      "at": "2026-07-26T08:22:06.623344+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d88-2696-716b-8c07-f35255253f17",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 702,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T08:38:05.682800+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d93-8fae-710a-b959-ab9df26f7013",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 560.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T08:48:12.074233+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9d9c-cd53-7649-980a-bf8d8b13dd68",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 700.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T09:00:37.762339+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9da8-3068-758d-8a3b-b64d9a392b66",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 560.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T09:10:43.892867+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-ctx-4096-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "4096",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "4096"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9db1-6857-7643-b0bb-7859f9190d0b",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1221.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-4096-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T09:31:49.207651+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9dc5-fdb7-7473-b743-5af299b6c160",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 640.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T09:44:36.923830+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9dd0-6e84-763f-8f95-137a54a8aa6d",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1701.2,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T10:13:41.895636+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9deb-0206-765e-8c9d-c0eb3a285b25",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 540.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T10:23:22.700753+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9df3-e00a-76fb-9917-7e9b994a5bd4",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 560.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T10:33:23.728307+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-ctx-8192-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "8192",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "8192"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9dfd-1189-725e-806d-0e5a931b6bbd",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 500.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "resultFile": "bench/results/race_sens-ctx-8192-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T10:42:26.378651+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e06-7b5d-7055-a9ae-06bf07e88727",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 660.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r1.json",
+      "at": "2026-07-26T10:55:23.431378+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x625 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e11-2c5b-72dc-9df4-57836cc4cd3d",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 580.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T11:05:44.080967+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1008 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e1a-bac9-74e7-be11-4b2f813d4ae8",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T11:15:10.464793+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x958 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e23-5124-72bd-b4fd-647878403a3e",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 580.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T11:25:33.062653+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1054 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "sens-ctx-16384-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "axis",
+      "axis": "OLLAMA_NUM_CTX",
+      "axisValue": "16384",
+      "axisBaseline": "8192",
+      "frozenOverrides": {
+        "OLLAMA_NUM_CTX": "16384"
+      },
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9e2c-c972-7548-887b-d83337ab735b",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 480.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_sens-ctx-16384-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T11:34:13.593281+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x869 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ea4-5bb1-721e-a758-8a1cbce03cd6",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 600.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T13:46:50.422096+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1117 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v3-r3",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9eae-45ef-73cf-880d-3f52af6d9184",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 500.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r3.json",
+      "at": "2026-07-26T13:56:00.026000+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x913 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v3-r4",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9eb6-8775-71bf-b5e5-7177e531ac5c",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 560.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r4.json",
+      "at": "2026-07-26T14:06:00.722360+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1066 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v3-r5",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ebf-d181-702c-9bd8-7560ea58d1e7",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 881,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r5.json",
+      "at": "2026-07-26T14:21:30.197539+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1655 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v3-r1",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ecf-11ac-76ed-afef-7af40a21c184",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 1061.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-gemma3-12b-v3-r1.json",
+      "at": "2026-07-26T14:41:09.755949+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1962 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9edf-e450-72e8-8a97-b718077fd661",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 580.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "resultFile": "bench/results/race_bench-gemma3-12b-v3-r2.json",
+      "at": "2026-07-26T14:51:31.615241+00:00",
+      "reason": "bot session reconnect loop during the race (Elara x1037 VillagerSpawned events): that villager's body was absent/thrashing, its team raced a member short, and the shared minecraft-service event loop was saturated. Undetectable by the honesty gate (honestRace was {0,0}); found by an offline session audit on 2026-07-26 after Elara was seen looping live."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v3-r2",
+      "configVersion": 3,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f0d-e898-7776-b61e-6bc7f77d3f03",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 560.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v3-r2.json",
+      "at": "2026-07-26T15:41:27.648567+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f1f-199a-77fb-bafb-c06866a6d87c",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 900.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r1.json",
+      "at": "2026-07-26T16:05:54.364685+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f2d-8529-7732-aaf6-0f80351901d8",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 1201.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T16:26:39.591924+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f40-8401-761e-834e-af68486ed3b5",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 780.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T16:40:23.966421+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f4d-1e9b-761f-aaa1-21eccf7f5876",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 520.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r4.json",
+      "at": "2026-07-26T16:49:49.793960+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f55-b9cf-73ce-9e52-32ecd4106e0f",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 460.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Petra"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r5.json",
+      "at": "2026-07-26T16:58:13.762162+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f5e-891c-715d-9a19-54b2cd041140",
+      "outcome": "host-contended",
+      "winner": "blue",
+      "durationSeconds": 1101.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r1.json",
+      "at": "2026-07-26T17:18:32.072550+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9f6f-f71e-742f-a11b-3e8750d2067d",
+      "outcome": "host-contended",
+      "winner": "red",
+      "durationSeconds": 1361.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r2.json",
+      "at": "2026-07-26T17:41:54.710843+00:00",
+      "reason": "host contention: the workstation was in interactive use during this run (operator report, 2026-07-26). Ollama shared the GPU and the executor shared the CPU with foreground work, which inflates deliberation latency and time-to-goal \u2014 the two headline columns \u2014 by an unmeasured amount. No gate can detect this: the run is honest, the fleet is healthy, the seed is right. Discarded on the operator's instruction and re-raced on a quiet box."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fab-a9ec-71d3-81ed-65db669a8a6e",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 541.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r1.json",
+      "at": "2026-07-26T18:33:26.509449+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fb4-9677-7720-abe9-0aea0e6ffc2c",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T18:42:50.794640+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only \u2014 v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fbd-3155-7139-a2a0-50d475e9d6b9",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 680.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T18:54:54.907614+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it. Gated retroactively on the operator's instruction, 2026-07-26. Applies to configVersion 4 rows only \u2014 v1/v2 rows predate the gate and cannot be re-raced (that world and protocol are gone), so they keep their original verdicts and their cfg column says which protocol produced them."
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fc8-3ef7-731c-b72c-b175e0fa3e44",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1280.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r4.json",
+      "at": "2026-07-26T19:16:59.535524+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fdc-74f5-73f5-b5ba-52c058535943",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 900.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r5.json",
+      "at": "2026-07-26T19:32:43.928708+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9fec-13e8-752c-b940-5d73a39d34ea",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 740.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r1.json",
+      "at": "2026-07-26T19:47:07.549668+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019f9ff8-0296-72dd-aec5-4a689886a1a1",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1261,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r2.json",
+      "at": "2026-07-26T20:08:49.967240+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 3,
+      "label": "bench-gemma3-12b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa00b-e70f-76b8-b4c8-8f505c3e1b39",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 860.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r3.json",
+      "at": "2026-07-26T20:23:53.234213+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 4,
+      "label": "bench-gemma3-12b-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa019-b699-768f-9a61-0675fbb87c47",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 740.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r4.json",
+      "at": "2026-07-26T20:36:58.366718+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 5,
+      "label": "bench-gemma3-12b-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa025-aad0-746d-b4f3-093d8deebf2c",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 760.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v4-r5.json",
+      "at": "2026-07-26T20:50:21.740967+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 1,
+      "label": "bench-gemma4-latest-v4-r1",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa033-2b1b-74a5-94b2-023b2a5a35ae",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 1581.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r1.json",
+      "at": "2026-07-26T21:18:47.239972+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 2,
+      "label": "bench-gemma4-latest-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa04b-ec1f-7469-9337-ef5db054199f",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 700.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r2.json",
+      "at": "2026-07-26T21:31:08.932803+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 3,
+      "label": "bench-gemma4-latest-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa057-47e1-75ad-8b32-5f252176c058",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 480.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r3.json",
+      "at": "2026-07-26T21:39:52.934999+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 4,
+      "label": "bench-gemma4-latest-v4-r4",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa05f-3aec-7759-93d1-d5c5d3620c4c",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 440.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r4.json",
+      "at": "2026-07-26T21:47:53.924463+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 5,
+      "label": "bench-gemma4-latest-v4-r5",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa066-90e8-73db-b05e-8aed8ba007b2",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 520.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v4-r5.json",
+      "at": "2026-07-26T21:57:14.970369+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa075-3ac9-7408-a3fc-fd1f8bfb2a97",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 520.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2.json",
+      "at": "2026-07-26T22:13:15.902073+00:00",
+      "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v4-r2b",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa07d-d232-71ef-9bb3-e2aca4ff5d9d",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1441.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r2b.json",
+      "at": "2026-07-26T22:37:59.650000+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v4-r3",
+      "configVersion": 4,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa094-76ab-7586-add2-15bca530c206",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 2081.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v4-r3.json",
+      "at": "2026-07-26T23:13:23.848528+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v5-r1",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa111-1cb0-74ad-be8f-373cf828f569",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 981,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r1.json",
+      "at": "2026-07-27T01:11:12.145537+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v5-r2",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa120-baf2-7096-b625-a92740b659f9",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1040.9,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r2.json",
+      "at": "2026-07-27T01:29:15.636483+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v5-r3",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa131-430b-727a-bc39-c1f9175b6b32",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 500.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Ansel"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r3.json",
+      "at": "2026-07-27T01:38:18.509267+00:00",
+      "reason": "Ansel deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v5-r3b",
+      "configVersion": 5,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa139-8bda-77d9-b58a-14201ad1b386",
+      "outcome": "contaminated",
+      "winner": "red",
+      "durationSeconds": 920.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Fen"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v5-r3b.json",
+      "at": "2026-07-27T01:54:21.790492+00:00",
+      "reason": "Fen deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 1,
+      "label": "bench-llama3.1-8b-v6-r1",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa2fc-c7f7-773a-8f7c-ad0d089cd97d",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1541.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r1.json",
+      "at": "2026-07-27T10:17:34.848753+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 2,
+      "label": "bench-llama3.1-8b-v6-r2",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa315-0989-728f-a5ce-b67674f74131",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 440.3,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r2.json",
+      "at": "2026-07-27T10:25:43.121901+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 3,
+      "label": "bench-llama3.1-8b-v6-r3",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa31c-6d14-722f-b1f0-abbcfddc4cfa",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 760.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r3.json",
+      "at": "2026-07-27T10:39:07.799358+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v6-r4",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa328-a727-71c3-91a3-689ea14551b2",
+      "outcome": "contaminated",
+      "winner": "blue",
+      "durationSeconds": 680.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": true,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": [
+          "Wren"
+        ]
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r4.json",
+      "at": "2026-07-27T10:51:08.969817+00:00",
+      "reason": "Wren deliberated all race and completed no action: a body contributing nothing leaves its team a member short, whatever stranded it"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 4,
+      "label": "bench-llama3.1-8b-v6-r4c",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa334-f5de-733f-8930-0c5ded0b1ef3",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 500.4,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r4c.json",
+      "at": "2026-07-27T11:01:35.352265+00:00"
+    },
+    {
+      "model": "llama3.1:8b",
+      "index": 5,
+      "label": "bench-llama3.1-8b-v6-r5",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa33d-4501-733c-b730-769e0fefd73b",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 700.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-llama3.1-8b-v6-r5.json",
+      "at": "2026-07-27T11:14:00.264361+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 1,
+      "label": "bench-gemma3-12b-v6-r1",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa349-ee96-759d-bf0f-0b90e3af5341",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 740.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v6-r1.json",
+      "at": "2026-07-27T11:28:30.050307+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 2,
+      "label": "bench-gemma3-12b-v6-r2",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa355-de1c-764e-a835-f5b7fe406f46",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 540.5,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v6-r2.json",
+      "at": "2026-07-27T11:38:12.087073+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 3,
+      "label": "bench-gemma3-12b-v6-r3",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa35e-cf88-76de-a5e0-adae08d3c04e",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 740.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v6-r3.json",
+      "at": "2026-07-27T11:51:18.228386+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 4,
+      "label": "bench-gemma3-12b-v6-r4",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa36a-bde4-754a-9f8b-66b0689746f0",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 1181.1,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v6-r4.json",
+      "at": "2026-07-27T12:11:40.699613+00:00"
+    },
+    {
+      "model": "gemma3:12b",
+      "index": 5,
+      "label": "bench-gemma3-12b-v6-r5",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa37d-6282-705e-a782-72cc6e46f471",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 881,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma3-12b-v6-r5.json",
+      "at": "2026-07-27T12:27:02.373093+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 1,
+      "label": "bench-gemma4-latest-v6-r1",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa38c-cfb9-737a-a3d1-25f75ce3a712",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 620.8,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v6-r1.json",
+      "at": "2026-07-27T12:39:33.172192+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 2,
+      "label": "bench-gemma4-latest-v6-r2",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa396-e92b-72b8-895d-35ff3e6affa4",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 1281,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v6-r2.json",
+      "at": "2026-07-27T13:01:35.257988+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 3,
+      "label": "bench-gemma4-latest-v6-r3",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa3ab-18eb-724b-9d48-490cc3ac5f81",
+      "outcome": "won",
+      "winner": "blue",
+      "durationSeconds": 580.6,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v6-r3.json",
+      "at": "2026-07-27T13:11:57.798984+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 4,
+      "label": "bench-gemma4-latest-v6-r4",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa3b4-afc7-701d-9eb5-c46c0f45d953",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 581,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v6-r4.json",
+      "at": "2026-07-27T13:22:26.599094+00:00"
+    },
+    {
+      "model": "gemma4:latest",
+      "index": 5,
+      "label": "bench-gemma4-latest-v6-r5",
+      "configVersion": 6,
+      "worldSeed": "6233701440491701965",
+      "sweepKind": "model",
+      "axis": null,
+      "axisValue": null,
+      "axisBaseline": null,
+      "frozenOverrides": {},
+      "stallMinutes": 75,
+      "raceTimeoutSeconds": 6600,
+      "attemptId": "019fa3be-3383-7417-835c-320785b33576",
+      "outcome": "won",
+      "winner": "red",
+      "durationSeconds": 520.7,
+      "honest": {
+        "fakeProviderDelta": 0,
+        "budgetTrippedDelta": 0
+      },
+      "discarded": false,
+      "fleetHealth": {
+        "spawns": {
+          "Elara": 0,
+          "Bram": 0,
+          "Wren": 0,
+          "Ansel": 0,
+          "Petra": 0,
+          "Fen": 0
+        },
+        "storming": {},
+        "mute": []
+      },
+      "resultFile": "bench/results/race_bench-gemma4-latest-v6-r5.json",
+      "at": "2026-07-27T13:31:49.909127+00:00"
     }
-  ]
+  ],
+  "$worldProtocol": "Runs carrying worldSeed 1709071022456631449 predate the v3 world protocol: one shared, never-reset world, no time/weather freeze, and memory-service reflections at the 0.7 default (compose never passed LLM_TEMPERATURE). Seed verified via RCON on 2026-07-25 against the live pre-v3 world ('Seed: [1709071022456631449]') before that world was replaced. The world itself is archived, not lost: D:/backups/ai-civilization-engine/pre-v3-world-1709071022456631449.tgz (cold tar of the whole minecraft-data volume, taken immediately before the v3 wipe) - restore it to re-inspect the terrain any of these 30 runs was raced on. v3 runs restore pristine-6233701440491701965-v3.tgz per block instead (docs/runbooks/race-world-reset.md). Never pool the two: the aggregator keys on (model, configVersion)."
 }
