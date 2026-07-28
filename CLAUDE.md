@@ -198,6 +198,24 @@ bounds/anyOf/$refs since May 2025; conservative strip kept because
 Anthropic strict does not. Stephen's advice + RSG architecture points saved
 to agent memory (stephen-blum-function-calling-advice).
 
+**Update (2026-07-28, DEPLOYED — villagers LIVE on Claude):** Owner funded
+the key; agent-service redeployed (`up -d --build --no-deps agent-service`),
+boot log `llm provider: anthropic` model claude-sonnet-5, 6 villagers at
+30s tick. Ledger confirms the full loop: Claude decision (gather iron_ore,
+percept-grounded reasoning) → ActionRequested → executor
+`TOOL_TIER_REQUIRED` refusal → memory written → follow-up `craft planks`.
+Run config: `.env` LLM_PROVIDER=anthropic, LLM_DAILY_TOKEN_BUDGET=4000000
+(≈63 min at observed 5.3k tok/tick × 12 calls/min before the breaker flips
+to FAKE — pollution risk, watch it), LLM_TEAM_MODELS blanked. Burn ≈
+$13-14/hr at Sonnet rates, no prompt caching yet (cache_control on the
+tools/system prefix is the obvious next cost lever). NEW PERMANENT GOTCHA:
+**this machine's shell profile EXPORTS a race-config env block
+(LLM_PROVIDER=ollama, LLM_TEAM_MODELS=red/blue, LLM_DAILY_TOKEN_BUDGET=100M,
+VILLAGER_COUNT, TICK_INTERVAL_SECONDS…) and compose interpolation takes
+process env OVER --env-file** — the first deploy silently came up on
+ollama+team brains despite a correct .env. `unset` the block (or run
+compose from a clean shell) before any deploy that changes LLM config.
+
 **Next session:** (1) Anthropic live smoke DONE (2026-07-27, owner added
 key + credits): claude-sonnet-5 forced decide call green end-to-end after
 one real 400 the smoke caught — Anthropic strict rejects type-array+enum
