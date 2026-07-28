@@ -6,7 +6,7 @@ the PORTED SKILLS ALONE through the assembled registry
 spreadplayers, EMPTY inventory, no staged materials, zero LLM calls, zero RCON
 gifts mid-run. Two sweeps of N=3 (wood ask 3, then 4). A prospecting fallback
 (exploreUntil with a find-predicate, then retry the miner) stood ready for the
-iron tier. Raw data: `skill-bench-1785260578585.json`, `skill-bench-1785260904176.json`
+iron tier. Raw data: `skill-bench-1785260578585.json`, `skill-bench-1785260789367.json`
 (the first file, `...305019.json`, is 3 runs voided by a staging race — bot
 benched before teleport landed; kept for the record, excluded from analysis).
 
