@@ -171,7 +171,11 @@ bot.once('spawn', async () => {
     },
     collectNearbyDrops: async () => {
       const before = collectedEvents
-      // The drop entity spawns a tick after the dig — wait before scanning.
+      // Deterministic first move: stand ON the dug cell — the drop pops there
+      // and proximity pickup grabs it without any entity-scan race.
+      if (tableCell) {
+        try { await bot.pathfinder.goto(new goals.GoalNear(tableCell.x, tableCell.y, tableCell.z, 0)) } catch { /* fine */ }
+      }
       await new Promise((r) => setTimeout(r, 900))
       const items = Object.values(bot.entities).filter(
         (e: any) => e?.name === 'item' && e.position.distanceTo(bot.entity.position) < 12,
