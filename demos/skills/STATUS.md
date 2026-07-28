@@ -9,8 +9,8 @@ are MERGED into demo-sprint; suite 719 green on the union.
 | U13 Tier 1 reflexes | auto-eat + armor on live world | APPROVED | u13-tier1-reflexes/out.mp4 (95s, take 3) | [x] 2026-07-28 |
 | U1 mineBlock | real primitive mines 4 oak on live world | APPROVED | u1-mineBlock/out.mp4 (62s) | [x] 2026-07-28 |
 | U2 craftItem+placeItem | logs->planks->table PLACED->sticks->pickaxe | APPROVED | u2-craft-place/out.mp4 (75s) | [x] 2026-07-28 |
-| U3 smeltItem+useChest | stations placed, 3 iron smelted (polled), chest cycle + honest partial | **DEMO-READY** | u3-smelt-chest/out.mp4 (100s) | [ ] |
-| U4 killMob | | QUEUED | — | [ ] |
+| U3 smeltItem+useChest | stations placed, 3 iron smelted (polled), chest cycle + honest partial | APPROVED | u3-smelt-chest/out.mp4 (100s) | [x] 2026-07-28 |
+| U4 killMob | 3/3 pig hunts via live bot.pvp, staged in cam foreground | **DEMO-READY** | u4-killMob/out.mp4 (74s) | [ ] |
 | U5 exploreUntil | | QUEUED | — | [ ] |
 | U6 wood tier | | QUEUED | — | [ ] |
 | U7 stone tier | | QUEUED | — | [ ] |
