@@ -124,6 +124,22 @@ const schema = z.object({
   // handful of blocks hundreds of times per gate chain — ~40% of the daytime
   // core before the cache. 0 disables the wrap (the one-tick rollback lever).
   PHYSICS_SIM_BLOCK_CACHE: z.coerce.number().int().min(0).max(1).default(1),
+  // Tier 1 plugin wiring (demo-sprint): one 0/1 flag per plugin, DEFAULT ON
+  // (owner's decision — the plugin path is the default; 0 = off/fallback).
+  // AUTO_EAT and ARMOR_MANAGER are ROUTING switches: flag 1 loads the plugin
+  // and the corresponding hand-rolled watcher (EatWatcher / ArmorWatcher)
+  // does NOT start; flag 0 skips the plugin and restores the watcher exactly
+  // as before. NOTE: while a routing flag is 1 the watcher's own knobs
+  // (EAT_CHECK_INTERVAL_MS / ARMOR_CHECK_INTERVAL_MS, whose 0 used to disable
+  // the reflex entirely) are inert — fully disabling a reflex now takes
+  // flag 0 AND interval 0. COLLECTBLOCK/TOOL/PVP only make bot.collectBlock /
+  // bot.tool / bot.pvp real for the skills layer — no behavior wiring beyond
+  // loadPlugin.
+  PLUGIN_COLLECTBLOCK: z.coerce.number().int().min(0).max(1).default(1),
+  PLUGIN_TOOL: z.coerce.number().int().min(0).max(1).default(1),
+  PLUGIN_PVP: z.coerce.number().int().min(0).max(1).default(1),
+  PLUGIN_AUTO_EAT: z.coerce.number().int().min(0).max(1).default(1),
+  PLUGIN_ARMOR_MANAGER: z.coerce.number().int().min(0).max(1).default(1),
   // Village-scale earshot: vanilla spawn scatter alone is ~20 blocks, and a
   // village is ~64 across. 16 made villagers deaf to neighbors in practice.
   CHAT_EARSHOT_BLOCKS: z.coerce.number().min(1).default(48),
