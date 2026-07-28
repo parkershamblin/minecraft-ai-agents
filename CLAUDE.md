@@ -216,6 +216,21 @@ process env OVER --env-file** — the first deploy silently came up on
 ollama+team brains despite a correct .env. `unset` the block (or run
 compose from a clean shell) before any deploy that changes LLM config.
 
+**Update (2026-07-28 04:16Z, Claude run HALTED — owner call, cost):** The
+live Claude run burned its 4M budget in 69 min (breaker tripped 03:58:12,
+~$12-14 of $20 — Sonnet at 6×30s tick is ~$13.7/hr) then ran FAKE
+deliberation 03:58→04:16 stop (**pollution window UNAUDITED** — check the
+ledger for the FakeProvider fingerprints: "A pleasant exchange in the
+morning sun", "Good day! The weather holds…", scripted relationshipUpdates
+toward Bram). Fleet restored on ollama/gemma3:12b 04:17, zero API burn.
+Owner's affordability ceiling: **$1/hr**. Agreed direction (NOT built):
+event-driven deliberation — wire `request_reactive` to
+ActionCompleted/ActionFailed + threat percepts (today it fires on chat
+only, scheduler.py already has wakeups+guards), clock tick becomes ~300s
+fallback heartbeat, pacing caps as the enforced $-ceiling; then Haiku
+fleet ≈ $1/hr ≈ ~140 event-aligned decisions/hr. Multi-step plan-slices
+(one decision drives minutes) is the follow-up multiplier.
+
 **Next session:** (1) Anthropic live smoke DONE (2026-07-27, owner added
 key + credits): claude-sonnet-5 forced decide call green end-to-end after
 one real 400 the smoke caught — Anthropic strict rejects type-array+enum
