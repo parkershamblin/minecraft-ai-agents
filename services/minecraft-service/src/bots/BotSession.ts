@@ -1,6 +1,14 @@
 import mineflayer, { type Bot } from 'mineflayer'
 // CJS default-import (same ESM-lexer caveat as kafkajs)
 import mineflayerPathfinder from 'mineflayer-pathfinder'
+// Tier 1 plugins: same CJS default-import + destructure discipline.
+import mineflayerCollectBlock from 'mineflayer-collectblock'
+import mineflayerTool from 'mineflayer-tool'
+import mineflayerPvp from 'mineflayer-pvp'
+import mineflayerAutoEat from 'mineflayer-auto-eat'
+// armor-manager compiles `export = initializeBot` — the default IS the
+// plugin function, no destructure needed.
+import armorManagerPlugin from 'mineflayer-armor-manager'
 import type Redis from 'ioredis'
 import type { Config } from '../config.ts'
 import { logger } from '../logging.ts'
@@ -26,6 +34,7 @@ import {
 import { type EatBot, EatWatcher } from './eat.ts'
 import { ArmorWatcher } from './armor.ts'
 import { GuardTether } from './guardTether.ts'
+import { type ReflexRouting, resolveReflexRouting } from './reflexRouting.ts'
 import {
   THREAT_ALERT_RADIUS,
   type ThreatBot,
@@ -91,6 +100,12 @@ import { type Position, distance, round1 } from '../world/position.ts'
 export type GatherResult = GatherSessionResult & { resource: string; requested: number }
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
+const { plugin: collectBlockPlugin } = mineflayerCollectBlock
+const { plugin: toolPlugin } = mineflayerTool
+const { plugin: pvpPlugin } = mineflayerPvp
+// auto-eat 3.3.6 (the last CJS release) exposes a plugin FUNCTION as a named
+// export — NOT the v5 `{ loader }` shape. Verified against its dist types.
+const { plugin: autoEatPlugin } = mineflayerAutoEat
 
 /** How long a failed gather target stays off the menu. Long enough to stop
  *  the every-tick re-pick loop, short enough that shifted world state gets
@@ -190,6 +205,9 @@ export class BotSession {
   private lastGatherAttempt: { target: Position; origin: Position } | null = null
   private movement: MovementTracker
   private spawnWaiters: Array<(reason: SpawnReason) => void> = []
+  /** Tier 1 plugin routing, resolved once from config (pure, test-covered
+   *  in reflexRouting) — wire() and the watcher starters only obey it. */
+  private readonly reflexRouting: ReflexRouting
   private log
 
   constructor(
@@ -198,6 +216,7 @@ export class BotSession {
     private readonly deps: SessionDeps,
   ) {
     this.movement = new MovementTracker(deps.config.MOVE_THROTTLE_MS)
+    this.reflexRouting = resolveReflexRouting(deps.config)
     this.log = logger.child({ villagerId, username })
   }
 
@@ -249,6 +268,34 @@ export class BotSession {
 
   private wire(bot: Bot): void {
     bot.loadPlugin(pathfinder)
+    // Tier 1 plugin wiring — this stays the ONLY loadPlugin site. Each load
+    // is gated by its PLUGIN_* flag (default ON; 0 = off/fallback).
+    if (this.reflexRouting.loadCollectBlock) {
+      // bot.collectBlock for future assembly wiring — loadPlugin only.
+      // Caveat: collectblock auto-loads pathfinder AND mineflayer-tool on a
+      // 0ms timer when absent, so PLUGIN_TOOL=0 is best-effort while
+      // collectblock is on (inherent to the plugin, not our routing).
+      bot.loadPlugin(collectBlockPlugin)
+    }
+    if (this.reflexRouting.loadTool) {
+      // bot.tool for future assembly wiring — loadPlugin only.
+      bot.loadPlugin(toolPlugin)
+    }
+    if (this.reflexRouting.loadPvp) {
+      // Makes bot.pvp real for the killMob primitive (built against a deps
+      // interface by a parallel worker) — no behavior wiring beyond this.
+      bot.loadPlugin(pvpPlugin)
+    }
+    // auto-eat and armor-manager are BELOW-deliberation reflexes: they never
+    // claim the busy seam (they cannot even see it), and when a flag is ON
+    // the corresponding hand-rolled watcher does not start (the routing gate
+    // lives in startEatWatch/startArmorWatch; flag 0 restores the watcher).
+    if (this.reflexRouting.useAutoEatPlugin) {
+      bot.loadPlugin(autoEatPlugin)
+    }
+    if (this.reflexRouting.useArmorManagerPlugin) {
+      bot.loadPlugin(armorManagerPlugin)
+    }
     // Persistent, unlike the once() below: mineflayer re-emits 'spawn' after a
     // death-respawn on the SAME connection, and each respawn is a fresh
     // inventory state — deltas across it would book re-collected death drops
@@ -305,6 +352,30 @@ export class BotSession {
       if (this.deps.config.PHYSICS_SIM_BLOCK_CACHE === 1) {
         // bot.physics's runtime engine isn't on mineflayer's Bot type.
         installSimBlockCache(this.bot as unknown as SimCapableBot)
+      }
+      if (this.reflexRouting.useAutoEatPlugin) {
+        // Post-spawn plugin configuration (the Movements precedent). Rank by
+        // foodPoints — minecraft-data's saturation values are non-vanilla
+        // scaled (pickFood's rule in eat.ts) — and trigger at the same
+        // peckish threshold the hand-rolled EatWatcher used, so flag 0 ⇄ 1
+        // keeps one trigger point (EAT_FOOD_THRESHOLD, default 14).
+        this.bot.autoEat.options.priority = 'foodPoints'
+        this.bot.autoEat.options.startAt = this.deps.config.EAT_FOOD_THRESHOLD
+        // 3.3.6 offers NO combat/busy gate option (disable()/enable() exist,
+        // but wiring them into busy transitions would be behavior, not
+        // routing): it eats on 'health' events, so a mid-fight bite can race
+        // the FightDriver's hand-equip. Accepted for Tier 1 — equipOldItem
+        // (default on) restores the held item after each bite. Its default
+        // bannedFood covers all four EAT_BANNED_FOODS defaults and also bans
+        // rotten_flesh, so the desperation tier is lost on the plugin path.
+      }
+      if (this.reflexRouting.useArmorManagerPlugin) {
+        // armor-manager auto-equips on its own pickup events; the gap vs the
+        // polled ArmorWatcher is armor ALREADY carried at (re)spawn — cover
+        // it with one best-effort sweep. Fire-and-forget: a reflex never
+        // claims the busy seam, and equips are sub-second inventory
+        // transactions (the ArmorWatcher precedent).
+        void this.bot.armorManager.equipAll().catch(() => {})
       }
     }
 
@@ -536,6 +607,9 @@ export class BotSession {
    */
   private startEatWatch(): void {
     const { config } = this.deps
+    if (this.reflexRouting.useAutoEatPlugin) {
+      return // the auto-eat plugin replaces this watcher (PLUGIN_AUTO_EAT=0 restores it)
+    }
     if (config.EAT_CHECK_INTERVAL_MS === 0) {
       return // disabled
     }
@@ -645,6 +719,9 @@ export class BotSession {
   /** Armor auto-equip reflex (SV-14-lite) — the 6th sibling interval. */
   private startArmorWatch(): void {
     const { config } = this.deps
+    if (this.reflexRouting.useArmorManagerPlugin) {
+      return // armor-manager replaces this watcher (PLUGIN_ARMOR_MANAGER=0 restores it)
+    }
     if (config.ARMOR_CHECK_INTERVAL_MS === 0) {
       return // disabled entirely
     }
