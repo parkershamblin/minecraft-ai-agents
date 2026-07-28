@@ -15,9 +15,8 @@ are MERGED into demo-sprint; suite 719 green on the union.
 | U6 wood tier | composed skills over live primitives; live-gate bug found+fixed | APPROVED | u6-wood-tier/out.mp4 (85s) | [x] 2026-07-28 |
 | U7 stone tier | tool-gated cobble mining, stone pickaxe+sword at the table | APPROVED | u7-stone-tier/out.mp4 (90s) | [x] 2026-07-28 |
 | U8 ore+smelt tier | THE RACE CHAIN: iron mined->furnace self-built->3 smelted->iron pickaxe | APPROVED | u8-ore-smelt/out.mp4 (164s) | [x] 2026-07-28 |
-| U9 food+combat | sword from logs, pig hunted via pvp, porkchop cooked | **DEMO-READY** | u9-food-combat/out.mp4 (69s) | [ ] |
-| U11 mastery stats | terminal demo over real ledger seed | QUEUED | — | [ ] |
-| U12 mastery policy | terminal demo over U11 output | QUEUED | — | [ ] |
+| U9 food+combat | sword from logs, pig hunted via pvp, porkchop cooked | APPROVED | u9-food-combat/out.mp4 (69s) | [x] 2026-07-28 |
+| U11+U12 mastery | stats+policy over 25,460 real ledger events (terminal) | **DEMO-READY** | u11-12-mastery/out.mp4 (100s) | [ ] |
 | U10 design doc | no demo (doc-only) | N/A | — | merged |
 
 Notes:
