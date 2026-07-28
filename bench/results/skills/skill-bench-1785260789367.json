@@ -1,0 +1,103 @@
+{
+  "benchedAt": "2026-07-28T17:46:29.367Z",
+  "branch": "demo-sprint",
+  "runs": 3,
+  "wins": 0,
+  "winTimesMs": [],
+  "endReasons": [
+    "wood:PATH_NOT_FOUND",
+    "wpick:PLACE_FAILED",
+    "wood:RESOURCE_NOT_FOUND"
+  ],
+  "llmCalls": 0,
+  "perSkill": [
+    {
+      "skill": "mineWoodLog",
+      "attempts": 3,
+      "successes": 1,
+      "successRate": 0.33,
+      "meanCostMs": 36100,
+      "failures": {
+        "PATH_NOT_FOUND": 1,
+        "RESOURCE_NOT_FOUND": 1
+      }
+    },
+    {
+      "skill": "craftWoodenPickaxe",
+      "attempts": 1,
+      "successes": 0,
+      "successRate": 0,
+      "meanCostMs": 1876,
+      "failures": {
+        "PLACE_FAILED": 1
+      }
+    }
+  ],
+  "refinementQueueTop": [
+    {
+      "skill": "mineWoodLog",
+      "frequency": 3,
+      "failureBurden": 2
+    },
+    {
+      "skill": "craftWoodenPickaxe",
+      "frequency": 1,
+      "failureBurden": 1
+    }
+  ],
+  "runsDetail": [
+    {
+      "run": 1,
+      "won": false,
+      "totalMs": 100400,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": false,
+          "costMs": 83929,
+          "failureCode": "PATH_NOT_FOUND",
+          "detail": "mineWoodLog(oak_log): no path to remaining oak_log — collected 1 of 4 oak_log (15 unreachable, 0 blocked digs)"
+        }
+      ],
+      "endReason": "wood:PATH_NOT_FOUND"
+    },
+    {
+      "run": 2,
+      "won": false,
+      "totalMs": 30706,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": true,
+          "costMs": 23696
+        },
+        {
+          "skill": "craftWoodenPickaxe",
+          "ok": false,
+          "costMs": 1876,
+          "failureCode": "PLACE_FAILED",
+          "detail": "craftWoodenPickaxe(place table): no block to place crafting_table against at (-424, 66, -210) — you cannot place a floating block"
+        }
+      ],
+      "endReason": "wpick:PLACE_FAILED"
+    },
+    {
+      "run": 3,
+      "won": false,
+      "totalMs": 4275,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": false,
+          "costMs": 675,
+          "failureCode": "RESOURCE_NOT_FOUND",
+          "detail": "no wood log of any family nearby (tried oak_log, birch_log, spruce_log, jungle_log, acacia_log, dark_oak_log, mangrove_log, cherry_log, pale_oak_log, bamboo_blo"
+        }
+      ],
+      "endReason": "wood:RESOURCE_NOT_FOUND"
+    }
+  ]
+}
