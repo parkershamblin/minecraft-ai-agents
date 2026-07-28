@@ -6,8 +6,8 @@ are MERGED into demo-sprint; suite 719 green on the union.
 
 | Unit | Demo | Status | Clip | Check-off |
 |------|------|--------|------|-----------|
-| U13 Tier 1 reflexes | auto-eat + armor on live world | **DEMO-READY** | u13-tier1-reflexes/out.mp4 (110s) | [ ] |
-| U1 mineBlock | pending U13 check-off | QUEUED | — | [ ] |
+| U13 Tier 1 reflexes | auto-eat + armor on live world | APPROVED | u13-tier1-reflexes/out.mp4 (95s, take 3) | [x] 2026-07-28 |
+| U1 mineBlock | real primitive mines 4 oak on live world | **DEMO-READY** | u1-mineBlock/out.mp4 (62s) | [ ] |
 | U2 craftItem+placeItem | | QUEUED | — | [ ] |
 | U3 smeltItem+useChest | | QUEUED | — | [ ] |
 | U4 killMob | | QUEUED | — | [ ] |

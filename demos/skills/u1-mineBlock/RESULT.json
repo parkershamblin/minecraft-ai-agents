@@ -1,0 +1,20 @@
+{
+  "unit": 1,
+  "title": "mineBlock primitive — real deps, live world",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/96",
+  "recordedAt": "2026-07-28T14:02:00Z",
+  "clip": "out.mp4",
+  "clipDurationS": 62,
+  "scenario": "The REAL merged mineBlock primitive (src/skills/primitives/mineBlock.ts, unmodified) invoked through live mineflayer deps: guardedBlock over minecraft-data 1.21.6, bot.findBlocks, pathfinder GoalLookAtBlock with budget-raced timeout, mineflayer-tool equipForBlock, bot.dig, drop-sweep collection. Bot staged at the pinned forest post (-416,-192) via spreadplayers.",
+  "invocation": { "name": "oak_log", "count": 4 },
+  "result": { "ok": true, "collected": 4, "costMs": 51449 },
+  "evidence": {
+    "onCamera": "Bot pathfinds through the forest, digs four oak logs, sweeps the drops; final inventory oak_logx4.",
+    "honesty": "Rehearsal at the treeless spawn returned a clean per-species RESOURCE_NOT_FOUND cascade ('no oak_log within 32 blocks — explore first') — the failure vocabulary working as designed, logged in the take notes.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Interop fix during wiring: mineflayer-tool is named-exports-only under ESM (import * as), same drift class as U13's auto-eat finding.",
+    "biome field came back empty from block.biome.name on this mineflayer version — context capture works, biome source needs the biome registry lookup instead; noted for assembly."
+  ]
+}
