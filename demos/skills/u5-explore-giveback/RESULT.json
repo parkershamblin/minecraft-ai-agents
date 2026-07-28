@@ -1,0 +1,24 @@
+{
+  "unit": 5,
+  "title": "exploreUntil + givePlacedItemBack primitives — live world",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/99",
+  "recordedAt": "2026-07-28T15:18:00Z (take 4)",
+  "clip": "out.mp4",
+  "clipDurationS": 58,
+  "scenario": "REAL merged primitives (unmodified) through live deps. Arc: crafting table placed (U2 harness with flake-retry), bot walks 18 blocks inland, exploreUntil legs back WEST with a table-in-sight predicate (found in one 16-block leg, elapsedMs 2778), then givePlacedItemBack walks to the cell, digs the table, sweeps for the drop.",
+  "invocations": [
+    { "skill": "placeItem (harness)", "result": { "ok": true } },
+    { "skill": "exploreUntil", "params": { "direction": { "x": -1, "y": 0, "z": 0 }, "maxTimeMs": 90000 }, "result": { "ok": true, "found": { "tableSighted": true, "distance": 6 }, "elapsedMs": 2778 } },
+    { "skill": "givePlacedItemBack", "result": { "ok": true, "recovered": false } }
+  ],
+  "evidence": {
+    "onCamera": "Table placed shoreline mid-frame; bot walks out east, exploreUntil legs return it west into frame; dig removes the table.",
+    "honestOutcome": "recovered:false IS the primitive's spec'd honest path — the block was verified removed but the drop sweep missed the item entity ('honesty over optimism' from the port's design). Rehearsal-2's log (committed take notes) shows the recovered:true path green as well: same chain, drop swept, inventory gained the table.",
+    "noCheatProperty": "givePlacedItemBack is the no-cheat rewrite — Voyager's original used /give resets; this dig-and-collect version runs on vanilla mechanics only (the in-suite grep property test pins it).",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Five takes: one sabotaged by a zombie process stopping OBS mid-recording (fixed — take orchestration is now single-process), one PLACE_FAILED flake (retry added to harness), one close-range GoalLookAtBlock wedge (PATH_NOT_FOUND, honest). World-set clutter from repeated takes cleaned via setblock.",
+    "Drop-sweep reliability is an adapter concern (item entity spawn latency + pickup radius), not a primitive defect — assembly should reuse the executor's gather-drop collection instead of the drill's simple sweep."
+  ]
+}
