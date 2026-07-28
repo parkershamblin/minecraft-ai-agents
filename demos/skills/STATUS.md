@@ -13,8 +13,8 @@ are MERGED into demo-sprint; suite 719 green on the union.
 | U4 killMob | 3/3 pig hunts via live bot.pvp, staged in cam foreground | APPROVED | u4-killMob/out.mp4 (74s) | [x] 2026-07-28 |
 | U5 exploreUntil+giveback | re-shot: full arc, recovered:true | APPROVED | u5-explore-giveback/out.mp4 (62s) | [x] 2026-07-28 |
 | U6 wood tier | composed skills over live primitives; live-gate bug found+fixed | APPROVED | u6-wood-tier/out.mp4 (85s) | [x] 2026-07-28 |
-| U7 stone tier | tool-gated cobble mining, stone pickaxe+sword at the table | **DEMO-READY** | u7-stone-tier/out.mp4 (90s) | [ ] |
-| U8 ore+smelt tier | | QUEUED | — | [ ] |
+| U7 stone tier | tool-gated cobble mining, stone pickaxe+sword at the table | APPROVED | u7-stone-tier/out.mp4 (90s) | [x] 2026-07-28 |
+| U8 ore+smelt tier | THE RACE CHAIN: iron mined->furnace self-built->3 smelted->iron pickaxe | **DEMO-READY** | u8-ore-smelt/out.mp4 (164s) | [ ] |
 | U9 food+combat | | QUEUED | — | [ ] |
 | U11 mastery stats | terminal demo over real ledger seed | QUEUED | — | [ ] |
 | U12 mastery policy | terminal demo over U11 output | QUEUED | — | [ ] |
