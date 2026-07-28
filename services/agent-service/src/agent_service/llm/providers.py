@@ -9,7 +9,7 @@ from typing import Protocol
 
 import httpx
 
-from agent_service.llm.contract import DECISION_SCHEMA
+from agent_service.llm.contract import decision_schema
 from agent_service.logging import logger
 from agent_service.metrics import llm_cost_dollars_total, llm_latency_seconds, llm_tokens_total
 from agent_service.settings import Settings
@@ -181,7 +181,7 @@ class OpenAIProvider:
                 # strict structured outputs: the model CANNOT emit off-schema JSON
                 "response_format": {
                     "type": "json_schema",
-                    "json_schema": {"name": "decision", "schema": DECISION_SCHEMA, "strict": True},
+                    "json_schema": {"name": "decision", "schema": decision_schema(strict=True), "strict": True},
                 },
             },
             timeout=60.0,
@@ -284,7 +284,7 @@ class OllamaProvider:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ])
-        payload["format"] = DECISION_SCHEMA  # Ollama structured outputs
+        payload["format"] = decision_schema()  # Ollama structured outputs (grammar-constrained)
         response = await self._client.post(
             self._url,
             json=payload,
