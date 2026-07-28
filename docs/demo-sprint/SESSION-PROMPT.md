@@ -61,10 +61,13 @@ A demo is DONE only when:
 3. demos/<name>/metrics.json holds the numbers the demo claims, derived from
    the ledger or bench outputs, never hand-typed.
 4. demos/<name>/capture.sh produces demos/<name>/out.mp4 (60-180s). Primary:
-   OBS via obs-websocket (OBS is NOT installed — first capture task:
-   winget install OBSProject.OBSStudio, enable websocket server, port 4455,
-   password into .env, script start/stop around the run). Fallback if OBS
-   blocks more than 2 iterations: the ledger-rendered pipeline
+   OBS via obs-websocket — READY: OBS 32.2.1 installed, websocket server
+   enabled, credentials in .env (OBS_WEBSOCKET_URL=ws://localhost:4455 +
+   OBS_WEBSOCKET_PASSWORD), auth handshake verified green 2026-07-28. Do
+   NOT drive the OBS GUI — script StartRecord/StopRecord over the
+   obs-websocket 5.x protocol. OBS must be running (start obs64.exe if the
+   port is closed; allow ~10s startup). Fallback if OBS blocks more than 2
+   iterations: the ledger-rendered pipeline
    (scripts/render-race-film.py) — fix its hardcoded CAPTIONS/NAME_OF/
    duration first; they are stale (they still claim llama/10s tick).
 5. demos/<name>/CAPTION.md: one-sentence claim a hiring manager understands;
