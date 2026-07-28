@@ -20,14 +20,6 @@ class Action(StrEnum):
     idle = 'idle'
     craft = 'craft'
     hunt = 'hunt'
-    place_block = 'place_block'
-    use_bucket = 'use_bucket'
-    equip = 'equip'
-    give = 'give'
-    deposit = 'deposit'
-    withdraw = 'withdraw'
-    toss = 'toss'
-    consume = 'consume'
 
 
 class ActionRequestedPayload(BaseModel):
@@ -41,11 +33,11 @@ class ActionRequestedPayload(BaseModel):
     villagerId: UUID
     action: Action = Field(
         ...,
-        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent). Phase-A additions (ADR 11, contract bump 1): place_block/use_bucket/equip/give/deposit/withdraw/toss/consume — the body-extension verbs of the beat-the-game arc. give is villager-to-villager item transfer (the collaboration primitive); deposit/withdraw are chest I/O; consume covers deliberate eating/drinking of a NAMED item (golden apple, later potions) — the hunger reflex still owns routine meals.",
+        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent).",
     )
     params: dict[str, Any] = Field(
         ...,
-        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams, place_block: PlaceBlockParams, use_bucket: UseBucketParams, equip: EquipParams, give: GiveParams, deposit: DepositParams, withdraw: WithdrawParams, toss: TossParams, consume: ConsumeParams; despawn/idle take {}).',
+        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {}).',
     )
     priority: conint(ge=1, le=10) | None = 5
     timeoutMs: conint(ge=1000) = Field(
@@ -159,9 +151,6 @@ class Item(StrEnum):
     furnace = 'furnace'
     iron_pickaxe = 'iron_pickaxe'
     iron_sword = 'iron_sword'
-    chest = 'chest'
-    shield = 'shield'
-    bucket = 'bucket'
 
 
 class CraftParams(BaseModel):
@@ -170,111 +159,5 @@ class CraftParams(BaseModel):
     )
     item: Item = Field(
         ...,
-        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11). Phase-A additions (ADR 11): chest (8 planks — the storage-economy anchor), shield (6 planks + 1 iron ingot, chain-resolution smelts if needed), bucket (3 iron ingots, same chain) — all ride the existing table/furnace flows.",
-    )
-
-
-class PlaceBlockParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    item: constr(min_length=1) = Field(
-        ...,
-        description='A block item you CARRY (cobblestone, dirt, oak_planks, torch, chest…). Not carried → ActionFailed{ITEM_NOT_CARRIED}; not placeable where asked → PLACE_FAILED. The executor verifies the world after placement (the placeCarried ghost-place lesson) — a throw with a landed block still completes.',
-    )
-    position: Position | None = Field(
-        None,
-        description='Where to place. Omitted = adjacent clear ground near your feet (the crafting-table spot-scan flow). Must be within reach (~4.5 blocks) — this is one block, not construction; walk first for anything farther.',
-    )
-
-
-class Mode(StrEnum):
-    fill = 'fill'
-    pour = 'pour'
-
-
-class Liquid(StrEnum):
-    water = 'water'
-    lava = 'lava'
-
-
-class UseBucketParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: Mode = Field(
-        ...,
-        description='fill scoops the nearest reachable source of `liquid` into an EMPTY carried bucket; pour empties whatever the carried bucket holds (water_bucket/lava_bucket) onto the target block. Pouring is how obsidian is cast and lava is doused — the executor reads the world back to report what the liquid became.',
-    )
-    liquid: Liquid | None = Field(
-        'water',
-        description="fill only: which liquid to look for. Ignored for pour — the bucket's contents decide.",
-    )
-    position: Position | None = Field(
-        None,
-        description='fill: the source block to scoop (nearest within reach if omitted). pour: the block to pour onto/against (the block you face if omitted).',
-    )
-
-
-class Destination(StrEnum):
-    hand = 'hand'
-    off_hand = 'off_hand'
-
-
-class EquipParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    item: constr(min_length=1) = Field(
-        ...,
-        description="A carried item to hold: a tool, weapon, shield, or a wearable the armor reflex doesn't manage (carved_pumpkin). Armor auto-equips by reflex — this verb is for the hands.",
-    )
-    destination: Destination | None = Field(
-        'hand', description='off_hand is where a shield lives.'
-    )
-
-
-class GiveParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    targetVillagerId: UUID = Field(
-        ...,
-        description="Whom to hand the items to. The executor walks to them, tosses the stack their way, and VERIFIES arrival in the receiver's pack (both bodies are in-process) — an unverified toss fails GIVE_FAILED with the drop position named.",
-    )
-    item: constr(min_length=1)
-    count: conint(ge=1, le=64) | None = 1
-
-
-class DepositParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    item: constr(min_length=1)
-    count: conint(ge=1, le=64) | None = 1
-
-
-class WithdrawParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    item: constr(min_length=1)
-    count: conint(ge=1, le=64) | None = 1
-
-
-class TossParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    item: constr(min_length=1)
-    count: conint(ge=1, le=64) | None = 1
-
-
-class ConsumeParams(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    item: constr(min_length=1) = Field(
-        ...,
-        description='A carried edible/drinkable to consume NOW (golden_apple; potions when brewing lands). Routine hunger stays with the eat reflex — this verb is for deliberate consumption with a purpose.',
+        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11).",
     )
