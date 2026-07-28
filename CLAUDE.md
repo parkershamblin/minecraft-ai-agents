@@ -231,6 +231,41 @@ fallback heartbeat, pacing caps as the enforced $-ceiling; then Haiku
 fleet ≈ $1/hr ≈ ~140 event-aligned decisions/hr. Multi-step plan-slices
 (one decision drives minutes) is the follow-up multiplier.
 
+**Update (2026-07-28, demo-sprint COMPLETE — skill layer built, filmed, assembled):**
+Owner-directed /batch built the FULL skill-library plan in one day, all on
+branch `demo-sprint` (pushed): 13 worktree units -> 13 PRs (#96-#108, all
+squash-merged), then an OBS demo GATE — 11 live clips, each owner-approved
+before the next (demos/skills/STATUS.md + per-unit RESULT.json). Suite 726
+green. What exists now: skills kernel (types/names, closed failure vocab,
+1.21.6 guards) · 11 Voyager primitives ported typed+deps-injected · 17
+library skills (wood/stone/ore-smelt/food-combat tiers, schema stubs
+co-located) · mastery machinery (stats.ts fold + policy.ts gate/refine/
+deprecate/UCB) · Tier 1 plugins wired in BotSession behind PLUGIN_* flags
+(all six, pvp via root npm override — single mineflayer tree verified) ·
+ASSEMBLY: src/skills/{adapters,registry,index}.ts — live deps carrying every
+gate lesson (point-blank GoalLookAtBlock reach guard, typed pickup counting
+keyed to dug block's drop, dig-site stand before sweep, Promise.raced walks,
+600ms post-craft settle), registry binds all 27 skills/primitives through
+the four tier shims with per-invocation SkillInvocationRecord capture.
+GATE-CAUGHT BUGS (all fixed+regression-tested): items-vs-applications
+conflation in craftPlanks/craftSticks (unit fakes had pinned the wrong
+assumption); junk-pickup miscounting (dirt counted as ore); post-craft
+inventory-sync race; unwatchdogged drop-walk wedge; armor-manager auto-equip
+NEVER fired on /give pickup (validates hand-rolled ArmorWatcher — run
+PLUGIN_ARMOR_MANAGER=0). Mastery demo over 25,460 real bench-window events:
+refinementQueue ranks ledger:gather burden 10,259 (23% @ 13,339 attempts) —
+the known iron-timeout ceiling, now quantified. FILMING RIG: obs-record.mjs
+(websocket 5.x, creds in .env) + demo-cam.ts (grounded spectator; floating
+cams get KICKED — no allow-flight) + skill-drill-u*.ts per demo; camera per
+demo content (first-person for roaming, spectator for staged), probe-frame +
+freezedetect + phase-frames MANDATORY before shipping any clip (two frozen
+clips shipped without them). Prismarine-viewer trap: stale tabs reconnect to
+new servers keeping OLD camera position. Next (owner-gated): free Ollama
+benchmark vs ported skills (version-drift surfacing, instruction step 3);
+unit-10 contract PR (docs/architecture/10-skill-tool-schema.md, one atomic
+configVersion bump, fixes SUPERSEDED enum gap + stale generated/ts);
+demo-sprint -> main PR when owner calls it.
+
 **Next session:** (1) Anthropic live smoke DONE (2026-07-27, owner added
 key + credits): claude-sonnet-5 forced decide call green end-to-end after
 one real 400 the smoke caught — Anthropic strict rejects type-array+enum
