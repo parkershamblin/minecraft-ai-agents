@@ -137,7 +137,7 @@ describe('craftPlanks', () => {
     const r = await craftPlanks({ mineBlock, craftItem }, {}, ctx)
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.outcome).toEqual({ crafted: 4, planks: 'oak_planks' })
-    expect(craftItem).toHaveBeenCalledWith({ name: 'oak_planks', count: 4 })
+    expect(craftItem).toHaveBeenCalledWith({ name: 'oak_planks', count: 1 }) // 4 items = 1 application
     expect(mineBlock).not.toHaveBeenCalled()
   })
 
@@ -177,7 +177,7 @@ describe('craftPlanks', () => {
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.outcome.planks).toBe('birch_planks')
     expect(craftItem).toHaveBeenCalledTimes(2) // only birch, never another species
-    expect(craftItem).toHaveBeenNthCalledWith(1, { name: 'birch_planks', count: 8 })
+    expect(craftItem).toHaveBeenNthCalledWith(1, { name: 'birch_planks', count: 2 }) // 8 items = 2 applications
     expect(mineBlock).toHaveBeenCalledWith({ name: 'birch_log', count: 2 })
   })
 
@@ -222,7 +222,7 @@ describe('craftSticks', () => {
     expect(r.ok).toBe(true)
     if (r.ok) expect(r.outcome).toEqual({ crafted: 4 })
     expect(craftItem).toHaveBeenCalledTimes(1)
-    expect(craftItem).toHaveBeenCalledWith({ name: 'stick', count: 4 })
+    expect(craftItem).toHaveBeenCalledWith({ name: 'stick', count: 1 }) // 4 sticks = 1 application
   })
 
   it('recovers MISSING_MATERIALS by crafting planks, then retries', async () => {
@@ -236,8 +236,8 @@ describe('craftSticks', () => {
           : ok({ crafted: 4 })
       }
       expect(name).toBe('oak_planks')
-      expect(count).toBe(2) // ceil(4 sticks / 4 per craft) * 2 planks per craft
-      return ok({ crafted: 2 })
+      expect(count).toBe(1) // 2 plank items -> 1 log application (yields 4)
+      return ok({ crafted: 4 })
     })
     const r = await craftSticks({ mineBlock, craftItem }, { count: 4 }, ctx)
     expect(r.ok).toBe(true)
@@ -294,7 +294,7 @@ describe('craftCraftingTable', () => {
           : ok({ crafted: 1 })
       }
       expect(name).toBe('oak_planks')
-      expect(count).toBe(4)
+      expect(count).toBe(1) // 4 plank items -> 1 log application
       return ok({ crafted: 4 })
     })
     const r = await craftCraftingTable({ mineBlock, craftItem }, {}, ctx)
@@ -433,5 +433,39 @@ describe('schema stubs', () => {
       'craftCraftingTable',
       'craftWoodenPickaxe',
     ])
+  })
+})
+
+// Live-gate regression (2026-07-28): craftItem's count is recipe APPLICATIONS,
+// not item yield. craftPlanks/craftSticks passed item counts through raw, so a
+// 9-plank ask became a 9-log demand — surfaced as MISSING_MATERIALS on the
+// live world with 8 logs held. Pin the conversion at the call boundary.
+describe('items-vs-applications conversion (live-gate regression)', () => {
+  it('craftPlanks asks craftItem for ceil(items/4) applications, not items', async () => {
+    const calls: Array<{ name: string; count?: number }> = []
+    const primitives = {
+      craftItem: vi.fn(async (params: { name: string; count?: number }) => {
+        calls.push(params)
+        return { ok: true as const, outcome: { crafted: (params.count ?? 1) * 4 }, costMs: 5, context: ctx }
+      }),
+      mineBlock: vi.fn(async () => ({ ok: true as const, outcome: { collected: 3 }, costMs: 5, context: ctx })),
+    }
+    const result = await craftPlanks(primitives as never, { count: 9, log: 'oak_log' }, ctx)
+    expect(result.ok).toBe(true)
+    expect(calls[0]).toEqual({ name: 'oak_planks', count: 3 })
+  })
+
+  it('craftSticks asks craftItem for ceil(items/4) applications, not items', async () => {
+    const calls: Array<{ name: string; count?: number }> = []
+    const primitives = {
+      craftItem: vi.fn(async (params: { name: string; count?: number }) => {
+        calls.push(params)
+        return { ok: true as const, outcome: { crafted: (params.count ?? 1) * 4 }, costMs: 5, context: ctx }
+      }),
+      mineBlock: vi.fn(async () => ({ ok: true as const, outcome: { collected: 1 }, costMs: 5, context: ctx })),
+    }
+    const result = await craftSticks(primitives as never, { count: 4 }, ctx)
+    expect(result.ok).toBe(true)
+    expect(calls[0]).toEqual({ name: 'stick', count: 1 })
   })
 })

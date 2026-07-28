@@ -11,8 +11,8 @@ are MERGED into demo-sprint; suite 719 green on the union.
 | U2 craftItem+placeItem | logs->planks->table PLACED->sticks->pickaxe | APPROVED | u2-craft-place/out.mp4 (75s) | [x] 2026-07-28 |
 | U3 smeltItem+useChest | stations placed, 3 iron smelted (polled), chest cycle + honest partial | APPROVED | u3-smelt-chest/out.mp4 (100s) | [x] 2026-07-28 |
 | U4 killMob | 3/3 pig hunts via live bot.pvp, staged in cam foreground | APPROVED | u4-killMob/out.mp4 (74s) | [x] 2026-07-28 |
-| U5 exploreUntil+giveback | place, walk away, explore-return, dig back (honest recovered:false; true-path in rehearsal log) | **DEMO-READY** | u5-explore-giveback/out.mp4 (58s) | [ ] |
-| U6 wood tier | | QUEUED | — | [ ] |
+| U5 exploreUntil+giveback | re-shot: full arc, recovered:true | APPROVED | u5-explore-giveback/out.mp4 (62s) | [x] 2026-07-28 |
+| U6 wood tier | composed skills over live primitives; live-gate bug found+fixed (items-vs-applications) | **DEMO-READY** | u6-wood-tier/out.mp4 (85s) | [ ] |
 | U7 stone tier | | QUEUED | — | [ ] |
 | U8 ore+smelt tier | | QUEUED | — | [ ] |
 | U9 food+combat | | QUEUED | — | [ ] |

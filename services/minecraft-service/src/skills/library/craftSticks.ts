@@ -63,9 +63,12 @@ export async function craftSticks(
   // Normalize before it reaches a primitive: zero/negative/fractional counts
   // would otherwise let a craft of nothing report success.
   const count = Math.max(1, Math.floor(params.count ?? 4))
+  // craftItem's count is recipe APPLICATIONS (2 planks -> 4 sticks), not item
+  // yield — convert, or a 4-stick ask becomes a 4-application (8-plank) demand.
+  const applications = Math.ceil(count / STICKS_PER_CRAFT)
   let costMs = 0
 
-  const first = await primitives.craftItem({ name: 'stick', count })
+  const first = await primitives.craftItem({ name: 'stick', count: applications })
   costMs += first.costMs
   if (first.ok) return skillOk({ crafted: first.outcome.crafted }, costMs, ctx)
   if (first.failureCode !== 'MISSING_MATERIALS') {
@@ -84,7 +87,7 @@ export async function craftSticks(
     )
   }
 
-  const retry = await primitives.craftItem({ name: 'stick', count })
+  const retry = await primitives.craftItem({ name: 'stick', count: applications })
   costMs += retry.costMs
   if (retry.ok) return skillOk({ crafted: retry.outcome.crafted }, costMs, ctx)
   return skillFail(

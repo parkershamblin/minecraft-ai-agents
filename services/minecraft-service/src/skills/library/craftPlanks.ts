@@ -90,9 +90,11 @@ export async function craftPlanks(
   const candidates = params.log != null ? [params.log] : [...WOOD_LOGS]
 
   // Pass 1: materials already in the inventory may satisfy a species' recipe.
+  // craftItem's count is recipe APPLICATIONS (one log -> 4 planks), not item
+  // yield — convert, or a 9-plank ask becomes a 9-log demand (live-gate bug).
   for (const log of candidates) {
     const planks = plankNameFor(log)
-    const crafted = await primitives.craftItem({ name: planks, count })
+    const crafted = await primitives.craftItem({ name: planks, count: logsNeededFor(log, count) })
     costMs += crafted.costMs
     if (crafted.ok) {
       return skillOk({ crafted: crafted.outcome.crafted, planks }, costMs, ctx)
@@ -125,7 +127,7 @@ export async function craftPlanks(
       )
     }
     const planks = plankNameFor(log)
-    const crafted = await primitives.craftItem({ name: planks, count })
+    const crafted = await primitives.craftItem({ name: planks, count: logsNeededFor(log, count) })
     costMs += crafted.costMs
     if (crafted.ok) {
       return skillOk({ crafted: crafted.outcome.crafted, planks }, costMs, ctx)

@@ -1,0 +1,22 @@
+{
+  "unit": 6,
+  "title": "Wood-tier composed skills — mineWoodLog + craftWoodenPickaxe over live primitives",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/106",
+  "recordedAt": "2026-07-28T16:25:00Z (take 2 — actor first-person follow-cam, chosen for a roaming demo)",
+  "clip": "out.mp4",
+  "clipDurationS": 85,
+  "scenario": "REAL merged U6 skills composed over the REAL U1/U2 primitives — zero mocks anywhere in the stack: mineWoodLog walks the 1.21.6 log family via mineBlock (pathfinder + tool-equip + dig + sweep), then craftWoodenPickaxe chains craftPlanks -> craftSticks -> craftCraftingTable -> placeItem -> table-recipe craft.",
+  "invocations": [
+    { "skill": "mineWoodLog", "params": { "count": 4 }, "result": { "ok": true, "collected": 4, "log": "oak_log", "costMs": 44634 } },
+    { "skill": "craftWoodenPickaxe", "result": { "ok": true, "crafted": 1, "tablePosition": { "x": -381, "y": 66, "z": -191 }, "costMs": 16788 } }
+  ],
+  "evidence": {
+    "onCamera": "First-person: bot looks up each trunk while chopping (mineBlock's GoalLookAtBlock), chases drops, then the craft phase places the table and produces the pickaxe. Final inventory wooden_pickaxex1 + leftovers.",
+    "liveGateBugCaught": "First rehearsal FAILED honestly: craftPlanks/craftSticks passed item counts where craftItem expects recipe APPLICATIONS — a 9-plank ask became a 9-log demand ('crafting 9 oak_planks needs 1 more oak_log' with 8 logs held). The unit's botless tests had pinned the same wrong assumption in their fakes. Fixed in both skills + 2 regression tests pinning the conversion; 5 stale assertions corrected; suite 721 green.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "This is the composed layer's first live outing — exactly the 'benchmark as porting harness' step: the items-vs-applications bug survived unit tests and fell out of the first real run.",
+    "Camera choice per the owner's directive: roaming demo -> actor first-person; the extension-managed tab couldn't take OS focus for OBS, so takes use an OS-opened tab (kept to one, closed between demos)."
+  ]
+}
