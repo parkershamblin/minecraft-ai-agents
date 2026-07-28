@@ -8,6 +8,7 @@
 import mineflayer from 'mineflayer'
 import mineflayerPathfinderPkg from 'mineflayer-pathfinder'
 import * as toolPkg from 'mineflayer-tool'
+import * as collectPkg from 'mineflayer-collectblock'
 import { plugin as pvpPlugin } from 'mineflayer-pvp'
 import minecraftData from 'minecraft-data'
 import { writeFileSync, mkdirSync } from 'node:fs'
@@ -17,6 +18,7 @@ import type { SkillInvocationRecord } from '../services/minecraft-service/src/sk
 
 const { pathfinder, Movements } = mineflayerPathfinderPkg
 const toolPlugin = (toolPkg as any).plugin ?? (toolPkg as any).default ?? toolPkg
+const collectPlugin = (collectPkg as any).plugin ?? (collectPkg as any).default ?? collectPkg
 
 const RUNS = Number(process.argv[2] ?? 3)
 const RUN_CAP_MS = 12 * 60_000
@@ -32,6 +34,7 @@ async function benchRun(run: number, allRecords: SkillInvocationRecord[]): Promi
   })
   bot.loadPlugin(pathfinder)
   bot.loadPlugin(toolPlugin)
+  bot.loadPlugin(collectPlugin)
   bot.loadPlugin(pvpPlugin as any)
 
   const steps: StepOutcome[] = []
@@ -89,8 +92,25 @@ async function benchRun(run: number, allRecords: SkillInvocationRecord[]): Promi
 
       const capTimer = setTimeout(() => { endReason = 'RUN_CAP'; bot.quit() }, RUN_CAP_MS)
       try {
-        // THE RACE COURSE, skills only.
-        const wood = await invoke('mineWoodLog', { count: 4 })
+        // THE RACE COURSE, skills only. Treeless spawns (2/6 in the first
+        // sweeps) get the same library-composed answer as ore: explore, retry.
+        const logIds = Object.keys(mcData.blocksByName)
+          .filter((n) => n.endsWith('_log') || n === 'bamboo_block')
+          .map((n) => mcData.blocksByName[n].id)
+        let wood = await invoke('mineWoodLog', { count: 4 })
+        if (!wood.ok && wood.failureCode === 'RESOURCE_NOT_FOUND') {
+          for (const direction of [{ x: 1, y: 0, z: 0 }, { x: 0, y: 0, z: 1 }, { x: -1, y: 0, z: 0 }, { x: 0, y: 0, z: -1 }]) {
+            const explored: any = await reg.invoke('exploreUntil', {
+              direction, maxTimeMs: 45_000,
+              predicate: () => (bot.findBlocks({ matching: logIds, maxDistance: 24, count: 1 }).length > 0 ? { trees: true } : null),
+            })
+            steps.push({ skill: 'exploreUntil', ok: explored.ok, costMs: explored.costMs, ...(explored.ok ? {} : { failureCode: explored.failureCode }) })
+            if (explored.ok) {
+              wood = await invoke('mineWoodLog', { count: 4 })
+              if (wood.ok) { wood.recovered = true; break }
+            }
+          }
+        }
         if (!wood.ok) { endReason = `wood:${wood.failureCode}`; return }
         const wpick = await invoke('craftWoodenPickaxe', {})
         if (!wpick.ok) { endReason = `wpick:${wpick.failureCode}`; return }

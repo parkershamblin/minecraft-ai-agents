@@ -69,6 +69,8 @@ export interface SkillAdapters {
 export function createSkillAdapters(bot: Bot, mcData: McDataLike & Record<string, any>): SkillAdapters {
   let lastDigPos: SkillPosition | null = null
   let lastDigDrop: string | null = null
+  let lastDigDropId: number | null = null
+  let preDigInv: number | null = null
   const pickupCounts = new Map<string, number>()
 
   bot.on('playerCollect', (collector: any, collected: any) => {
@@ -103,8 +105,13 @@ export function createSkillAdapters(bot: Bot, mcData: McDataLike & Record<string
     racedGoto(new goals.GoalNear(pos.x, pos.y, pos.z, range), timeoutMs)
 
   const collectNearbyDrops = async (): Promise<number> => {
-    const target = lastDigDrop
-    const before = target ? (pickupCounts.get(target) ?? 0) : 0
+    // Inventory delta is the truth (skill-bench finding: pickup events can
+    // over-report while the pack holds less). Sweep only when the delta says
+    // the drop is still on the ground.
+    const invDelta = () =>
+      lastDigDropId != null ? Math.max(0, bot.inventory.count(lastDigDropId, null) - (preDigInv ?? 0)) : 0
+    await sleep(600)
+    if (lastDigDropId != null && invDelta() > 0) return invDelta()
     if (lastDigPos) await gotoNear(lastDigPos, 0, DROP_WALK_TIMEOUT_MS)
     await sleep(900)
     const items = Object.values(bot.entities).filter(
@@ -114,7 +121,9 @@ export function createSkillAdapters(bot: Bot, mcData: McDataLike & Record<string
       await gotoNear({ x: item.position.x, y: item.position.y, z: item.position.z }, 0, DROP_WALK_TIMEOUT_MS)
     }
     await sleep(1200)
-    return target ? Math.max(0, (pickupCounts.get(target) ?? 0) - before) : 0
+    if (lastDigDropId != null) return invDelta()
+    const target = lastDigDrop
+    return target ? (pickupCounts.get(target) ?? 0) : 0
   }
 
   const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -123,7 +132,16 @@ export function createSkillAdapters(bot: Bot, mcData: McDataLike & Record<string
     resolveBlock: (name) => guardedBlock(mcData, name),
     findBlocks: (blockId, maxDistance, count) =>
       bot.findBlocks({ matching: blockId, maxDistance, count }).map((v) => ({ x: v.x, y: v.y, z: v.z })),
-    gotoBlock: async (pos, timeoutMs) => (await gotoBlockGuarded(pos, timeoutMs)) ? 'arrived' : 'path_not_found',
+    gotoBlock: async (pos, timeoutMs) => {
+      // With collectblock loaded, collect() does its own navigation
+      // (including the towering canopy logs need — skill-bench finding);
+      // a failed pre-walk must not veto the dig attempt.
+      if ((bot as any).collectBlock) {
+        await gotoBlockGuarded(pos, Math.min(timeoutMs, 8_000))
+        return 'arrived'
+      }
+      return (await gotoBlockGuarded(pos, timeoutMs)) ? 'arrived' : 'path_not_found'
+    },
     equipBestToolFor: async (pos) => {
       const block = bot.blockAt(new Vec3(pos.x, pos.y, pos.z))
       if (!block) return 'none_needed'
@@ -138,13 +156,19 @@ export function createSkillAdapters(bot: Bot, mcData: McDataLike & Record<string
     dig: async (pos) => {
       const block = bot.blockAt(new Vec3(pos.x, pos.y, pos.z))
       if (!block || block.name === 'air') return 'blocked'
-      try {
-        const dropName = DROP_OF[block.name] ?? block.name
-        await bot.dig(block)
-        lastDigPos = { ...pos }
-        lastDigDrop = dropName
-        return 'dug'
-      } catch { return 'blocked' }
+      const dropName = DROP_OF[block.name] ?? block.name
+      const dropId = (mcData as any).itemsByName[dropName]?.id ?? null
+      preDigInv = dropId != null ? bot.inventory.count(dropId, null) : null
+      lastDigPos = { ...pos }
+      lastDigDrop = dropName
+      lastDigDropId = dropId
+      const cb = (bot as any).collectBlock
+      if (cb) {
+        // collectblock paths (towers when needed), mines, and picks up —
+        // the canopy answer Voyager vendored a fork for.
+        try { await cb.collect(block); return 'dug' } catch { /* fall back */ }
+      }
+      try { await bot.dig(block); return 'dug' } catch { return 'blocked' }
     },
     collectNearbyDrops,
     now: () => Date.now(),
@@ -179,8 +203,13 @@ export function createSkillAdapters(bot: Bot, mcData: McDataLike & Record<string
     },
     countInventory: (itemId) => bot.inventory.count(itemId, null),
     findCraftingTable: (maxDistance) => {
-      const b = findTableBlock(maxDistance)
-      return b ? { x: b.position.x, y: b.position.y, z: b.position.z } : null
+      // Distance/elevation clamp (skill-bench finding: a cliff-top table 30
+      // blocks off burned the whole walk budget) — beyond this, placing a
+      // fresh table is cheaper than the walk, and the skills know how.
+      const b = findTableBlock(Math.min(maxDistance, 12))
+      if (!b) return null
+      if (Math.abs(b.position.y - bot.entity.position.y) > 4) return null
+      return { x: b.position.x, y: b.position.y, z: b.position.z }
     },
     gotoBlock: async (pos, timeoutMs) => (await gotoBlockGuarded(pos, timeoutMs)) ? 'arrived' : 'failed',
     now: () => Date.now(),

@@ -95,3 +95,19 @@ describe('skill registry (assembly)', () => {
     }
   })
 })
+
+describe('adapter taxonomy fixes (skill-bench findings)', () => {
+  it('findCraftingTable ignores distant and cliff-top tables', async () => {
+    const { createSkillAdapters } = await import('../src/skills/adapters.ts')
+    const bot = fakeBot()
+    // A table 30 blocks out at +13y: reachable per findBlock, but the clamp
+    // must refuse it (placing fresh beats the walk).
+    bot.findBlock = ({ maxDistance }: any) =>
+      maxDistance >= 25 ? { position: { x: 30, y: 77, z: 0 } } : null
+    const a = createSkillAdapters(bot, mcData)
+    expect(a.craftItemDeps.findCraftingTable(32)).toBeNull()
+    // Near, level table passes.
+    bot.findBlock = () => ({ position: { x: 4, y: 64, z: 0 } })
+    expect(a.craftItemDeps.findCraftingTable(32)).toEqual({ x: 4, y: 64, z: 0 })
+  })
+})

@@ -51,3 +51,42 @@ win; the taxonomy above IS the artifact, and it feeds the unit-11/12 mastery
 machinery directly (the bench emits SkillInvocationRecords via the registry).
 
 **Zero API spend.** All local: mineflayer + Paper + the ported library.
+
+---
+
+## Post-fix sweep (same day) — four taxonomy fixes applied, measured
+
+Fixes: (1) log mining routed through mineflayer-collectblock (paths, towers,
+collects — the canopy answer); (2a) wood-tier placeItem retries at a
+validated ground cell; (2b) findCraftingTable clamped to 12 blocks / ±4y;
+(3) collectNearbyDrops verified by inventory delta (truth over events);
+(4) caller-side wood prospecting via exploreUntil. Suite 727 green.
+Data: `skill-bench-1785263744221.json`.
+
+| Run | End | Depth |
+|---|---|---|
+| 1 | cobble:TOOL_REQUIRED | wood tier complete |
+| 2 | spick:RESOURCE_NOT_FOUND (table) | wood + cobble complete |
+| 3 | iron:TIMEOUT (70s mineBlock budget) | wood + stone COMPLETE, died 640s in, mid-iron |
+
+**Measured movement:** wood-tier completion 2/6 -> 3/3 (mineWoodLog +
+craftWoodenPickaxe 100%); deepest run advanced from "stone gear" to
+"mid-iron at 640s". Still 0 wins — honestly reported.
+
+**Remaining queue (new heads, from data):**
+1. **Iron trip budget** — mineBlock's 10s+20s/block cap is the library
+   edition of the fleet's long-standing 60s-iron-trip ceiling (iron found,
+   not collected in time). Fix: depth-scaled budgets — the same open item
+   CLAUDE.md carries for the executor. One shared root cause, now measured
+   in both systems.
+2. **Table amnesia** — the 12-block clamp trades cliff-table walks for
+   forgetting your own table after wandering; craft skills should PLACE on
+   RESOURCE_NOT_FOUND(crafting_table) when planks are held (skill-side
+   recovery, like craftFurnace already does).
+3. **equipBestTool false-negative** (1 run) — sampled block refused
+   requireHarvest despite a wooden pickaxe held; mineflayer-tool nuance to
+   characterize.
+
+The pattern across both sweeps: every fix moved the failure boundary one
+tier deeper and produced a new, smaller, named problem — the refinement
+loop working exactly as the mastery design intends.

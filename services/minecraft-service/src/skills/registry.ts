@@ -67,7 +67,17 @@ export function createSkillRegistry(
   const woodPrimitives: WoodTierPrimitives = {
     mineBlock: (p) => mineBlock(a.mineBlockDeps, p, ctx()),
     craftItem: (p) => craftItemPrimitive(a.craftItemDeps, p, ctx()),
-    placeItem: (p) => placeItemPrimitive(a.placeItemDepsFor(p.name), p, ctx()) as never,
+    placeItem: async (p) => {
+      // Skill-provided default positions can be mid-air (skill-bench:
+      // craftWoodenPickaxe's "+x of the bot" PLACE_FAILED) — retry once at a
+      // validated ground cell before reporting failure.
+      let r = await placeItemPrimitive(a.placeItemDepsFor(p.name), p, ctx())
+      if (!r.ok && r.failureCode === 'PLACE_FAILED') {
+        const cell = a.findGroundCell()
+        if (cell) r = await placeItemPrimitive(a.placeItemDepsFor(p.name), { name: p.name, position: cell }, ctx())
+      }
+      return r as never
+    },
   }
 
   const itemsToApplications = (name: string, items: number | undefined): SkillResult<never> | number => {
