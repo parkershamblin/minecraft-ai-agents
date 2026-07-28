@@ -1,0 +1,9 @@
+{"at":"2026-07-28T15:04:49.005Z","event":"spawned","username":"skill_drill"}
+{"at":"2026-07-28T15:04:57.011Z","event":"harness_placeTable_invoke"}
+{"at":"2026-07-28T15:04:59.720Z","event":"harness_placeTable_result","ok":true,"outcome":{"placed":true,"position":{"x":-395,"y":67,"z":-193}},"costMs":198,"context":{"biome":null,"timeOfDay":1000,"heldTool":"crafting_table","hostileCount":0,"position":{"x":-396,"y":67,"z":-193}}}
+{"at":"2026-07-28T15:05:05.274Z","event":"walked_away","from":{"x":-395,"y":67,"z":-193},"distance":18}
+{"at":"2026-07-28T15:05:05.274Z","event":"exploreUntil_findTable_invoke"}
+{"at":"2026-07-28T15:05:10.773Z","event":"exploreUntil_findTable_result","ok":true,"outcome":{"found":{"tableSighted":true,"distance":6},"elapsedMs":2999},"costMs":2999,"context":{"biome":null,"timeOfDay":1000,"heldTool":"crafting_table","hostileCount":0,"position":{"x":-396,"y":67,"z":-193}}}
+{"at":"2026-07-28T15:05:12.274Z","event":"givePlacedItemBack_table_invoke"}
+{"at":"2026-07-28T15:05:24.248Z","event":"givePlacedItemBack_table_result","ok":true,"outcome":{"recovered":true},"costMs":9468,"context":{"biome":null,"timeOfDay":1000,"heldTool":"crafting_table","hostileCount":0,"position":{"x":-396,"y":67,"z":-193}}}
+{"at":"2026-07-28T15:05:25.761Z","event":"demo_complete","inventory":["crafting_tablex2"]}

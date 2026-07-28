@@ -5,6 +5,7 @@ import pytest
 
 from agent_service.llm.contract import validate_decision
 from agent_service.llm.providers import (
+    AnthropicProvider,
     FakeProvider,
     OllamaProvider,
     OpenAIProvider,
@@ -30,7 +31,7 @@ class TestFakeProvider:
 
 
 class TestOpenAIProvider:
-    async def test_sends_strict_schema_and_parses_usage(self):
+    async def test_sends_forced_strict_tool_and_parses_arguments(self):
         captured = {}
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -39,7 +40,20 @@ class TestOpenAIProvider:
             return httpx.Response(
                 200,
                 json={
-                    "choices": [{"message": {"content": '{"a":1}'}}],
+                    "choices": [
+                        {
+                            "message": {
+                                "content": None,
+                                "tool_calls": [
+                                    {
+                                        "id": "call_1",
+                                        "type": "function",
+                                        "function": {"name": "decide", "arguments": '{"a":1}'},
+                                    }
+                                ],
+                            }
+                        }
+                    ],
                     "usage": {"prompt_tokens": 120, "completion_tokens": 30},
                 },
             )
@@ -47,11 +61,89 @@ class TestOpenAIProvider:
         provider = OpenAIProvider("sk-test", "gpt-4o-mini", 0.7, _client(handler))
         response = await provider.complete("sys", "usr")
 
-        assert captured["response_format"]["json_schema"]["strict"] is True
-        assert captured["response_format"]["json_schema"]["schema"]["required"]
+        assert "response_format" not in captured  # the old channel is gone
+        tool = captured["tools"][0]["function"]
+        assert tool["name"] == "decide"
+        assert tool["strict"] is True
+        assert tool["parameters"]["required"]
+        assert captured["tool_choice"] == {"type": "function", "function": {"name": "decide"}}
+        assert captured["parallel_tool_calls"] is False
         assert response.tokens_in == 120
         assert response.tokens_out == 30
         assert response.text == '{"a":1}'
+
+    async def test_missing_tool_call_degrades_to_content(self):
+        # Near-impossible under forced tool_choice, but the seam must hand
+        # SOMETHING to validate_decision (which then produces the idle
+        # fallback) instead of KeyError-ing the tick.
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": "I cannot decide."}}], "usage": {}},
+            )
+
+        provider = OpenAIProvider("sk-test", "gpt-4o-mini", 0.7, _client(handler))
+        response = await provider.complete("sys", "usr")
+        assert response.text == "I cannot decide."
+
+
+class TestAnthropicProvider:
+    async def test_sends_forced_strict_tool_and_parses_input(self):
+        captured = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured.update(json.loads(request.content))
+            assert request.headers["x-api-key"] == "sk-ant-test"
+            assert request.headers["anthropic-version"] == "2023-06-01"
+            return httpx.Response(
+                200,
+                json={
+                    "content": [
+                        {"type": "text", "text": "picking a task"},
+                        {"type": "tool_use", "id": "toolu_1", "name": "decide", "input": {"a": 1}},
+                    ],
+                    "stop_reason": "tool_use",
+                    "usage": {"input_tokens": 200, "output_tokens": 40},
+                },
+            )
+
+        provider = AnthropicProvider("sk-ant-test", "claude-sonnet-5", _client(handler))
+        response = await provider.complete("sys", "usr")
+
+        # Sampling params are REMOVED on current Claude models — sending
+        # temperature 400s. The greedy convention deliberately does not apply.
+        assert "temperature" not in captured
+        assert captured["thinking"] == {"type": "disabled"}
+        assert captured["system"] == "sys"
+        tool = captured["tools"][0]
+        assert tool["name"] == "decide"
+        assert tool["strict"] is True
+        assert tool["input_schema"]["required"]
+        assert captured["tool_choice"] == {
+            "type": "tool",
+            "name": "decide",
+            "disable_parallel_tool_use": True,
+        }
+        assert response.tokens_in == 200
+        assert response.tokens_out == 40
+        assert json.loads(response.text) == {"a": 1}
+
+    async def test_refusal_without_tool_use_degrades_to_marker(self):
+        # A classifier stop returns no tool_use block; the marker is non-JSON
+        # so decide_safely maps it to idle with the stop_reason in the log.
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                json={
+                    "content": [{"type": "text", "text": "declined"}],
+                    "stop_reason": "refusal",
+                    "usage": {"input_tokens": 10, "output_tokens": 2},
+                },
+            )
+
+        provider = AnthropicProvider("sk-ant-test", "claude-sonnet-5", _client(handler))
+        response = await provider.complete("sys", "usr")
+        assert "stop_reason=refusal" in response.text
 
 
 class TestOllamaProvider:
@@ -170,6 +262,25 @@ class TestChain:
         provider = await build_llm_provider(settings, _client(lambda r: httpx.Response(500)))
         assert isinstance(provider, OpenAIProvider)
 
+    async def test_anthropic_key_selects_anthropic_under_auto(self):
+        settings = Settings(llm_provider="auto", openai_api_key="", anthropic_api_key="sk-ant-x")
+        provider = await build_llm_provider(settings, _client(lambda r: httpx.Response(500)))
+        assert isinstance(provider, AnthropicProvider)
+
+    async def test_auto_prefers_openai_over_anthropic(self):
+        # Existing precedence preserved: openai wins under auto when both
+        # keys are present; LLM_PROVIDER=anthropic pins explicitly.
+        settings = Settings(llm_provider="auto", openai_api_key="sk-test", anthropic_api_key="sk-ant-x")
+        provider = await build_llm_provider(settings, _client(lambda r: httpx.Response(500)))
+        assert isinstance(provider, OpenAIProvider)
+
+    async def test_explicit_anthropic_pins(self):
+        settings = Settings(
+            llm_provider="anthropic", openai_api_key="sk-would-win-under-auto", anthropic_api_key="sk-ant-x"
+        )
+        provider = await build_llm_provider(settings, _client(lambda r: httpx.Response(500)))
+        assert isinstance(provider, AnthropicProvider)
+
     async def test_no_key_falls_to_ollama_with_warmup(self):
         calls = []
 
@@ -285,6 +396,7 @@ class TestTeamRouter:
 @pytest.fixture(autouse=True)
 def _no_env_leakage(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     monkeypatch.delenv("OLLAMA_BASE_URL", raising=False)
     monkeypatch.delenv("LLM_TEAM_MODELS", raising=False)

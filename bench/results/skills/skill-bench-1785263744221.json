@@ -1,0 +1,173 @@
+{
+  "benchedAt": "2026-07-28T18:35:44.221Z",
+  "branch": "demo-sprint",
+  "runs": 3,
+  "wins": 0,
+  "winTimesMs": [],
+  "endReasons": [
+    "cobble:TOOL_REQUIRED",
+    "spick:RESOURCE_NOT_FOUND",
+    "iron:TIMEOUT"
+  ],
+  "llmCalls": 0,
+  "perSkill": [
+    {
+      "skill": "mineWoodLog",
+      "attempts": 3,
+      "successes": 3,
+      "successRate": 1,
+      "meanCostMs": 88589,
+      "failures": {}
+    },
+    {
+      "skill": "craftWoodenPickaxe",
+      "attempts": 3,
+      "successes": 3,
+      "successRate": 1,
+      "meanCostMs": 3227,
+      "failures": {}
+    },
+    {
+      "skill": "collectCobblestone",
+      "attempts": 3,
+      "successes": 2,
+      "successRate": 0.67,
+      "meanCostMs": 15869,
+      "failures": {
+        "TOOL_REQUIRED": 1
+      }
+    },
+    {
+      "skill": "craftStonePickaxe",
+      "attempts": 2,
+      "successes": 1,
+      "successRate": 0.5,
+      "meanCostMs": 9068,
+      "failures": {
+        "RESOURCE_NOT_FOUND": 1
+      }
+    },
+    {
+      "skill": "mineIronOre",
+      "attempts": 1,
+      "successes": 0,
+      "successRate": 0,
+      "meanCostMs": 483108,
+      "failures": {
+        "TIMEOUT": 1
+      }
+    }
+  ],
+  "refinementQueueTop": [
+    {
+      "skill": "collectCobblestone",
+      "frequency": 3,
+      "failureBurden": 1
+    },
+    {
+      "skill": "craftStonePickaxe",
+      "frequency": 2,
+      "failureBurden": 1
+    },
+    {
+      "skill": "mineIronOre",
+      "frequency": 1,
+      "failureBurden": 1
+    }
+  ],
+  "runsDetail": [
+    {
+      "run": 1,
+      "won": false,
+      "totalMs": 109985,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": true,
+          "costMs": 93840
+        },
+        {
+          "skill": "craftWoodenPickaxe",
+          "ok": true,
+          "costMs": 3715
+        },
+        {
+          "skill": "collectCobblestone",
+          "ok": false,
+          "costMs": 7,
+          "failureCode": "TOOL_REQUIRED",
+          "detail": "stone needs a harvest tool the pack lacks (e.g. a pickaxe)"
+        }
+      ],
+      "endReason": "cobble:TOOL_REQUIRED"
+    },
+    {
+      "run": 2,
+      "won": false,
+      "totalMs": 124473,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": true,
+          "costMs": 92545
+        },
+        {
+          "skill": "craftWoodenPickaxe",
+          "ok": true,
+          "costMs": 3034
+        },
+        {
+          "skill": "collectCobblestone",
+          "ok": true,
+          "costMs": 23722
+        },
+        {
+          "skill": "craftStonePickaxe",
+          "ok": false,
+          "costMs": 26,
+          "failureCode": "RESOURCE_NOT_FOUND",
+          "detail": "crafting_table: crafting stone_pickaxe needs a crafting table and none stands within 32 blocks"
+        }
+      ],
+      "endReason": "spick:RESOURCE_NOT_FOUND"
+    },
+    {
+      "run": 3,
+      "won": false,
+      "totalMs": 640339,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": true,
+          "costMs": 79381
+        },
+        {
+          "skill": "craftWoodenPickaxe",
+          "ok": true,
+          "costMs": 2931
+        },
+        {
+          "skill": "collectCobblestone",
+          "ok": true,
+          "costMs": 23878
+        },
+        {
+          "skill": "craftStonePickaxe",
+          "ok": true,
+          "costMs": 18110
+        },
+        {
+          "skill": "mineIronOre",
+          "ok": false,
+          "costMs": 483108,
+          "failureCode": "TIMEOUT",
+          "detail": "budget of 70000ms elapsed before any iron_ore was collected"
+        }
+      ],
+      "endReason": "iron:TIMEOUT"
+    }
+  ]
+}

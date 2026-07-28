@@ -275,6 +275,12 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       LLM_MODEL_OLLAMA: ${LLM_MODEL_OLLAMA:-llama3.1:8b}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL_OPENAI: ${LLM_MODEL_OPENAI:-gpt-4o-mini}
+      # Anthropic decision channel (forced strict tool call, 2026-07-27).
+      # Forwarded EXPLICITLY — an env var missing from this block never
+      # reaches the container (the LLM_TEMPERATURE bug class, bit twice).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL_ANTHROPIC: ${LLM_MODEL_ANTHROPIC:-claude-sonnet-5}
       LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-2000000}
       # Backpressure for the shared LLM backend: excess deliberations queue at
       # the provider instead of thrashing one GPU with 20 concurrent requests.
@@ -288,6 +294,7 @@ services:
       # 0.0 = greedy decoding for benchmark runs (bench/race/frozen-config.json).
       LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
       TICK_INTERVAL_SECONDS: ${TICK_INTERVAL_SECONDS:-60}
+      OUTCOME_WAKE_ENABLED: ${OUTCOME_WAKE_ENABLED:-true}
       VILLAGER_COUNT: ${VILLAGER_COUNT:-1}
       # D2 filming lever (M2-10): one shared-aim line in every system prompt.
       # Blank = off; pulled only if the arc stalls (plan ruling).

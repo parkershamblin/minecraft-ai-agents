@@ -4,7 +4,7 @@ words a villager thinks with are unit-testable and diffable in review."""
 import json
 from typing import Any
 
-from agent_service.brain.awareness import LastDecision
+from agent_service.brain.awareness import FailureStreak, LastDecision
 from agent_service.brain.civics import CivicView
 from agent_service.brain.race import MILESTONES, RaceView
 from agent_service.memory_client import RetrievedMemory
@@ -518,6 +518,7 @@ def user_prompt(
     memories: list[RetrievedMemory],
     feelings: dict[str, Any] | None = None,
     last_decision: LastDecision | None = None,
+    failure_streaks: list[FailureStreak] | None = None,
     civic: CivicView | None = None,
     race: RaceView | None = None,
 ) -> str:
@@ -577,6 +578,24 @@ def user_prompt(
             outcome = f"it FAILED: {json.dumps(percepts[claimed_index]['detail'])}"
         params = f" {json.dumps(last_decision.params)}" if last_decision.params else ""
         sections.append(f"Your last decision: {last_decision.action}{params} → {outcome}")
+
+    # Abandon-and-repropose (2026-07-27): greedy decoding re-asks a refused
+    # intent forever — the paired-outcome line above proved too weak once the
+    # same failure repeated. This is a STANDING section (same decay rule as
+    # civics): it renders every tick a streak stays hot, not only on the tick
+    # the failure landed.
+    if failure_streaks:
+        streak_lines = "\n".join(
+            f"- {s.intent} — refused {s.count} times in a row" for s in failure_streaks
+        )
+        sections.append(
+            "CHANGE COURSE — the world has repeatedly refused these:\n"
+            f"{streak_lines}\n"
+            "Do NOT ask for any of these again right now. Choose a different "
+            "target, resource, or action; if the goal still matters, take a "
+            "different route to it — move somewhere new first, craft the "
+            "missing tool, or ask another villager for help."
+        )
 
     # Feelings for the villagers actually in sight (read seam wired -> not None).
     if feelings is not None:

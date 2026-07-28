@@ -114,6 +114,8 @@ async def lifespan(app: FastAPI):
     roster = await repo.list_alive(settings.villager_count)
     scheduler.ensure([_brief(v) for v in roster])
     percepts.on_chat_percept = scheduler.request_reactive  # ears -> mind (M1-2)
+    if settings.outcome_wake_enabled:
+        percepts.on_outcome_percept = scheduler.request_reactive  # outcome -> mind (D1)
     # Election news broadcasts to every alive villager; the same map resolves
     # candidate/mayor names for percepts (refreshed on seed).
     percepts.roster = {str(v.id): v.name for v in roster}

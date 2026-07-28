@@ -1,0 +1,25 @@
+{
+  "unit": 8,
+  "title": "Ore + smelt tier — THE RACE-CRITICAL CHAIN, composed skills over live primitives",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/107",
+  "recordedAt": "2026-07-28T16:56:00Z (actor first-person; mining + furnace close-ups)",
+  "clip": "out.mp4",
+  "clipDurationS": 164,
+  "scenario": "REAL merged U8 skills over live primitives, the full iron arc the T1 race is scored on: mineIronOre (stone-pickaxe tier gate) -> mineCoalOre -> craftFurnace (self-provisions its 8 cobblestone by mining) -> smeltIronOre (coal fuel, polled output) -> craftIronPickaxe. Ore vein staged via setblock in the U7 pit (the U4 pig-summon pattern); everything else the skills did themselves. Continuity: U7's stone pickaxe, U6's table.",
+  "invocations": [
+    { "skill": "mineIronOre", "params": { "count": 3 }, "result": { "ok": true, "mined": 3, "byVariant": { "iron_ore": 3 } } },
+    { "skill": "mineCoalOre", "params": { "count": 2 }, "result": { "ok": true, "mined": 2 } },
+    { "skill": "craftFurnace", "result": { "ok": true, "crafted": 1, "stoneMined": true } },
+    { "skill": "smeltIronOre", "params": { "count": 3, "fuelName": "coal" }, "result": { "ok": true, "smelted": 3 } },
+    { "skill": "craftIronPickaxe", "result": { "ok": true, "crafted": 1 } }
+  ],
+  "evidence": {
+    "onCamera": "First-person: pit mining (iron then coal), resurface climb, furnace crafted after self-mining stone, 3 raw iron smelted on coal at the standing furnace, iron pickaxe crafted. Final inventory: iron_pickaxex1.",
+    "liveGateBugCaught": "Rehearsals exposed a drop-accounting bug in the drill adapter: a bare playerCollect counter mistook junk pickups (dirt, leaf litter showering during pit digs) for ore, so the primitive believed it had collected iron it never held (3 'collected', 1 in the pack). Fixed with typed pickup counting keyed to the dug block's actual drop (iron_ore -> raw_iron). Assembly note: the executor's gather pipeline needs the same item-typed accounting.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Ore vein staged (this shoreline stage has no natural surface iron in 32 blocks); block-break, drop, smelt, and craft mechanics all vanilla.",
+    "smeltIronOre and craftIronPickaxe reused the standing U3 furnace and U6 table (furnacePlaced:false, tablePlaced:false — their find-before-place logic on camera)."
+  ]
+}

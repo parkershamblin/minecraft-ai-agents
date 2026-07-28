@@ -1,0 +1,140 @@
+{
+  "benchedAt": "2026-07-28T17:42:58.584Z",
+  "branch": "demo-sprint",
+  "runs": 3,
+  "wins": 0,
+  "winTimesMs": [],
+  "endReasons": [
+    "wpick:PATH_NOT_FOUND",
+    "wood:RESOURCE_NOT_FOUND",
+    "spick:PATH_NOT_FOUND"
+  ],
+  "llmCalls": 0,
+  "perSkill": [
+    {
+      "skill": "mineWoodLog",
+      "attempts": 3,
+      "successes": 2,
+      "successRate": 0.67,
+      "meanCostMs": 33149,
+      "failures": {
+        "RESOURCE_NOT_FOUND": 1
+      }
+    },
+    {
+      "skill": "craftWoodenPickaxe",
+      "attempts": 2,
+      "successes": 1,
+      "successRate": 0.5,
+      "meanCostMs": 30210,
+      "failures": {
+        "PATH_NOT_FOUND": 1
+      }
+    },
+    {
+      "skill": "collectCobblestone",
+      "attempts": 1,
+      "successes": 1,
+      "successRate": 1,
+      "meanCostMs": 21620,
+      "failures": {}
+    },
+    {
+      "skill": "craftStonePickaxe",
+      "attempts": 1,
+      "successes": 0,
+      "successRate": 0,
+      "meanCostMs": 20028,
+      "failures": {
+        "PATH_NOT_FOUND": 1
+      }
+    }
+  ],
+  "refinementQueueTop": [
+    {
+      "skill": "mineWoodLog",
+      "frequency": 3,
+      "failureBurden": 1
+    },
+    {
+      "skill": "craftWoodenPickaxe",
+      "frequency": 2,
+      "failureBurden": 1
+    },
+    {
+      "skill": "craftStonePickaxe",
+      "frequency": 1,
+      "failureBurden": 1
+    }
+  ],
+  "runsDetail": [
+    {
+      "run": 1,
+      "won": false,
+      "totalMs": 141475,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": true,
+          "costMs": 70071
+        },
+        {
+          "skill": "craftWoodenPickaxe",
+          "ok": false,
+          "costMs": 56921,
+          "failureCode": "PATH_NOT_FOUND",
+          "detail": "craftWoodenPickaxe(planks): craftPlanks(mine oak_log): no path to remaining oak_log — collected 1 of 3 oak_log (11 unreachable, 0 blocked digs)"
+        }
+      ],
+      "endReason": "wpick:PATH_NOT_FOUND"
+    },
+    {
+      "run": 2,
+      "won": false,
+      "totalMs": 6122,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": false,
+          "costMs": 477,
+          "failureCode": "RESOURCE_NOT_FOUND",
+          "detail": "no wood log of any family nearby (tried oak_log, birch_log, spruce_log, jungle_log, acacia_log, dark_oak_log, mangrove_log, cherry_log, pale_oak_log, bamboo_blo"
+        }
+      ],
+      "endReason": "wood:RESOURCE_NOT_FOUND"
+    },
+    {
+      "run": 3,
+      "won": false,
+      "totalMs": 78718,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": true,
+          "costMs": 28900
+        },
+        {
+          "skill": "craftWoodenPickaxe",
+          "ok": true,
+          "costMs": 3498
+        },
+        {
+          "skill": "collectCobblestone",
+          "ok": true,
+          "costMs": 21620
+        },
+        {
+          "skill": "craftStonePickaxe",
+          "ok": false,
+          "costMs": 20028,
+          "failureCode": "PATH_NOT_FOUND",
+          "detail": "could not reach the crafting table at (-384, 79, -220)"
+        }
+      ],
+      "endReason": "spick:PATH_NOT_FOUND"
+    }
+  ]
+}

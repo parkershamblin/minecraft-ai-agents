@@ -28,3 +28,4 @@ Minecraft 1.21.6 Server/
 # Java build output (Eclipse/VSCode drops compiled classes in bin/; Gradle
 # output is build/ — neither belongs in git).
 services/*/bin/
+.claude/worktrees/

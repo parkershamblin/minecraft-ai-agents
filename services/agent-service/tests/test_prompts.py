@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from agent_service.brain.awareness import LastDecision
+from agent_service.brain.awareness import FailureStreak, LastDecision
 from agent_service.brain.prompts import system_prompt, user_prompt
 from agent_service.villagers.relationships import RelationshipEdge
 
@@ -208,6 +208,18 @@ def test_last_decision_without_outcome_is_honest():
 def test_no_last_decision_section_by_default():
     prompt = user_prompt(_snapshot(), [], [])
     assert "Your last decision" not in prompt
+
+
+def test_failure_streaks_render_a_change_course_section():
+    streaks = [FailureStreak(intent="gather iron_ore", count=3)]
+    prompt = user_prompt(_snapshot(), [], [], failure_streaks=streaks)
+    assert "CHANGE COURSE" in prompt
+    assert "gather iron_ore — refused 3 times in a row" in prompt
+
+
+def test_no_change_course_section_without_streaks():
+    prompt = user_prompt(_snapshot(), [], [], failure_streaks=[])
+    assert "CHANGE COURSE" not in prompt
 
 
 # ------------------------------------------------------------------- hazards

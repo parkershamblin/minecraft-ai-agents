@@ -1,0 +1,24 @@
+{
+  "unit": 4,
+  "title": "killMob primitive — live mineflayer-pvp combat",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/97",
+  "recordedAt": "2026-07-28T14:56:00Z (take 3 — staged in the demo-cam foreground)",
+  "clip": "out.mp4",
+  "clipDurationS": 74,
+  "scenario": "REAL merged killMob primitive (unmodified) over live deps: bot.nearestEntity search, mineflayer-pvp 1.3.2 attack/stop engagement (the root-override single-mineflayer tree), entity-gone confirmation, drop sweep. Three pigs summoned in the cam's field of view; wooden sword equipped.",
+  "invocations": [
+    { "attempt": 1, "result": { "ok": true, "killed": true, "costMs": 3752 } },
+    { "attempt": 2, "result": { "ok": true, "killed": true, "costMs": 3790 } },
+    { "attempt": 3, "result": { "ok": true, "killed": true, "costMs": 4829 } }
+  ],
+  "evidence": {
+    "onCamera": "Actor visible full-frame under the oak; hunts and kills three pigs in sequence; drops auto-collected during combat (porkchops in final inventory).",
+    "pvpStopInvariant": "pvp.stop() called on every exit path per the primitive's design — no leaked engagement between hunts (attempt N+1 starts clean).",
+    "honestFailure": "Take 2 (kept in logs) ended with an honest TARGET_NOT_FOUND 'no pig within 48 blocks' when the third pig wandered out of search radius — the exact prose a deliberating LLM would read.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "dropsCollected counter reads low when proximity pickup happens DURING combat (before the sweep window) — the inventory delta is the truth; adapter note for assembly.",
+    "shoot + waitForMobRemoved primitives from this PR are covered by their botless suites; killMob is the on-camera representative (hawkeye bow wiring deferred to assembly)."
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "unit": 7,
+  "title": "Stone-tier composed skills — collectCobblestone + stone tools over live primitives",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/103",
+  "recordedAt": "2026-07-28T16:37:00Z (take 2 — actor first-person; mining demo)",
+  "clip": "out.mp4",
+  "clipDurationS": 90,
+  "scenario": "REAL merged U7 skills over live adapters. U7's richer primitives seam (countItem, findBlock, equipBestTool, ITEMS-count craftItem with adapter-side conversion — this unit anticipated the U6 bug class) wired to the real U1/U2 primitives. Continuity: U6's wooden pickaxe + standing crafting table.",
+  "invocations": [
+    { "skill": "collectCobblestone", "params": { "count": 8 }, "result": { "ok": true, "collected": 8 } },
+    { "skill": "craftStonePickaxe", "result": { "ok": true, "crafted": 1 } },
+    { "skill": "craftStoneSword", "result": { "ok": true, "crafted": 1 } }
+  ],
+  "evidence": {
+    "onCamera": "First-person: equips the wooden pickaxe (tool gate), digs into the hillside — stone walls fill the frame — collects 8 cobblestone, climbs back to the surface, crafts stone pickaxe + sword at the standing table. Final inventory holds both stone tools.",
+    "toolGate": "collectCobblestone refuses without a harvest tool (TOOL_REQUIRED path pinned in its suite); live run shows the equip-first behavior.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Two live findings for assembly: (1) GoalLookAtBlock wedges at point-blank range — adapter now short-circuits inside 4 blocks (third occurrence of this wedge class); (2) mining can dig the body into a pit deeper than craftItem's 20s table-walk budget — the drill resurfaces between phases; a real caller needs the same beat or a deeper walk budget."
+  ]
+}

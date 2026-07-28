@@ -1,0 +1,82 @@
+{
+  "benchedAt": "2026-07-28T17:38:25.018Z",
+  "branch": "demo-sprint",
+  "runs": 3,
+  "wins": 0,
+  "winTimesMs": [],
+  "endReasons": [
+    "wood:RESOURCE_NOT_FOUND",
+    "wood:RESOURCE_NOT_FOUND",
+    "wood:RESOURCE_NOT_FOUND"
+  ],
+  "llmCalls": 0,
+  "perSkill": [
+    {
+      "skill": "mineWoodLog",
+      "attempts": 3,
+      "successes": 0,
+      "successRate": 0,
+      "meanCostMs": 418,
+      "failures": {
+        "RESOURCE_NOT_FOUND": 3
+      }
+    }
+  ],
+  "refinementQueueTop": [
+    {
+      "skill": "mineWoodLog",
+      "frequency": 3,
+      "failureBurden": 3
+    }
+  ],
+  "runsDetail": [
+    {
+      "run": 1,
+      "won": false,
+      "totalMs": 5000,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": false,
+          "costMs": 721,
+          "failureCode": "RESOURCE_NOT_FOUND",
+          "detail": "no wood log of any family nearby (tried oak_log, birch_log, spruce_log, jungle_log, acacia_log, dark_oak_log, mangrove_log, cherry_log, pale_oak_log, bamboo_blo"
+        }
+      ],
+      "endReason": "wood:RESOURCE_NOT_FOUND"
+    },
+    {
+      "run": 2,
+      "won": false,
+      "totalMs": 4081,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": false,
+          "costMs": 1,
+          "failureCode": "RESOURCE_NOT_FOUND",
+          "detail": "no wood log of any family nearby (tried oak_log, birch_log, spruce_log, jungle_log, acacia_log, dark_oak_log, mangrove_log, cherry_log, pale_oak_log, bamboo_blo"
+        }
+      ],
+      "endReason": "wood:RESOURCE_NOT_FOUND"
+    },
+    {
+      "run": 3,
+      "won": false,
+      "totalMs": 4625,
+      "ironPickaxe": false,
+      "steps": [
+        {
+          "skill": "mineWoodLog",
+          "ok": false,
+          "costMs": 532,
+          "failureCode": "RESOURCE_NOT_FOUND",
+          "detail": "no wood log of any family nearby (tried oak_log, birch_log, spruce_log, jungle_log, acacia_log, dark_oak_log, mangrove_log, cherry_log, pale_oak_log, bamboo_blo"
+        }
+      ],
+      "endReason": "wood:RESOURCE_NOT_FOUND"
+    }
+  ]
+}

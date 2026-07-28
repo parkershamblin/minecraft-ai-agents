@@ -12,7 +12,10 @@
     "postinstall": "patch-package"
   },
   "overrides": {
-    "canvas": "npm:noop2@2.0.0"
+    "canvas": "npm:noop2@2.0.0",
+    "mineflayer-utils": {
+      "mineflayer": "4.37.1"
+    }
   },
   "devDependencies": {
     "patch-package": "8.0.0",

@@ -35,6 +35,7 @@ const executor = new CommandExecutor({
   isFresh: (commandId) => dedupe.isFresh(commandId),
   maxCommandAgeMs: config.COMMAND_MAX_AGE_SECONDS * 1_000,
   maxTimeoutMs: config.COMMAND_TIMEOUT_MAX_MS,
+  maxMoveDistance: config.MOVE_MAX_DISTANCE,
   publishOutcome: (command, eventType, extra) =>
     producer.publish(
       'world.events',

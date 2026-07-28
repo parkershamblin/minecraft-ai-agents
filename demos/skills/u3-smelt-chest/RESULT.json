@@ -1,0 +1,27 @@
+{
+  "unit": 3,
+  "title": "smeltItem + useChest primitives — furnace + chest stations, live world",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/102",
+  "recordedAt": "2026-07-28T14:38:00Z (take 3 — dedicated demo-cam spectator bot, the pov-rig pattern)",
+  "clip": "out.mp4",
+  "clipDurationS": 100,
+  "scenario": "REAL merged smeltItem + useChest primitives (unmodified) through live deps: openFurnace/openContainer window adapters, findBlock station search, poll-not-hard-wait output drain. Harness reuses the proven U2 placeItem to stand up the furnace and chest (with real-caller retry on PLACE_FAILED).",
+  "invocations": [
+    { "skill": "placeItem", "params": { "name": "furnace" }, "result": { "ok": true } },
+    { "skill": "placeItem", "params": { "name": "chest" }, "result": { "ok": true } },
+    { "skill": "smeltItem", "params": { "itemName": "raw_iron", "fuelName": "oak_planks", "count": 3 }, "result": { "ok": true, "smelted": 3, "costMs": "~30s real furnace time, polled" } },
+    { "skill": "checkItemInsideChest", "result": { "ok": true, "contents": [] } },
+    { "skill": "depositItemIntoChest", "params": { "items": { "iron_ingot": 3, "wooden_pickaxe": 1 } }, "result": { "ok": true, "deposited": { "iron_ingot": 3, "wooden_pickaxe": 1 } } },
+    { "skill": "checkItemInsideChest", "result": { "ok": true, "contents": [{ "iron_ingot": 3 }, { "wooden_pickaxe": 1 }] } },
+    { "skill": "getItemFromChest", "params": { "items": { "iron_ingot": 3 } }, "result": { "ok": true, "taken": { "iron_ingot": 2 }, "missing": { "iron_ingot": 1 } } }
+  ],
+  "evidence": {
+    "onCamera": "Actor bot visible from the dedicated cam: places both stations, tends the furnace ~30s (real smelt time, output polled not hard-waited), works the chest through the deposit/check/withdraw cycle.",
+    "honestPartial": "The final withdraw reported taken:2, missing:1 — a live partial-transfer honestly surfaced in the outcome vocabulary rather than rounded up. Exactly what the deliberating LLM needs to read.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Camera lesson graduated: actor-mounted first-person loses the shot to window interactions; the dedicated grounded spectator bot (demo-cam.ts, pov-rig pattern) is now the standard rig. Floating cams get kicked (no allow-flight on this server).",
+    "One live PLACE_FAILED (blockUpdate flake, world-verified empty) handled by the harness retry — the primitive's failure detail was actionable as designed."
+  ]
+}

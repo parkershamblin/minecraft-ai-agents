@@ -1,8 +1,10 @@
 """The LLM port — ports-and-adapters seam for deliberation.
 
-Chain: openai -> ollama -> fake (boot-probed); a daily token budget circuit
-breaker wraps whichever provider wins. The decision contract binds LLM output
-to the same packages/events schema the wire uses.
+Chain: openai -> anthropic -> ollama -> fake (boot-probed); a daily token
+budget circuit breaker wraps whichever provider wins. The decision contract
+binds LLM output to the same packages/events schema the wire uses. Frontier
+providers carry the decision as a single forced strict tool call; the local
+Ollama path keeps the grammar-constrained JSON channel.
 """
 
 from agent_service.llm.contract import Decision, MalformedDecision, validate_decision

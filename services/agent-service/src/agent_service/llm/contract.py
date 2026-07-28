@@ -310,3 +310,130 @@ def validate_decision(raw_text: str) -> Decision:
         ),
         governance_action=_parse_governance(data.get("governanceAction")),
     )
+
+
+# ------------------------------------------------------------- native tools
+# The frontier-provider tool parameters (owner decision 2026-07-27): OpenAI
+# and Anthropic call a single forced 'decide' tool under strict mode, while
+# the local Ollama grammar path keeps DECISION_SCHEMA byte-identical — no
+# decode-grammar change for local models, so no benchmark configVersion
+# churn. Strict tool grammars reject free-form objects and constraint
+# keywords, so this shape tightens `params` to a union of the REAL per-verb
+# $defs and strips the bounds for the wire; validate_decision still enforces
+# the full contract post-parse, where the error messages are better.
+
+# Keywords the strict grammars (OpenAI strict tools / Anthropic strict tool
+# use) reject or ignore — dropped for the wire only; bounds stay enforced
+# locally by validate_decision.
+_STRICT_UNSUPPORTED_KEYWORDS = frozenset(
+    {
+        "default",
+        "minimum",
+        "maximum",
+        "exclusiveMinimum",
+        "exclusiveMaximum",
+        "multipleOf",
+        "minLength",
+        "maxLength",
+        "pattern",
+        "format",
+        "minItems",
+        "maxItems",
+    }
+)
+
+
+@cache
+def _action_defs() -> dict[str, Any]:
+    contract_path = find_contracts_dir() / "commands" / "ActionRequested.v1.schema.json"
+    return json.loads(contract_path.read_text(encoding="utf-8"))["$defs"]
+
+
+def _resolve_refs(node: Any, defs: dict[str, Any]) -> Any:
+    """Inline '#/$defs/X' refs so a def can be embedded in a document with a
+    different root (the tool parameters handed to providers)."""
+    if isinstance(node, dict):
+        if "$ref" in node:
+            name = str(node["$ref"]).rsplit("/", 1)[-1]
+            resolved = _resolve_refs(defs[name], defs)
+            extra = {k: _resolve_refs(v, defs) for k, v in node.items() if k != "$ref"}
+            return {**resolved, **extra}
+        return {key: _resolve_refs(value, defs) for key, value in node.items()}
+    if isinstance(node, list):
+        return [_resolve_refs(item, defs) for item in node]
+    return node
+
+
+def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
+    """Strict-mode discipline, applied recursively: every object closed with
+    every property required; previously-optional properties become nullable
+    (nullable enums gain null as a member) so 'omit' stays expressible —
+    _normalize_params strips explicit nulls before wire validation, so
+    decode-side null and wire-side absence agree."""
+    out = {k: v for k, v in schema.items() if k not in _STRICT_UNSUPPORTED_KEYWORDS}
+    if isinstance(out.get("properties"), dict):
+        originally_required = set(out.get("required", []))
+        props: dict[str, Any] = {}
+        for key, sub in out["properties"].items():
+            if isinstance(sub, dict):
+                sub = _strictify(sub)
+                if key not in originally_required:
+                    if isinstance(sub.get("enum"), list):
+                        # Nullable ENUM must be anyOf(enum, null): Anthropic's
+                        # strict validator 400s on a type array paired with
+                        # enum members ("Enum value 'wood' does not match
+                        # declared type ['string','null']" — live smoke,
+                        # 2026-07-27). anyOf reads the same to both providers.
+                        sub = {"anyOf": [sub, {"type": "null"}]}
+                    else:
+                        t = sub.get("type")
+                        if isinstance(t, str) and t != "null":
+                            sub = {**sub, "type": [t, "null"]}
+                        elif isinstance(t, list) and "null" not in t:
+                            sub = {**sub, "type": [*t, "null"]}
+            props[key] = sub
+        out["properties"] = props
+        out["required"] = list(props)
+        out["additionalProperties"] = False
+    if isinstance(out.get("items"), dict):
+        out["items"] = _strictify(out["items"])
+    for keyword in ("anyOf", "oneOf", "allOf"):
+        if isinstance(out.get(keyword), list):
+            out[keyword] = [_strictify(s) if isinstance(s, dict) else s for s in out[keyword]]
+    return out
+
+
+@cache
+def decision_tool_schema() -> dict[str, Any]:
+    """The `input_schema`/`parameters` for the single forced 'decide' tool on
+    the frontier providers (Anthropic's own guidance for many related actions
+    is literally "group them into a single tool with an action parameter").
+
+    - reasoning FIRST: constrained decoding emits keys in schema order, and
+      deciding before rationalizing was the measured failure mode (brief
+      CoT-first cut wrong-function selection 30.5%%->1.5%%, arXiv 2604.02155).
+    - params tightens from free-form to an anyOf union of the real per-verb
+      shapes from ActionRequested.v1 (refs inlined; idle = the closed empty
+      object) — strict mode rejects free-form objects (the M1-3 latent 400).
+    - strictified: objects closed, everything required-nullable, constraint
+      keywords stripped for the wire.
+
+    The Ollama grammar path deliberately does NOT use this schema — its
+    decode grammar stays byte-identical to DECISION_SCHEMA.
+    """
+    schema = json.loads(json.dumps(DECISION_SCHEMA))  # deep copy, cache-safe
+    props = schema["properties"]
+    schema["properties"] = {"reasoning": props.pop("reasoning"), **props}
+    try:
+        defs = _action_defs()
+    except FileNotFoundError:
+        defs = None  # never true in service images (packages/events is COPY'd in)
+    if defs is not None:
+        branches = [
+            _resolve_refs(defs[_PARAMS_DEF_BY_ACTION[action]], defs)
+            for action in DELIBERATE_ACTIONS
+            if action in _PARAMS_DEF_BY_ACTION
+        ]
+        branches.append({"type": "object", "properties": {}, "additionalProperties": False})  # idle
+        schema["properties"]["params"] = {"anyOf": branches}
+    return _strictify(schema)

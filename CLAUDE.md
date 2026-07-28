@@ -144,18 +144,139 @@ depth-scaled trip budget. Discards on record, none silent: 11 v3 (Elara
 reconnect storm, 625-1962 spawns/race), 7 v4 (host contention — honest,
 healthy, correct seed, still not comparable), 2 v4 + 1 v6 (mute).
 
-**Next session (2026-07-27): READ `papers/` FIRST, then pick the next
-build.** Six PDFs — `GovSim` (already load-bearing: the N-runs + mean/95%
-CI shape and greedy decoding come from it, cited in `bench/race/
-README.md`), `voyager`, `MineDojo`, `MineLand`, `MINDcraft`,
-`MindsEyeofLLMs`. Owner's intent is to decide what to build next from
-them, NOT to re-open the benchmark — that just had a full audit and is
-merged. Reading six papers serially will eat the window before the
-decision gets made; one subagent per paper returning {claim, method,
-what transfers here, what conflicts with this stack} keeps the main
-thread free for synthesis (ask the owner before spawning agents). The
-likely question is "what capability next", so weigh findings against
-`docs/architecture/10-red-vs-blue.md` (roadmap beyond T1 unchanged).
+**Update (2026-07-27, branch `feedback-loop-close` — papers READ, top
+candidate BUILT):** Six-paper sweep done (one subagent per paper);
+synthesis + ranked shortlist: `docs/reports/papers-synthesis-2026-07-27.md`.
+Convergent verdicts: NL negotiation/coordination is DEAD at 8B (GovSim,
+MINDcraft, MineLand independently — structured state, not chat, must carry
+coordination); GovSim's oracle universalization hint is the ONE finding
+proven on our model class (llama-3-8B 1.0→8.0 months, temp 0); Voyager's
+self-verification is the −73% component and our ledger does it rule-based
+for free; VoT REGRESSES at 8B (spatial truth stays code-side); MINDcraft's
+success-filtered SFT lifts llama3-8b 0.00→0.28 (beats gpt-4o) from ~200
+winning trajectories — our ledger already logs that raw material. Shortlist:
+(1) close-the-loop BUILT, (2) governance-quota arc (universalization as
+elected policy), (3) ledger→SFT exporter, (4) verb-plan skill library,
+(5) prompt-wins bundle. BUILT this session, tests green (minecraft-service
+379 + tsc clean, agent-service 228), NOT deployed, zero contract changes:
+far-target move gate (`MOVE_MAX_DISTANCE` env, default 128 horizontal
+blocks; fast PATH_NOT_FOUND with a staging-waypoint message BEFORE
+pathfinding — gather/hunt already had contract clamps 64/48, move had none)
++ abandon-and-repropose (`ActionAwareness` failure streaks keyed by intent
+identity; plumbing codes SUPERSEDED/STALE_COMMAND/BODY_BUSY/… never count;
+3 consecutive substantive refusals → standing "CHANGE COURSE" prompt
+section, cleared by success or 10 quiet ticks — expiry so a stale ban can't
+block a race win).
+
+**Update (2026-07-27, same branch — owner reset + function calling at the
+provider seam):** Owner DISCARDED everything after the paper-sweep baseline
+(commit `56823ad` reverts ADR 11 beat-the-game, phase-A verbs+skills,
+hawkeye pin, and the first FC pass — all recoverable at `5f738d6`) and
+directed: implement Stephen Blum's function-calling advice, native tools
+where APIs support it. SHIPPED (`e47baae`, agent-service 241 green, 13 new):
+OpenAI now sends ONE forced strict function tool `decide`
+(tool_choice pinned, parallel off) instead of response_format; NEW
+AnthropicProvider (Messages API, forced strict tool, thinking disabled, NO
+temperature — sampling params are removed on current Claude models, so
+Anthropic decisions are not greedy-reproducible); `decision_tool_schema()`
+in contract.py (reasoning-first, params anyOf union of ActionRequested
+$defs, strictified, bounds stripped for the wire); chain now
+openai → anthropic → ollama → fake; settings `ANTHROPIC_API_KEY` +
+`LLM_MODEL_ANTHROPIC` (default claude-sonnet-5 — fable rejects the
+disabled-thinking fast path). **Ollama decode grammar BYTE-IDENTICAL —
+no configVersion churn; test-pinned in `test_tool_schema.py`.**
+Re-verification workflow (5 lanes, live sources + live probes on this box's
+Ollama, full verdict `docs/reports/function-calling-2026-07-27.md`):
+Ollama do-not-migrate CONFIRMED on every claim at v0.32.5 (tools
+template-parsed — `tools/tools.go` is a text parser; no tool_choice —
+"required" silently ignored live; gemma3 400s; tools+format suppression
+reproduced live; NEW #15539: gemma4 tools parser fails under
+system+think:false — our exact config; live llama probe: tools-channel
+decisions THINNER than grammar-channel — params {} vs real params).
+Stale belief corrected: OpenAI strict mode DOES support numeric
+bounds/anyOf/$refs since May 2025; conservative strip kept because
+Anthropic strict does not. Stephen's advice + RSG architecture points saved
+to agent memory (stephen-blum-function-calling-advice).
+
+**Update (2026-07-28, DEPLOYED — villagers LIVE on Claude):** Owner funded
+the key; agent-service redeployed (`up -d --build --no-deps agent-service`),
+boot log `llm provider: anthropic` model claude-sonnet-5, 6 villagers at
+30s tick. Ledger confirms the full loop: Claude decision (gather iron_ore,
+percept-grounded reasoning) → ActionRequested → executor
+`TOOL_TIER_REQUIRED` refusal → memory written → follow-up `craft planks`.
+Run config: `.env` LLM_PROVIDER=anthropic, LLM_DAILY_TOKEN_BUDGET=4000000
+(≈63 min at observed 5.3k tok/tick × 12 calls/min before the breaker flips
+to FAKE — pollution risk, watch it), LLM_TEAM_MODELS blanked. Burn ≈
+$13-14/hr at Sonnet rates, no prompt caching yet (cache_control on the
+tools/system prefix is the obvious next cost lever). NEW PERMANENT GOTCHA:
+**this machine's shell profile EXPORTS a race-config env block
+(LLM_PROVIDER=ollama, LLM_TEAM_MODELS=red/blue, LLM_DAILY_TOKEN_BUDGET=100M,
+VILLAGER_COUNT, TICK_INTERVAL_SECONDS…) and compose interpolation takes
+process env OVER --env-file** — the first deploy silently came up on
+ollama+team brains despite a correct .env. `unset` the block (or run
+compose from a clean shell) before any deploy that changes LLM config.
+
+**Update (2026-07-28 04:16Z, Claude run HALTED — owner call, cost):** The
+live Claude run burned its 4M budget in 69 min (breaker tripped 03:58:12,
+~$12-14 of $20 — Sonnet at 6×30s tick is ~$13.7/hr) then ran FAKE
+deliberation 03:58→04:16 stop (**pollution window UNAUDITED** — check the
+ledger for the FakeProvider fingerprints: "A pleasant exchange in the
+morning sun", "Good day! The weather holds…", scripted relationshipUpdates
+toward Bram). Fleet restored on ollama/gemma3:12b 04:17, zero API burn.
+Owner's affordability ceiling: **$1/hr**. Agreed direction (NOT built):
+event-driven deliberation — wire `request_reactive` to
+ActionCompleted/ActionFailed + threat percepts (today it fires on chat
+only, scheduler.py already has wakeups+guards), clock tick becomes ~300s
+fallback heartbeat, pacing caps as the enforced $-ceiling; then Haiku
+fleet ≈ $1/hr ≈ ~140 event-aligned decisions/hr. Multi-step plan-slices
+(one decision drives minutes) is the follow-up multiplier.
+
+**Update (2026-07-28, demo-sprint COMPLETE — skill layer built, filmed, assembled):**
+Owner-directed /batch built the FULL skill-library plan in one day, all on
+branch `demo-sprint` (pushed): 13 worktree units -> 13 PRs (#96-#108, all
+squash-merged), then an OBS demo GATE — 11 live clips, each owner-approved
+before the next (demos/skills/STATUS.md + per-unit RESULT.json). Suite 726
+green. What exists now: skills kernel (types/names, closed failure vocab,
+1.21.6 guards) · 11 Voyager primitives ported typed+deps-injected · 17
+library skills (wood/stone/ore-smelt/food-combat tiers, schema stubs
+co-located) · mastery machinery (stats.ts fold + policy.ts gate/refine/
+deprecate/UCB) · Tier 1 plugins wired in BotSession behind PLUGIN_* flags
+(all six, pvp via root npm override — single mineflayer tree verified) ·
+ASSEMBLY: src/skills/{adapters,registry,index}.ts — live deps carrying every
+gate lesson (point-blank GoalLookAtBlock reach guard, typed pickup counting
+keyed to dug block's drop, dig-site stand before sweep, Promise.raced walks,
+600ms post-craft settle), registry binds all 27 skills/primitives through
+the four tier shims with per-invocation SkillInvocationRecord capture.
+GATE-CAUGHT BUGS (all fixed+regression-tested): items-vs-applications
+conflation in craftPlanks/craftSticks (unit fakes had pinned the wrong
+assumption); junk-pickup miscounting (dirt counted as ore); post-craft
+inventory-sync race; unwatchdogged drop-walk wedge; armor-manager auto-equip
+NEVER fired on /give pickup (validates hand-rolled ArmorWatcher — run
+PLUGIN_ARMOR_MANAGER=0). Mastery demo over 25,460 real bench-window events:
+refinementQueue ranks ledger:gather burden 10,259 (23% @ 13,339 attempts) —
+the known iron-timeout ceiling, now quantified. FILMING RIG: obs-record.mjs
+(websocket 5.x, creds in .env) + demo-cam.ts (grounded spectator; floating
+cams get KICKED — no allow-flight) + skill-drill-u*.ts per demo; camera per
+demo content (first-person for roaming, spectator for staged), probe-frame +
+freezedetect + phase-frames MANDATORY before shipping any clip (two frozen
+clips shipped without them). Prismarine-viewer trap: stale tabs reconnect to
+new servers keeping OLD camera position. Next (owner-gated): free Ollama
+benchmark vs ported skills (version-drift surfacing, instruction step 3);
+unit-10 contract PR (docs/architecture/10-skill-tool-schema.md, one atomic
+configVersion bump, fixes SUPERSEDED enum gap + stale generated/ts);
+demo-sprint -> main PR when owner calls it.
+
+**Next session:** (1) Anthropic live smoke DONE (2026-07-27, owner added
+key + credits): claude-sonnet-5 forced decide call green end-to-end after
+one real 400 the smoke caught — Anthropic strict rejects type-array+enum
+nullable shapes; fixed as anyOf(enum, null) in `_strictify` (`9bf2620`).
+9.9s latency, 3001/245 tokens. OpenAI smoke STILL PENDING (no key) —
+required before any OpenAI filming run (risk: anyOf-union acceptance).
+(2) Owner decisions still open from the paper sweep: deploy/A-B of the
+far-target gate + failure streaks (GPU cost), governance-quota arc
+(contract sign-off). (3) The discarded beat-the-game arc is one
+`git revert 56823ad` (or cherry-picks from `5f738d6`) away if the owner
+wants it back — do NOT resurrect without an explicit ask.
 
 **Benchmark: DONE and merged** (PR #93 v3-v6, PR #94 v7, both on `main`).
 No benchmark work is queued. Open items carried forward, none blocking:

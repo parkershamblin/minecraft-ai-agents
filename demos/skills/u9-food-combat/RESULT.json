@@ -1,0 +1,23 @@
+{
+  "unit": 9,
+  "title": "Food + combat composed skills — craftWoodenSword, killOnePig, cookMeat",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/100",
+  "recordedAt": "2026-07-28T17:18:00Z (take 4 — spectator demo-cam, combat demo on the U4 stage)",
+  "clip": "out.mp4",
+  "clipDurationS": 69,
+  "scenario": "REAL merged U9 skills over live primitives: craftWoodenSword's from-logs chain (8 planks -> sticks -> its own table -> sword), killOnePig over live bot.pvp, cookMeat smelting the porkchop at a fresh furnace with plank fuel.",
+  "invocations": [
+    { "skill": "craftWoodenSword", "result": { "ok": true, "crafted": true } },
+    { "skill": "killOnePig", "result": { "ok": true, "killed": true } },
+    { "skill": "cookMeat", "params": { "meat": "porkchop", "count": 1 }, "result": { "ok": true, "cooked": 1 } }
+  ],
+  "evidence": {
+    "onCamera": "Spectator shot: pigs wander through the foreground, actor crafts the sword, hunts a pig, walks to the furnace and cooks the porkchop. Final inventory: wooden_swordx1, cooked_porkchopx1.",
+    "liveFindings": "Three real bugs across takes: (1) inventory-sync race — countInventory reads stale totals right after a craft (600ms settle in the adapter; assembly note for chained crafts); (2) an unreachable drop wedged the hunt forever — the drill's drop-walk lacked a Promise.race watchdog (the executor's own wedge-regression lesson, reapplied); (3) world wear — the U3 furnace's output slot still held old iron ingots, which leaked into a rehearsal's cook count (fresh furnace for the take).",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "craftWoodenSword is a from-logs chain by contract (its docstring says so) — staging gives logs, not planks; plus 2 spare planks as furnace fuel since the chain consumes exactly all 8.",
+    "Pigs summoned in the cam cone (the U4 staging pattern)."
+  ]
+}

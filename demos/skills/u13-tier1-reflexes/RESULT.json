@@ -1,0 +1,18 @@
+{
+  "unit": 13,
+  "title": "Tier 1 plugin wiring — survival reflexes below deliberation",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/108",
+  "recordedAt": "2026-07-28T13:54:00Z (take 3 — wandering bot for continuous visible motion; frame-motion check now gates every clip before delivery)",
+  "clip": "out.mp4",
+  "clipDurationS": 95,
+  "scenario": "Standalone drill bot (skill_drill) with the U13 plugin set (mineflayer-auto-eat 3.3.6, mineflayer-armor-manager 2.0.1, pathfinder) joined the LIVE world alongside the 6-villager fleet. RCON gave 8 bread and applied minecraft:hunger 15s/amp200; iron helmet+chestplate given mid-run.",
+  "evidence": {
+    "autoEat": "PROVEN on camera (take 3): REFLEX_autoeat_started fired at food=16 — the exact configured startAt threshold — then ~12 eat cycles against an amp-200 hunger effect that outpaced eating down to food=0, recovering to 20/20 when it expired. Reflex fired continuously WHILE the bot wandered on pathfinder legs — below-deliberation during body activity, the exact claim. Zero LLM calls.",
+    "armorManager": "NEGATIVE FINDING (take 2, direct armor-slot poll): iron helmet+chestplate given via /give were picked up but armor-manager's auto-equip never moved them to armor slots during the run. This validates the repo's original design choice — the hand-rolled ArmorWatcher POLLS instead of trusting the plugin's playerCollect trigger. U13's wiring keeps equipAll() at connect only; recommendation for assembly: keep PLUGIN_ARMOR_MANAGER=0 (hand-rolled fallback) until the plugin's trigger is characterized, or add a periodic equipAll nudge.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Drill bot replicates the U13 wiring path standalone; the deployed minecraft-service container still runs pre-merge code. Service-level proof lands when the container is rebuilt (up -d --build --no-deps minecraft-service), which drops and respawns the fleet — deferred to avoid disturbing the live run.",
+    "One real interop bug found and fixed during filming: auto-eat 3.3.6 CJS default import is {plugin}, not a callable — exactly the drift class the demo gate exists to catch."
+  ]
+}

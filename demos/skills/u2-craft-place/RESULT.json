@@ -1,0 +1,24 @@
+{
+  "unit": 2,
+  "title": "craftItem + placeItem primitives — full wood-tier chain, live world",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/98",
+  "recordedAt": "2026-07-28T14:15:00Z (take 4 — first-person camera + orbit choreography)",
+  "clip": "out.mp4",
+  "clipDurationS": 75,
+  "scenario": "The REAL merged craftItem + placeItem primitives (unmodified) through live deps: recipesAll adapter with the structural-Recipe map, inventory counting, findBlock table search, pathfinder walks, placeBlock with world-truth verification. Chain from 4 oak logs: planks x12 -> crafting_table -> PLACE (verified in-world at -384,66,-195) -> sticks x4 -> wooden_pickaxe via the table-required recipe path.",
+  "invocations": [
+    { "skill": "craftItem", "params": { "name": "oak_planks", "count": 4 }, "result": { "ok": true, "crafted": 12 } },
+    { "skill": "craftItem", "params": { "name": "crafting_table", "count": 1 }, "result": { "ok": true, "crafted": 1 } },
+    { "skill": "placeItem", "params": { "name": "crafting_table" }, "result": { "ok": true, "placed": true } },
+    { "skill": "craftItem", "params": { "name": "stick", "count": 1 }, "result": { "ok": true, "crafted": 4 } },
+    { "skill": "craftItem", "params": { "name": "wooden_pickaxe", "count": 1 }, "result": { "ok": true, "crafted": 1 } }
+  ],
+  "evidence": {
+    "onCamera": "First-person: logs in hand, table placed ahead (head turns to the reference block), orbit sweep around the placed table, pickaxe crafted at it. Final inventory wooden_pickaxex1, stickx2, oak_planksx7.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Three camera takes burned learning prismarine-viewer: third-person tabs RECONNECT to new viewer servers keeping their stale camera position (aerial ghost view). First-person + scripted lookAt/orbit is the reliable recipe — noted for all subsequent demos.",
+    "Materials restocked via RCON give (4 oak logs, same as U1's output) because rehearsal consumed the originals; chain logic identical."
+  ]
+}

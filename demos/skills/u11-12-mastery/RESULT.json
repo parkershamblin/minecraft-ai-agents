@@ -1,0 +1,21 @@
+{
+  "units": [11, 12],
+  "title": "Mastery machinery — stats table + selection policy over REAL ledger data",
+  "prs": ["https://github.com/parkershamblin/minecraft-ai-agents/pull/101", "https://github.com/parkershamblin/minecraft-ai-agents/pull/104"],
+  "recordedAt": "2026-07-28T17:27:00Z (terminal capture — no game window; the data IS the picture)",
+  "clip": "out.mp4",
+  "clipDurationS": 100,
+  "scenario": "The real merged stats.ts + policy.ts run over 25,460 real ActionCompleted/ActionFailed events from the committed bench windows (119 files, v3-v7 races; 277 plumbing events filtered by the awareness-derived set) plus 29 context-bearing records transcribed from today's demo gate.",
+  "headlines": {
+    "refinementQueueTop": "ledger:gather — burden 10,259 (13,339 attempts @ 23% success). The machinery independently ranks the known iron-gather timeout ceiling as THE place refinement effort pays.",
+    "masteryGate": "With ledger:gather trailing at 44% (< 0.6 threshold), buildShelter and tameWolf proposals are BLOCKED — refine before expanding; goal-path skills stay allowed.",
+    "isMastered": "Nothing qualifies yet, honestly: history has no context columns (mastery REQUIRES cross-context evidence — the skill layer captures context by construction going forward), and today's live records share one stage.",
+    "ucb": "Zero-attempt skill drawn first (+Infinity UCB), then exploration bounces as each outcome feeds the table back — nothing frozen after one success, Voyager's flaw closed.",
+    "retrievalOrder": "23 known skills capped to an 8-deep exposed surface (small-deep beats large-shallow for an 8B composer)."
+  },
+  "llmCallsDuring": 0,
+  "caveats": [
+    "Live demo-gate records transcribed from the day's RESULT.json takes (29 invocations, real results/costs/contexts); UCB draw outcomes inside the loop are simulated coin-flips purely to animate table feedback on camera.",
+    "ledger: skills carry the ledger: prefix — they are the OLD executor verbs seeded as history, not the new library skills."
+  ]
+}

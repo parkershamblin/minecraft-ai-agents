@@ -1,0 +1,58 @@
+{
+  "corpus": {
+    "files": 119,
+    "source": "bench/results/sweep/slices/*.window.json"
+  },
+  "decisions": {
+    "total": 25690,
+    "malformed": 3351,
+    "malformed_pct": 13.0,
+    "malformed_breakdown": {
+      "numeric_bounds": 3090,
+      "params_shape": 83,
+      "not_json": 178
+    },
+    "malformed_breakdown_pct": {
+      "numeric_bounds": 92.2,
+      "params_shape": 2.5,
+      "not_json": 5.3
+    },
+    "invalid_verbs": 0,
+    "verb_counts": {
+      "gather": 14013,
+      "craft": 7810,
+      "idle": 3351,
+      "move": 410,
+      "chat": 59,
+      "hunt": 47
+    }
+  },
+  "executor": {
+    "action_failed_total": 13778,
+    "by_code": {
+      "INTERNAL": 4905,
+      "RESOURCE_NOT_FOUND": 3133,
+      "TIMEOUT": 2251,
+      "TOOL_TIER_REQUIRED": 1618,
+      "TOOL_REQUIRED": 1070,
+      "PATH_NOT_FOUND": 308,
+      "SMELT_FAILED": 214,
+      "SUPERSEDED": 209,
+      "STALE_COMMAND": 46,
+      "BOT_DISCONNECTED": 21,
+      "TARGET_ESCAPED": 2,
+      "SELF_DEFENSE_IN_PROGRESS": 1
+    },
+    "plumbing_codes": [
+      "BODY_BUSY",
+      "BOT_DISCONNECTED",
+      "HAZARD_ESCAPE_IN_PROGRESS",
+      "SELF_DEFENSE_IN_PROGRESS",
+      "STALE_COMMAND",
+      "SUPERSEDED"
+    ],
+    "plumbing": 277,
+    "substantive": 13501,
+    "plumbing_pct": 2.0
+  }
+}
