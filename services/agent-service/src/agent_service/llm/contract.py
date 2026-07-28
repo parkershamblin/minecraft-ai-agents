@@ -378,13 +378,19 @@ def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
             if isinstance(sub, dict):
                 sub = _strictify(sub)
                 if key not in originally_required:
-                    t = sub.get("type")
-                    if isinstance(t, str) and t != "null":
-                        sub = {**sub, "type": [t, "null"]}
-                    elif isinstance(t, list) and "null" not in t:
-                        sub = {**sub, "type": [*t, "null"]}
-                    if isinstance(sub.get("enum"), list) and None not in sub["enum"]:
-                        sub = {**sub, "enum": [*sub["enum"], None]}
+                    if isinstance(sub.get("enum"), list):
+                        # Nullable ENUM must be anyOf(enum, null): Anthropic's
+                        # strict validator 400s on a type array paired with
+                        # enum members ("Enum value 'wood' does not match
+                        # declared type ['string','null']" — live smoke,
+                        # 2026-07-27). anyOf reads the same to both providers.
+                        sub = {"anyOf": [sub, {"type": "null"}]}
+                    else:
+                        t = sub.get("type")
+                        if isinstance(t, str) and t != "null":
+                            sub = {**sub, "type": [t, "null"]}
+                        elif isinstance(t, list) and "null" not in t:
+                            sub = {**sub, "type": [*t, "null"]}
             props[key] = sub
         out["properties"] = props
         out["required"] = list(props)
