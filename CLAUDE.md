@@ -168,13 +168,44 @@ identity; plumbing codes SUPERSEDED/STALE_COMMAND/BODY_BUSY/… never count;
 section, cleared by success or 10 quiet ticks — expiry so a stale ban can't
 block a race win).
 
-**Next session: decide deploy/A-B of `feedback-loop-close`, then candidate
-2.** The branch is local-only, uncommitted-to-main; an A/B under the race
-harness costs GPU and is the owner's call (do NOT fold into configVersion
-churn casually — see the batching note below). Candidate 2 (governance
-quota arc) needs owner sign-off on contract additions (broadcast
-announcement event → percept). The full argument for every candidate and
-the dead-end list live in the synthesis doc; per-paper page refs there.
+**Update (2026-07-27, same branch — owner reset + function calling at the
+provider seam):** Owner DISCARDED everything after the paper-sweep baseline
+(commit `56823ad` reverts ADR 11 beat-the-game, phase-A verbs+skills,
+hawkeye pin, and the first FC pass — all recoverable at `5f738d6`) and
+directed: implement Stephen Blum's function-calling advice, native tools
+where APIs support it. SHIPPED (`e47baae`, agent-service 241 green, 13 new):
+OpenAI now sends ONE forced strict function tool `decide`
+(tool_choice pinned, parallel off) instead of response_format; NEW
+AnthropicProvider (Messages API, forced strict tool, thinking disabled, NO
+temperature — sampling params are removed on current Claude models, so
+Anthropic decisions are not greedy-reproducible); `decision_tool_schema()`
+in contract.py (reasoning-first, params anyOf union of ActionRequested
+$defs, strictified, bounds stripped for the wire); chain now
+openai → anthropic → ollama → fake; settings `ANTHROPIC_API_KEY` +
+`LLM_MODEL_ANTHROPIC` (default claude-sonnet-5 — fable rejects the
+disabled-thinking fast path). **Ollama decode grammar BYTE-IDENTICAL —
+no configVersion churn; test-pinned in `test_tool_schema.py`.**
+Re-verification workflow (5 lanes, live sources + live probes on this box's
+Ollama, full verdict `docs/reports/function-calling-2026-07-27.md`):
+Ollama do-not-migrate CONFIRMED on every claim at v0.32.5 (tools
+template-parsed — `tools/tools.go` is a text parser; no tool_choice —
+"required" silently ignored live; gemma3 400s; tools+format suppression
+reproduced live; NEW #15539: gemma4 tools parser fails under
+system+think:false — our exact config; live llama probe: tools-channel
+decisions THINNER than grammar-channel — params {} vs real params).
+Stale belief corrected: OpenAI strict mode DOES support numeric
+bounds/anyOf/$refs since May 2025; conservative strip kept because
+Anthropic strict does not. Stephen's advice + RSG architecture points saved
+to agent memory (stephen-blum-function-calling-advice).
+
+**Next session:** (1) LIVE SMOKE both frontier providers before any filming
+run — no API keys on this box today; one forced-call smoke each (risks:
+Anthropic strict-keyword tolerance, OpenAI anyOf-union acceptance).
+(2) Owner decisions still open from the paper sweep: deploy/A-B of the
+far-target gate + failure streaks (GPU cost), governance-quota arc
+(contract sign-off). (3) The discarded beat-the-game arc is one
+`git revert 56823ad` (or cherry-picks from `5f738d6`) away if the owner
+wants it back — do NOT resurrect without an explicit ask.
 
 **Benchmark: DONE and merged** (PR #93 v3-v6, PR #94 v7, both on `main`).
 No benchmark work is queued. Open items carried forward, none blocking:
