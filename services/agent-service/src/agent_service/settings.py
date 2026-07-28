@@ -38,11 +38,18 @@ class Settings(BaseSettings):
 
     port: int = 8001
 
-    # --- LLM (chain: openai -> ollama -> fake, probed at boot) --------------
+    # --- LLM (chain: openai -> anthropic -> ollama -> fake, probed at boot) --
     # 'auto' walks the chain; an explicit value pins a provider (tests: fake).
     openai_api_key: str = ""
     llm_provider: str = "auto"
     llm_model_openai: str = "gpt-4o-mini"
+    # Anthropic (Claude) — the decision channel is a single FORCED strict
+    # tool call there (native function calling, 2026-07-27). Sonnet default:
+    # 6-20 villagers ticking every 30s is a high-volume loop; Opus-tier is a
+    # deliberate owner override, not a default. claude-fable-5 won't work
+    # here (it rejects the disabled-thinking fast path the provider uses).
+    anthropic_api_key: str = ""
+    llm_model_anthropic: str = "claude-sonnet-5"
     ollama_base_url: str = "http://localhost:11434"
     llm_model_ollama: str = "llama3.1:8b"
     llm_temperature: float = 0.7

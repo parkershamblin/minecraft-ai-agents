@@ -9,7 +9,7 @@ from typing import Protocol
 
 import httpx
 
-from agent_service.llm.contract import DECISION_SCHEMA
+from agent_service.llm.contract import DECISION_SCHEMA, decision_tool_schema
 from agent_service.logging import logger
 from agent_service.metrics import llm_cost_dollars_total, llm_latency_seconds, llm_tokens_total
 from agent_service.settings import Settings
@@ -19,7 +19,21 @@ from agent_service.settings import Settings
 _PRICES_PER_TOKEN: dict[str, tuple[float, float]] = {
     "gpt-4o-mini": (0.15e-6, 0.60e-6),
     "gpt-4o": (2.50e-6, 10.00e-6),
+    "claude-sonnet-5": (3.00e-6, 15.00e-6),
+    "claude-opus-5": (5.00e-6, 25.00e-6),
+    "claude-haiku-4-5": (1.00e-6, 5.00e-6),
 }
+
+# The single forced tool on the frontier providers (owner decision
+# 2026-07-27): the decision channel IS a function call there — one 'decide'
+# invocation per tick, strict schema, no open-ended loop. The description is
+# model-facing documentation; the verbs themselves are documented in the
+# system prompt, which stays the source of truth for behavior.
+_DECIDE_TOOL_DESCRIPTION = (
+    "Commit the villager's decision for this tick. Reason briefly first, then "
+    "pick exactly one action with params matching that action's shape. Call "
+    "this tool exactly once."
+)
 
 
 @dataclass(frozen=True)
@@ -178,22 +192,144 @@ class OpenAIProvider:
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
-                # strict structured outputs: the model CANNOT emit off-schema JSON
-                "response_format": {
-                    "type": "json_schema",
-                    "json_schema": {"name": "decision", "schema": DECISION_SCHEMA, "strict": True},
+                # Native FORCED strict function calling (2026-07-27, replacing
+                # response_format json_schema — same constrained-decoding
+                # machinery per OpenAI's own docs, but the tools surface is the
+                # standardized channel). tool_choice pins the call; the model
+                # cannot answer in prose or pick another function.
+                "tools": [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "decide",
+                            "description": _DECIDE_TOOL_DESCRIPTION,
+                            "parameters": decision_tool_schema(),
+                            "strict": True,
+                        },
+                    }
+                ],
+                "tool_choice": {"type": "function", "function": {"name": "decide"}},
+                "parallel_tool_calls": False,
+            },
+            timeout=60.0,
+        )
+        response.raise_for_status()
+        body = response.json()
+        message = body["choices"][0]["message"]
+        tool_calls = message.get("tool_calls") or []
+        if tool_calls:
+            text = tool_calls[0]["function"]["arguments"]
+        else:
+            # Near-impossible under forced tool_choice; degrade to whatever
+            # came back so validate_decision produces the idle fallback with
+            # a real error message instead of this seam crashing the tick.
+            text = message.get("content") or ""
+        usage = body.get("usage", {})
+        return _record(
+            LLMResponse(
+                text=text,
+                tokens_in=usage.get("prompt_tokens", 0),
+                tokens_out=usage.get("completion_tokens", 0),
+                latency_seconds=time.perf_counter() - started,
+                provider=self.name,
+                model=self.model,
+            )
+        )
+
+
+class AnthropicProvider:
+    """Claude via the Messages API with a FORCED strict tool call — the
+    native function-calling shape Anthropic documents for this exact case
+    (their guidance for many related actions: "group them into a single tool
+    with an action parameter"). Raw httpx by house convention: every provider
+    is transport-only behind one shared AsyncClient, semaphore and metrics
+    seam.
+
+    Deliberate divergences from the local-model conventions:
+    - No temperature: sampling params are REMOVED on current Claude models
+      (Opus 4.7+/Sonnet 5) — sending one 400s. Decisions on this provider are
+      not greedy-reproducible; the race harness must not assume they are.
+    - thinking explicitly disabled: a per-tick decision needs no extended
+      thinking, and disabled keeps max_tokens accounting flat (thinking
+      shares the max_tokens budget when enabled). NOTE: claude-fable-5
+      rejects disabled thinking — configure Sonnet/Opus-tier models here.
+    """
+
+    name = "anthropic"
+
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        client: httpx.AsyncClient,
+        max_concurrent: int = 4,
+    ):
+        self.model = model
+        self._api_key = api_key
+        self._client = client
+        self._gate = asyncio.Semaphore(max_concurrent)
+
+    async def complete(self, system: str, user: str) -> LLMResponse:
+        async with self._gate:
+            return await self._complete(system, user)
+
+    async def _complete(self, system: str, user: str) -> LLMResponse:
+        started = time.perf_counter()
+        response = await self._client.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": self._api_key,
+                "anthropic-version": "2023-06-01",
+            },
+            json={
+                "model": self.model,
+                # Decision JSON runs ~300 tokens; thinking is disabled so
+                # nothing hidden shares this budget.
+                "max_tokens": 2048,
+                "thinking": {"type": "disabled"},
+                "system": system,
+                "messages": [{"role": "user", "content": user}],
+                "tools": [
+                    {
+                        "name": "decide",
+                        "description": _DECIDE_TOOL_DESCRIPTION,
+                        "input_schema": decision_tool_schema(),
+                        # strict tool use is GA, no beta header: tool input is
+                        # grammar-guaranteed to match input_schema.
+                        "strict": True,
+                    }
+                ],
+                "tool_choice": {
+                    "type": "tool",
+                    "name": "decide",
+                    "disable_parallel_tool_use": True,
                 },
             },
             timeout=60.0,
         )
         response.raise_for_status()
         body = response.json()
+        tool_input = next(
+            (
+                block.get("input")
+                for block in body.get("content", [])
+                if block.get("type") == "tool_use"
+            ),
+            None,
+        )
+        if tool_input is not None:
+            text = json.dumps(tool_input)
+        else:
+            # Refusal or classifier stop: no tool_use block arrives. Hand a
+            # non-JSON marker downstream — decide_safely maps it to idle with
+            # the stop_reason in the log, never a crash.
+            text = f"(no tool_use block; stop_reason={body.get('stop_reason')})"
         usage = body.get("usage", {})
         return _record(
             LLMResponse(
-                text=body["choices"][0]["message"]["content"],
-                tokens_in=usage.get("prompt_tokens", 0),
-                tokens_out=usage.get("completion_tokens", 0),
+                text=text,
+                tokens_in=usage.get("input_tokens", 0),
+                tokens_out=usage.get("output_tokens", 0),
                 latency_seconds=time.perf_counter() - started,
                 provider=self.name,
                 model=self.model,
@@ -323,7 +459,8 @@ def _model_pulled(wanted: str, available: list[str]) -> bool:
 
 async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> LLMProvider:
     """Boot-time chain: explicit LLM_PROVIDER pins; 'auto' walks
-    openai (key present) -> ollama (reachable + model pulled, warmed) -> fake.
+    openai (key present) -> anthropic (key present) -> ollama (reachable +
+    model pulled, warmed) -> fake.
     Degrades with a structured warning — the demo never crashes on credentials."""
     choice = settings.llm_provider.lower()
 
@@ -342,6 +479,19 @@ async def build_llm_provider(settings: Settings, client: httpx.AsyncClient) -> L
         )
     if choice == "openai":
         logger.warning("LLM_PROVIDER=openai but OPENAI_API_KEY is blank — walking the chain instead")
+
+    if choice in ("auto", "anthropic") and settings.anthropic_api_key:
+        logger.info("llm provider: anthropic", model=settings.llm_model_anthropic)
+        return AnthropicProvider(
+            settings.anthropic_api_key,
+            settings.llm_model_anthropic,
+            client,
+            settings.llm_max_concurrent_requests,
+        )
+    if choice == "anthropic":
+        logger.warning(
+            "LLM_PROVIDER=anthropic but ANTHROPIC_API_KEY is blank — walking the chain instead"
+        )
 
     try:
         response = await client.get(f"{settings.ollama_base_url.rstrip('/')}/api/tags", timeout=5.0)
