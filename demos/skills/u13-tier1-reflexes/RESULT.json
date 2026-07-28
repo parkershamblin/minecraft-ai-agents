@@ -1,0 +1,18 @@
+{
+  "unit": 13,
+  "title": "Tier 1 plugin wiring — survival reflexes below deliberation",
+  "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/108",
+  "recordedAt": "2026-07-28T13:34:00Z",
+  "clip": "out.mp4",
+  "clipDurationS": 110,
+  "scenario": "Standalone drill bot (skill_drill) with the U13 plugin set (mineflayer-auto-eat 3.3.6, mineflayer-armor-manager 2.0.1, pathfinder) joined the LIVE world alongside the 6-villager fleet. RCON gave 8 bread and applied minecraft:hunger 15s/amp200; iron helmet+chestplate given mid-run.",
+  "evidence": {
+    "autoEat": "PROVEN on camera: REFLEX_autoeat_started fired at food=16 — the exact configured startAt threshold — and re-fired through five full eat cycles against the active hunger effect; run ended food 20/20 with zero LLM/deliberation involvement (fleet untouched, zero tokens).",
+    "armorManager": "INCONCLUSIVE this take: armor-slot updateSlot events fired but carried null item names (viewer-window slot indexing), so auto-equip is not proven by this log. Re-take with a corrected slot listener available on request.",
+    "llmCallsDuring": 0
+  },
+  "caveats": [
+    "Drill bot replicates the U13 wiring path standalone; the deployed minecraft-service container still runs pre-merge code. Service-level proof lands when the container is rebuilt (up -d --build --no-deps minecraft-service), which drops and respawns the fleet — deferred to avoid disturbing the live run.",
+    "One real interop bug found and fixed during filming: auto-eat 3.3.6 CJS default import is {plugin}, not a callable — exactly the drift class the demo gate exists to catch."
+  ]
+}
