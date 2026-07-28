@@ -58,12 +58,18 @@ bot.once('spawn', async () => {
     log('viewer_ready', { url: 'http://localhost:3100' })
   }
 
-  // armor-manager equips silently; expose it via armor slot changes.
-  // (bot.inventory exists only after spawn — registering here, not module level.)
-  bot.inventory.on('updateSlot', (slot, oldItem, newItem) => {
-    if (slot >= 5 && slot <= 8)
-      log('REFLEX_armor_equipped', { slot, item: newItem?.name ?? null, was: oldItem?.name ?? null })
-  })
+  // armor-manager equips silently; poll the armor slots directly (updateSlot
+  // carried null item names in take 1 — slot objects, not names).
+  let lastArmor = ''
+  setInterval(() => {
+    const worn = [5, 6, 7, 8]
+      .map((s) => bot.inventory.slots[s]?.name ?? '-')
+      .join(',')
+    if (worn !== lastArmor) {
+      log('REFLEX_armor_state', { head: worn.split(',')[0], chest: worn.split(',')[1], legs: worn.split(',')[2], feet: worn.split(',')[3] })
+      lastArmor = worn
+    }
+  }, 1000)
 
   setTimeout(() => {
     log('demo_complete', { demo, food: bot.food, health: bot.health })

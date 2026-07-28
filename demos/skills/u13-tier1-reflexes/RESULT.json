@@ -2,13 +2,13 @@
   "unit": 13,
   "title": "Tier 1 plugin wiring — survival reflexes below deliberation",
   "pr": "https://github.com/parkershamblin/minecraft-ai-agents/pull/108",
-  "recordedAt": "2026-07-28T13:34:00Z",
+  "recordedAt": "2026-07-28T13:44:00Z (take 2 — correct monitor MSI MAG323UPF + audio, owner-fixed OBS scene)",
   "clip": "out.mp4",
-  "clipDurationS": 110,
+  "clipDurationS": 95,
   "scenario": "Standalone drill bot (skill_drill) with the U13 plugin set (mineflayer-auto-eat 3.3.6, mineflayer-armor-manager 2.0.1, pathfinder) joined the LIVE world alongside the 6-villager fleet. RCON gave 8 bread and applied minecraft:hunger 15s/amp200; iron helmet+chestplate given mid-run.",
   "evidence": {
-    "autoEat": "PROVEN on camera: REFLEX_autoeat_started fired at food=16 — the exact configured startAt threshold — and re-fired through five full eat cycles against the active hunger effect; run ended food 20/20 with zero LLM/deliberation involvement (fleet untouched, zero tokens).",
-    "armorManager": "INCONCLUSIVE this take: armor-slot updateSlot events fired but carried null item names (viewer-window slot indexing), so auto-equip is not proven by this log. Re-take with a corrected slot listener available on request.",
+    "autoEat": "PROVEN on camera (take 2): REFLEX_autoeat_started fired at food=16 — the exact configured startAt threshold — then ~8 eat cycles against the active hunger effect; ended food 19/20. Zero LLM/deliberation involvement (fleet untouched, zero tokens).",
+    "armorManager": "NEGATIVE FINDING (take 2, direct armor-slot poll): iron helmet+chestplate given via /give were picked up but armor-manager's auto-equip never moved them to armor slots during the run. This validates the repo's original design choice — the hand-rolled ArmorWatcher POLLS instead of trusting the plugin's playerCollect trigger. U13's wiring keeps equipAll() at connect only; recommendation for assembly: keep PLUGIN_ARMOR_MANAGER=0 (hand-rolled fallback) until the plugin's trigger is characterized, or add a periodic equipAll nudge.",
     "llmCallsDuring": 0
   },
   "caveats": [
