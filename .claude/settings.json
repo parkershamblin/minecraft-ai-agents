@@ -4,6 +4,7 @@
   },
   "permissions": {
     "allow": [
+      "Bash(ffmpeg *)",
       "Bash(docker compose *)",
       "Bash(docker exec *)",
       "Bash(docker ps*)",
@@ -20,7 +21,8 @@
       "Bash(winget install OBSProject.OBSStudio)",
       "Bash(jq *)",
       "Bash(npm test*)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(py *)"
     ],
     "deny": [
       "Bash(task nuke*)"

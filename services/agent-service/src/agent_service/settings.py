@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     reactive_cooldown_seconds: float = 15.0
     max_reactive_per_5min: int = 3
     reactive_imminent_seconds: float = 10.0
+    # Outcome-driven wakes (D1): ActionCompleted/ActionFailed percepts may
+    # request a reactive tick. Off = pure wall-clock scheduling (A/B baseline).
+    outcome_wake_enabled: bool = True
     memories_per_tick: int = 6
 
     port: int = 8001
