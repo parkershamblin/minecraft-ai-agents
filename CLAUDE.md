@@ -168,32 +168,6 @@ identity; plumbing codes SUPERSEDED/STALE_COMMAND/BODY_BUSY/… never count;
 section, cleared by success or 10 quiet ticks — expiry so a stale ban can't
 block a race win).
 
-**Update (2026-07-27, same branch — function-calling research + schema
-fixes):** Owner's mentor (Stephen Blum, PubNub CTO) advised adopting
-function-calling tool use (saved to agent memory). Five-agent research
-sweep ran; full verdict + sources:
-`docs/reports/function-calling-research-2026-07-27.md`. Verdict: our
-one-grammar-constrained-decision-per-tick already IS the modern pattern
-(OpenAI: strict tools == strict structured outputs, same machinery;
-Anthropic explicitly recommends one tool with an action param); Ollama's
-literal `tools` API would REGRESS us — tool calls are template-parsed, not
-grammar-constrained (ollama#6002 never shipped), no tool_choice, gemma3 has
-no tool template (400s), and tools+format together triggers documented
-tool suppression (arXiv 2606.25605). SHIPPED on the branch instead, tests
-234 green + live llama smoke OK: (1) DECISION_SCHEMA reordered —
-**reasoning now FIRST** (grammar emits keys in schema order; action-first
-was post-hoc rationalization; brief-CoT-first cut wrong-function 30.5%→1.5%
-in evals — order is now test-pinned); (2) `decision_schema()` — params
-free-form → anyOf union of the real ActionRequested $defs (refs inlined,
-idle={}), decode grammar can no longer emit params no verb accepts;
-(3) `decision_schema(strict=True)` — the OpenAI strict reshape (debt item
-"params 400 since M1-3") implemented mechanically, **needs a one-call live
-OpenAI smoke before any filming run**. WARNING: decode grammar changed for
-every Ollama run — racing against v7 numbers needs a configVersion bump;
-batch with this branch's executor fixes. Ollama-upgrade gotcha to keep:
-#15260 class (`think:false` silently disabled `format` grammar on thinking
-models, fixed by 0.32.x) — re-verify after any Ollama bump.
-
 **Next session: decide deploy/A-B of `feedback-loop-close`, then candidate
 2.** The branch is local-only, uncommitted-to-main; an A/B under the race
 harness costs GPU and is the owner's call (do NOT fold into configVersion

@@ -53,16 +53,6 @@ _TIMEOUT_MS_BY_ACTION = {
     # time + the walk/place — sits AT the ceiling, never past it. (SV-3's
     # table-only worst case was ~1s + a 16-block walk.)
     "hunt": 30_000,  # HUNT_CHASE_TIMEOUT_MS (20s) + collection reserve
-    # Phase-A verbs (ADR 11, contract bump 1) — all comfortably under the
-    # ceiling; give/deposit/withdraw budget a table-flow-length walk.
-    "place_block": 20_000,
-    "use_bucket": 20_000,
-    "equip": 10_000,
-    "give": 30_000,
-    "deposit": 30_000,
-    "withdraw": 30_000,
-    "toss": 10_000,
-    "consume": 15_000,
 }
 _TIMEOUT_DEFAULT_MS = 30_000
 

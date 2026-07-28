@@ -68,23 +68,6 @@ interface Harness {
   seen: Set<string>
 }
 
-/** Phase-A session stubs (ADR 11) — happy-path defaults, overridable per test. */
-function phaseAStubs(): Pick<
-  SessionActions,
-  'placeBlock' | 'useBucket' | 'equipItem' | 'tossItem' | 'consumeItem' | 'deposit' | 'withdraw' | 'countOf'
-> {
-  return {
-    placeBlock: vi.fn(async (item: string) => ({ item, placed: item, position: { x: 1, y: 64, z: 0 } })),
-    useBucket: vi.fn(async (mode: string) => ({ mode, bucket: 'water_bucket', targetBlock: 'water', position: { x: 1, y: 63, z: 0 } })),
-    equipItem: vi.fn(async (item: string, destination: string) => ({ item, destination })),
-    tossItem: vi.fn(async (item: string, count: number) => ({ item, tossed: count })),
-    consumeItem: vi.fn(async (item: string) => ({ item, consumed: true })),
-    deposit: vi.fn(async (item: string, count: number) => ({ item, deposited: count, chestAt: { x: 2, y: 64, z: 2 } })),
-    withdraw: vi.fn(async (item: string, count: number) => ({ item, withdrawn: count, chestAt: { x: 2, y: 64, z: 2 } })),
-    countOf: vi.fn(() => 0),
-  }
-}
-
 function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partial<SessionActions> = {}): Harness {
   const outcomes: Harness['outcomes'] = []
   const seen = new Set<string>()
@@ -98,7 +81,6 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
     craft: vi.fn(async () => craftResult()),
     hunt: vi.fn(async () => huntResult()),
     stopMoving: vi.fn(),
-    ...phaseAStubs(),
     ...sessionOverrides,
   }
   const deps: ExecutorDeps = {
@@ -167,91 +149,6 @@ describe('CommandExecutor', () => {
     const h = harness({}, { position: null })
     await h.executor.execute(command('move', { to: { x: 500, y: 64, z: 500 } }))
     expect(h.session.moveTo).toHaveBeenCalled() // the pathfinder owns the verdict then
-  })
-
-  // ---- Phase-A verbs (ADR 11, contract bump 1) ----
-
-  it('place_block without item fails INVALID_PARAMS before touching the world', async () => {
-    const h = harness()
-    await h.executor.execute(command('place_block', {}))
-    expect(h.session.placeBlock).not.toHaveBeenCalled()
-    expect(h.outcomes[0]!.extra.errorCode).toBe('INVALID_PARAMS')
-  })
-
-  it('place_block passes coded session failures through verbatim', async () => {
-    const notCarried = Object.assign(new Error('you carry no torch to place'), { code: 'ITEM_NOT_CARRIED', retryable: false })
-    const h = harness({}, { placeBlock: vi.fn(async () => { throw notCarried }) })
-    await h.executor.execute(command('place_block', { item: 'torch' }))
-    expect(h.outcomes[0]!.extra.errorCode).toBe('ITEM_NOT_CARRIED')
-    expect(h.outcomes[0]!.extra.retryable).toBe(false)
-  })
-
-  it('use_bucket validates mode against the contract enum', async () => {
-    const bad = harness()
-    await bad.executor.execute(command('use_bucket', { mode: 'drink' }))
-    expect(bad.outcomes[0]!.extra.errorCode).toBe('INVALID_PARAMS')
-    const good = harness() // fresh harness — the dedupe would swallow a same-id second command
-    await good.executor.execute(command('use_bucket', { mode: 'fill', liquid: 'lava' }, 20_000))
-    expect(good.session.useBucket).toHaveBeenCalledWith('fill', 'lava', undefined)
-  })
-
-  it('toss and deposit clamp counts to the contract 1..64', async () => {
-    const tossH = harness()
-    await tossH.executor.execute(command('toss', { item: 'gold_ingot', count: 900 }))
-    expect(tossH.session.tossItem).toHaveBeenCalledWith('gold_ingot', 64)
-    const depositH = harness()
-    await depositH.executor.execute(command('deposit', { item: 'coal', count: 0 }))
-    expect(depositH.session.deposit).toHaveBeenCalledWith('coal', 1)
-  })
-
-  it('give walks to the receiver, tosses toward them, and verifies their pack grew', async () => {
-    const receiverCounts = [0, 3] // before-read 0, first poll sees the pickup
-    const receiver: SessionActions = {
-      ...harness().session,
-      position: { x: 6, y: 64, z: 0 },
-      countOf: vi.fn(() => receiverCounts.shift() ?? 3),
-    }
-    const h: Harness = harness({ getSession: (id) => (id === 'bram-id' ? receiver : h.session) })
-    await h.executor.execute(command('give', { targetVillagerId: 'bram-id', item: 'raw_iron', count: 3 }, 30_000))
-    // walked to the receiver, then stepped away for the pickup race
-    expect(h.session.moveTo).toHaveBeenCalledWith({ x: 6, y: 64, z: 0 }, 2)
-    expect(h.session.tossItem).toHaveBeenCalledWith('raw_iron', 3, { x: 6, y: 64, z: 0 })
-    expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
-    const result = h.outcomes[0]!.extra.result as Record<string, unknown>
-    expect(result.received).toBe(3)
-  })
-
-  it('give fails GIVE_FAILED when the receiver never picks up', async () => {
-    vi.useRealTimers() // the verification poll sleeps for real
-    try {
-      const receiver: SessionActions = {
-        ...harness().session,
-        position: { x: 6, y: 64, z: 0 },
-        countOf: vi.fn(() => 0), // pack never grows
-      }
-      const h = harness({ getSession: (id) => (id === 'bram-id' ? receiver : h.session) })
-      await h.executor.execute(command('give', { targetVillagerId: 'bram-id', item: 'raw_iron' }, 30_000))
-      expect(h.outcomes[0]!.extra.errorCode).toBe('GIVE_FAILED')
-      expect(h.outcomes[0]!.extra.retryable).toBe(true)
-      expect(String(h.outcomes[0]!.extra.errorMessage)).toContain('(6, 64, 0)') // names where the drop fell
-    } finally {
-      vi.useFakeTimers()
-    }
-  }, 15_000)
-
-  it('give to a villager not in the world fails PATH_NOT_FOUND without walking', async () => {
-    const h = harness({ getSession: (id) => (id === 'ghost-id' ? undefined : h.session) })
-    await h.executor.execute(command('give', { targetVillagerId: 'ghost-id', item: 'coal' }))
-    expect(h.session.moveTo).not.toHaveBeenCalled()
-    expect(h.outcomes[0]!.extra.errorCode).toBe('PATH_NOT_FOUND')
-  })
-
-  it('withdraw passes RESOURCE_NOT_FOUND through from an empty chest', async () => {
-    const empty = Object.assign(new Error('the chest at (2, 64, 2) holds no coal'), { code: 'RESOURCE_NOT_FOUND', retryable: true })
-    const h = harness({}, { withdraw: vi.fn(async () => { throw empty }) })
-    await h.executor.execute(command('withdraw', { item: 'coal', count: 4 }))
-    expect(h.outcomes[0]!.extra.errorCode).toBe('RESOURCE_NOT_FOUND')
-    expect(h.outcomes[0]!.extra.retryable).toBe(true)
   })
 
   it('watchdog emits ActionFailed{TIMEOUT} and cancels the action', async () => {
@@ -356,7 +253,6 @@ describe('CommandExecutor', () => {
       craft: vi.fn(async () => craftResult()),
       hunt: vi.fn(async () => huntResult()),
       stopMoving: vi.fn(),
-      ...phaseAStubs(),
     }
     const mover: SessionActions = {
       active: true,
@@ -368,7 +264,6 @@ describe('CommandExecutor', () => {
       craft: vi.fn(async () => craftResult()),
       hunt: vi.fn(async () => huntResult()),
       stopMoving: vi.fn(),
-      ...phaseAStubs(),
     }
     const h = harness({ getSession: (id) => (id === 'bram-id' ? target : mover) })
     await h.executor.execute(command('follow', { targetVillagerId: 'bram-id', range: 2 }))

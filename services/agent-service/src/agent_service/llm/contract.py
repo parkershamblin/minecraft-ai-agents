@@ -25,24 +25,14 @@ DELIBERATE_ACTIONS = ("move", "gather", "chat", "follow", "idle", "craft", "hunt
 GOVERNANCE_ACTIONS = ("declare_candidacy", "vote")
 
 # The outer shape handed to structured-output modes (OpenAI json_schema /
-# Ollama format). params stays free-form in this BASE — the provider-facing
-# variant with the per-verb union is decision_schema() below; validate_decision
-# enforces per-action shapes either way.
-#
-# PROPERTY ORDER IS LOAD-BEARING (2026-07-27): grammar-constrained decoding
-# (Ollama format → llama.cpp grammar; OpenAI strict) emits keys in schema
-# order, so the schema's order IS the model's generation order. reasoning
-# comes FIRST so the model deliberates before committing to an action —
-# action-first is post-hoc rationalization, and brief-reason-then-pick cut
-# wrong-function selection 30.5%→1.5% in small-model evals (arXiv 2604.02155;
-# "reason free, constrain late" — docs/reports/function-calling-research-
-# 2026-07-27.md).
+# Ollama format). params stays free-form here — strict mode dislikes
+# conditionals — and is enforced per-action by validate_decision below.
 DECISION_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "reasoning": {"type": "string", "maxLength": 600},
         "action": {"type": "string", "enum": list(DELIBERATE_ACTIONS)},
         "params": {"type": "object"},
+        "reasoning": {"type": "string", "maxLength": 600},
         "importance": {"type": "number", "minimum": 0, "maximum": 10},
         "sentiment": {"type": "number", "minimum": -1, "maximum": 1},
         # REQUIRED-NULLABLE, not optional: OpenAI strict structured outputs
@@ -94,9 +84,9 @@ DECISION_SCHEMA: dict[str, Any] = {
         },
     },
     "required": [
-        "reasoning",
         "action",
         "params",
+        "reasoning",
         "importance",
         "sentiment",
         "relationshipUpdates",
@@ -203,105 +193,16 @@ _GOVERNANCE_DEF_BY_ACTION = {
 
 
 @cache
-def _action_defs() -> dict[str, Any]:
-    contract_path = find_contracts_dir() / "commands" / "ActionRequested.v1.schema.json"
-    return json.loads(contract_path.read_text(encoding="utf-8"))["$defs"]
-
-
-@cache
 def _validators() -> tuple[Draft202012Validator, dict[str, Draft202012Validator]]:
-    defs = _action_defs()
+    contract_path = find_contracts_dir() / "commands" / "ActionRequested.v1.schema.json"
+    contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    defs = contract["$defs"]
     outer = Draft202012Validator(DECISION_SCHEMA)
     per_action = {
         action: Draft202012Validator({**defs[def_name], "$defs": defs})
         for action, def_name in _PARAMS_DEF_BY_ACTION.items()
     }
     return outer, per_action
-
-
-def _resolve_refs(node: Any, defs: dict[str, Any]) -> Any:
-    """Inline '#/$defs/X' refs so a def can be embedded in a document with a
-    different root (the decode schema handed to providers)."""
-    if isinstance(node, dict):
-        if "$ref" in node:
-            name = str(node["$ref"]).rsplit("/", 1)[-1]
-            resolved = _resolve_refs(defs[name], defs)
-            extra = {k: _resolve_refs(v, defs) for k, v in node.items() if k != "$ref"}
-            return {**resolved, **extra}
-        return {key: _resolve_refs(value, defs) for key, value in node.items()}
-    if isinstance(node, list):
-        return [_resolve_refs(item, defs) for item in node]
-    return node
-
-
-def _strictify(schema: dict[str, Any]) -> dict[str, Any]:
-    """OpenAI strict-mode discipline, applied recursively: every object closed
-    with every property required; previously-optional properties become
-    nullable (nullable enums gain null as a member) so 'omit' stays
-    expressible — _normalize_params strips explicit nulls before wire
-    validation, so decode-side null and wire-side absence agree. Annotation-
-    only `default` is dropped (strict mode rejects unknown keywords)."""
-    out = {k: v for k, v in schema.items() if k != "default"}
-    if isinstance(out.get("properties"), dict):
-        originally_required = set(out.get("required", []))
-        props: dict[str, Any] = {}
-        for key, sub in out["properties"].items():
-            if isinstance(sub, dict):
-                sub = _strictify(sub)
-                if key not in originally_required:
-                    t = sub.get("type")
-                    if isinstance(t, str) and t != "null":
-                        sub = {**sub, "type": [t, "null"]}
-                    elif isinstance(t, list) and "null" not in t:
-                        sub = {**sub, "type": [*t, "null"]}
-                    if isinstance(sub.get("enum"), list) and None not in sub["enum"]:
-                        sub = {**sub, "enum": [*sub["enum"], None]}
-            props[key] = sub
-        out["properties"] = props
-        out["required"] = list(props)
-        out["additionalProperties"] = False
-    if isinstance(out.get("items"), dict):
-        out["items"] = _strictify(out["items"])
-    for keyword in ("anyOf", "oneOf", "allOf"):
-        if isinstance(out.get(keyword), list):
-            out[keyword] = [_strictify(s) if isinstance(s, dict) else s for s in out[keyword]]
-    return out
-
-
-@cache
-def decision_schema(strict: bool = False) -> dict[str, Any]:
-    """The provider-facing decision shape: DECISION_SCHEMA with `params`
-    tightened from free-form to a union of the REAL per-verb shapes from
-    ActionRequested.v1 (refs inlined; idle = the empty object). The decode
-    grammar then cannot produce params that no verb accepts — action↔params
-    pairing stays validate_decision's post-parse job, where the error
-    messages are better.
-
-    strict=True applies OpenAI strict-mode discipline on top — the `params`
-    reshape CLAUDE.md has demanded before any OpenAI run (strict mode rejects
-    free-form objects; this path 400'd from M1-3 until 2026-07-27). Reshaped,
-    NOT yet verified against the live API — do a one-call smoke before any
-    OpenAI filming run.
-
-    Falls back to the free-form base when packages/events is unreachable —
-    never true in service images (they COPY packages/events in).
-    """
-    schema = json.loads(json.dumps(DECISION_SCHEMA))  # deep copy, cache-safe
-    try:
-        defs = _action_defs()
-    except FileNotFoundError:
-        defs = None
-    if defs is not None:
-        branches = [
-            _resolve_refs(defs[_PARAMS_DEF_BY_ACTION[action]], defs)
-            for action in DELIBERATE_ACTIONS
-            if action in _PARAMS_DEF_BY_ACTION
-        ]
-        branches.append({"type": "object", "properties": {}, "additionalProperties": False})  # idle
-        schema["properties"]["params"] = {"anyOf": branches}
-    if strict:
-        schema = _strictify(schema)
-    return schema
 
 
 @cache
