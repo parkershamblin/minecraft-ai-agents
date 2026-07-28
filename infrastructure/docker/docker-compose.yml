@@ -275,6 +275,12 @@ services:
       LLM_PROVIDER: ${LLM_PROVIDER:-auto}
       LLM_MODEL_OLLAMA: ${LLM_MODEL_OLLAMA:-llama3.1:8b}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL_OPENAI: ${LLM_MODEL_OPENAI:-gpt-4o-mini}
+      # Anthropic decision channel (forced strict tool call, 2026-07-27).
+      # Forwarded EXPLICITLY — an env var missing from this block never
+      # reaches the container (the LLM_TEMPERATURE bug class, bit twice).
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL_ANTHROPIC: ${LLM_MODEL_ANTHROPIC:-claude-sonnet-5}
       LLM_DAILY_TOKEN_BUDGET: ${LLM_DAILY_TOKEN_BUDGET:-2000000}
       # Backpressure for the shared LLM backend: excess deliberations queue at
       # the provider instead of thrashing one GPU with 20 concurrent requests.
