@@ -2,6 +2,30 @@
   "env": {
     "CLAUDE_CODE_USE_POWERSHELL_TOOL": "1"
   },
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(docker ps*)",
+      "Bash(docker logs *)",
+      "Bash(task *)",
+      "Bash(node scripts/*)",
+      "Bash(uv run *)",
+      "Bash(uvx *)",
+      "Bash(curl localhost*)",
+      "Bash(curl http://localhost*)",
+      "Bash(git *)",
+      "Bash(gh pr *)",
+      "Bash(gh api *)",
+      "Bash(winget install OBSProject.OBSStudio)",
+      "Bash(jq *)",
+      "Bash(npm test*)",
+      "Bash(npm run *)"
+    ],
+    "deny": [
+      "Bash(task nuke*)"
+    ]
+  },
   "hooks": {
     "Notification": [
       {
