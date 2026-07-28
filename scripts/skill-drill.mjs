@@ -15,7 +15,7 @@ import mineflayerPathfinder from 'mineflayer-pathfinder'
 import autoEatPkg from 'mineflayer-auto-eat'
 import armorManagerPkg from 'mineflayer-armor-manager'
 
-const { pathfinder } = mineflayerPathfinder
+const { pathfinder, Movements, goals } = mineflayerPathfinder
 // CJS interop: auto-eat 3.3.6 exports { plugin }; armor-manager is export=fn.
 const autoEat = autoEatPkg.plugin ?? autoEatPkg.default ?? autoEatPkg
 const armorManager = armorManagerPkg.default ?? armorManagerPkg
@@ -71,7 +71,29 @@ bot.once('spawn', async () => {
     }
   }, 1000)
 
+  // Visible motion: wander around spawn so the viewer shows a living bot —
+  // and proves the reflexes fire below deliberation WHILE the body walks.
+  // (A stationary eating bot renders as a frozen frame: no HUD, no animation.)
+  const movements = new Movements(bot)
+  movements.canDig = false
+  movements.allow1by1towers = false
+  bot.pathfinder.setMovements(movements)
+  const base = bot.entity.position.clone()
+  let done = false
+  ;(async () => {
+    while (!done) {
+      const dx = Math.floor(Math.random() * 17) - 8
+      const dz = Math.floor(Math.random() * 17) - 8
+      try {
+        log('wander_leg', { toX: Math.round(base.x + dx), toZ: Math.round(base.z + dz) })
+        await bot.pathfinder.goto(new goals.GoalNearXZ(base.x + dx, base.z + dz, 2))
+      } catch { /* unreachable leg — pick another */ }
+      await new Promise((r) => setTimeout(r, 500))
+    }
+  })()
+
   setTimeout(() => {
+    done = true
     log('demo_complete', { demo, food: bot.food, health: bot.health })
     bot.quit()
     process.exit(0)
