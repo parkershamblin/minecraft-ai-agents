@@ -198,9 +198,12 @@ bounds/anyOf/$refs since May 2025; conservative strip kept because
 Anthropic strict does not. Stephen's advice + RSG architecture points saved
 to agent memory (stephen-blum-function-calling-advice).
 
-**Next session:** (1) LIVE SMOKE both frontier providers before any filming
-run — no API keys on this box today; one forced-call smoke each (risks:
-Anthropic strict-keyword tolerance, OpenAI anyOf-union acceptance).
+**Next session:** (1) Anthropic live smoke DONE (2026-07-27, owner added
+key + credits): claude-sonnet-5 forced decide call green end-to-end after
+one real 400 the smoke caught — Anthropic strict rejects type-array+enum
+nullable shapes; fixed as anyOf(enum, null) in `_strictify` (`9bf2620`).
+9.9s latency, 3001/245 tokens. OpenAI smoke STILL PENDING (no key) —
+required before any OpenAI filming run (risk: anyOf-union acceptance).
 (2) Owner decisions still open from the paper sweep: deploy/A-B of the
 far-target gate + failure streaks (GPU cost), governance-quota arc
 (contract sign-off). (3) The discarded beat-the-game arc is one
