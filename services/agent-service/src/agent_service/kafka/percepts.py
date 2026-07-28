@@ -37,6 +37,24 @@ from aiokafka import AIOKafkaConsumer
 from agent_service.logging import logger
 
 _ACTION_TYPES = {"ActionCompleted", "ActionFailed"}
+
+# Outcome wake predicate (D1, event-driven deliberation). A completed or
+# substantively-failed action is the moment a villager has something new to
+# decide about; plumbing failures say nothing about the intent and SUPERSEDED
+# alone floods ~13/run at v7 — an unconditional wake here is the documented
+# GPU stampede. The scheduler's cooldown + per-5min cap still gate every
+# grant, so this predicate only decides what is WORTH proposing.
+_WAKE_COMPLETED_ACTIONS = {"gather", "craft", "hunt", "move", "follow"}
+
+
+def _wakes_deliberation(event_type: str, payload: dict) -> bool:
+    from agent_service.brain.awareness import _PLUMBING_CODES
+
+    if event_type == "ActionFailed":
+        return str(payload.get("errorCode")) not in _PLUMBING_CODES
+    if event_type == "ActionCompleted":
+        return str(payload.get("action")) in _WAKE_COMPLETED_ACTIONS
+    return False
 _CIVIC_TYPES = {
     "ElectionStarted",
     "CandidateNominated",
@@ -78,6 +96,7 @@ class PerceptConsumer:
         self._task: asyncio.Task | None = None
         # Set after scheduler construction (main.py): (villager_id, cause_event_id) -> bool.
         self.on_chat_percept: Callable[[str, str], bool] | None = None
+        self.on_outcome_percept: Callable[[str, str], bool] | None = None
         # M2-8 injections (main.py, refreshed on seed): the civic cache and the
         # broadcast roster — villagerId -> name, doubling as the fanout target
         # list and the name resolver for candidate/mayor percepts.
@@ -179,6 +198,8 @@ class PerceptConsumer:
                     "occurredAt": envelope.get("occurredAt"),
                 },
             )
+            if self.on_outcome_percept and _wakes_deliberation(event_type, payload):
+                self.on_outcome_percept(villager_id, envelope.get("eventId"))
 
         elif event_type == "HazardEncountered":
             villager_id = payload.get("villagerId")
