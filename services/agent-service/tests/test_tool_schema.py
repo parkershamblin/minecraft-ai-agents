@@ -16,6 +16,7 @@ from agent_service.llm.contract import (
     _STRICT_UNSUPPORTED_KEYWORDS,
     DECISION_SCHEMA,
     DELIBERATE_ACTIONS,
+    _action_defs,
     decision_tool_schema,
 )
 
@@ -58,6 +59,19 @@ def test_bounded_ratings_are_enums_not_open_ranges():
     assert sentiment["enum"] == [-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0]
     for field in (importance, sentiment):
         assert "minimum" not in field and "maximum" not in field
+
+
+def test_arrival_ranges_are_bounded_enums():
+    """The no-op move class. An unbounded `range` is not a loose constraint —
+    a pathfinder goal is satisfied the moment the body is ALREADY within range,
+    so a large value cancels the walk and still reports success. Measured on
+    the v8 deploy: 150 moves, median 30ms, blocksTraveled 0, model asking for
+    100/128/1000. Folded into the same bump before any v8 race."""
+    defs = _action_defs()
+    for params in ("MoveParams", "FollowParams"):
+        field = defs[params]["properties"]["range"]
+        assert field["enum"] == [1, 2, 3, 4, 5, 6, 7, 8], params
+        assert "maximum" not in field and "minimum" not in field, params
 
 
 def test_params_union_accepts_every_verb_and_idle():

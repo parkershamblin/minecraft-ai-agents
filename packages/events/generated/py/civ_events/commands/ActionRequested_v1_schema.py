@@ -66,12 +66,26 @@ class SpawnParams(BaseModel):
     spawnPosition: Position | None = None
 
 
+class Range(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+    integer_3 = 3
+    integer_4 = 4
+    integer_5 = 5
+    integer_6 = 6
+    integer_7 = 7
+    integer_8 = 8
+
+
 class MoveParams(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     to: Position
-    range: confloat(ge=0.0) | None = 1
+    range: Range | None = Field(
+        1,
+        description="How close counts as arrived, in blocks. An ENUM by rule R4, and for a sharper reason than the other bounded fields: range was an unbounded number, and a move is satisfied the moment the body is ALREADY within range of the target, so a large value turns the verb into a guaranteed no-op that still reports success. Measured live 2026-07-31 under the unbounded schema: 150 consecutive move commands, median 30ms, blocksTraveled 0 on every one, with the model emitting ranges of 100, 128 and 1000 — a third of all deliberation spent standing still while the ledger said 'arrived'. Nothing above 8 has a legitimate caller; the far-target gate already rejects destinations past 128 blocks, so any range at that scale was a no-op by construction.",
+    )
 
 
 class ChatParams(BaseModel):
@@ -90,7 +104,10 @@ class FollowParams(BaseModel):
         extra='forbid',
     )
     targetVillagerId: UUID
-    range: confloat(ge=1.0) | None = 2
+    range: Range | None = Field(
+        2,
+        description='How close to the target villager counts as caught up, in blocks. Bounded as an ENUM for the same reason as MoveParams.range (rule R4): follow resolves to the same walk, so an unbounded range made it a no-op that reported success.',
+    )
 
 
 class Resource(StrEnum):

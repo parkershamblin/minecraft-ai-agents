@@ -100,9 +100,10 @@
           "$ref": "#/$defs/Position"
         },
         "range": {
-          "type": "number",
-          "minimum": 0,
-          "default": 1
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8],
+          "default": 1,
+          "description": "How close counts as arrived, in blocks. An ENUM by rule R4, and for a sharper reason than the other bounded fields: range was an unbounded number, and a move is satisfied the moment the body is ALREADY within range of the target, so a large value turns the verb into a guaranteed no-op that still reports success. Measured live 2026-07-31 under the unbounded schema: 150 consecutive move commands, median 30ms, blocksTraveled 0 on every one, with the model emitting ranges of 100, 128 and 1000 — a third of all deliberation spent standing still while the ledger said 'arrived'. Nothing above 8 has a legitimate caller; the far-target gate already rejects destinations past 128 blocks, so any range at that scale was a no-op by construction."
         }
       },
       "required": [
@@ -136,9 +137,10 @@
           "format": "uuid"
         },
         "range": {
-          "type": "number",
-          "minimum": 1,
-          "default": 2
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8],
+          "default": 2,
+          "description": "How close to the target villager counts as caught up, in blocks. Bounded as an ENUM for the same reason as MoveParams.range (rule R4): follow resolves to the same walk, so an unbounded range made it a no-op that reported success."
         }
       },
       "required": [

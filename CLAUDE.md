@@ -29,6 +29,32 @@ name — for the `food` family that empties the box — now reads contents via
 `checkItemInsideChest` and plans against what is really there. Also fixed the
 memory-service twin of the known `.env` provider flake (pinned
 `llm_model_ollama` in the test, mirroring agent-service's fix).
+**Update (2026-07-31, same branch — DEPLOYED, and the deploy paid for itself):**
+v8 deployed to the live stack (infra + containerized Paper + 6 villagers on
+gemma3:12b at 30s tick) and the **first real `place` command landed**: attempt
+`019fbafb-02ff`, `ActionCompleted` with `position {x:-435,y:59,z:-247}` in
+7.0s, and RCON `execute if block` confirms the crafting table is really there
+— the executor -> BotSession.place -> registry -> placeItem -> world-verify
+path ran live for the first time. A `store` probe returned
+`CONTAINER_NOT_FOUND` with its full prescriptive message: a failure code that
+did not exist on the wire that morning, naming a recovery that only became
+possible because `chest` joined the craft enum in the same PR.
+**THE DEPLOY THEN FOUND A BIGGER BUG THAN THE ONE IT SHIPPED.** `MoveParams.
+range` (and `FollowParams.range`) were UNBOUNDED numbers, and the prompt said
+only `"range": number` — so the model invented values (100, 128, **1000**). A
+pathfinder goal is satisfied the moment the body is ALREADY within range, so a
+large range does not relax the walk, it **cancels** it — and the command still
+reports success. Measured live: **150 consecutive moves, median 30ms,
+`blocksTraveled` 0 on every one** — roughly a third of all deliberation spent
+standing still while the ledger read "arrived". Almost certainly a contributor
+to the "deliberates a whole race from a spot that can never serve it" class
+that v5/v6 attacked from the executor side. FOLDED INTO v8 (not a v9: nothing
+had raced under v8 yet, so it was free) — both ranges are now integer enums
+1..8, `clampRange` backs them in the executor, the SYSTEM_TEMPLATE line states
+the default and warns that a large range cancels the walk, and
+`test_arrival_ranges_are_bounded_enums` + 8 executor cases pin it shut.
+Suites after: minecraft 761, agent 247, memory 51, contracts 25, exit 0.
+
 **OWNER DECISION OPEN: the verb NAMES.** The design doc listed them DRAFT
 ("names settle at PR time with the owner"); they shipped as designed. Renaming
 is cheap NOW and expensive after the first v8 race — it would be a second

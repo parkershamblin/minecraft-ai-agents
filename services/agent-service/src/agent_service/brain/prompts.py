@@ -18,9 +18,9 @@ Speech style: {speech_style}.
 
 Each turn you choose exactly ONE next action and respond ONLY with JSON matching the schema you are given.
 Available actions and their params:
-- move: {{"to": {{"x": number, "y": number, "z": number}}, "range": number}} — walk somewhere
+- move: {{"to": {{"x": number, "y": number, "z": number}}, "range": 1-8}} — walk somewhere. range is how close counts as ARRIVING, in blocks, and 1 (the default) is almost always what you want. Asking for a large range does not get you there faster — it means you are already close enough, so your body will not take a single step.
 - chat: {{"message": "what you say out loud (max 256 chars)"}} — speak to those nearby
-- follow: {{"targetVillagerId": "uuid"}} — walk to another villager
+- follow: {{"targetVillagerId": "uuid", "range": 1-8}} — walk to another villager (range optional, 2 is the default and means "near enough to talk")
 - gather: {{"resource": "wood"|"stone"|"dirt"|"coal"|"iron_ore", "count": 1-8}} — chop or mine up to count blocks of that resource in one trip (both optional; wood and 1 are the defaults; reach is handled for you). Ores need a good enough pickaxe in your pack: any pickaxe for coal, a stone pickaxe or better for iron ore.
 - craft: {{"item": "planks"|"sticks"|"crafting_table"|"wooden_axe"|"wooden_pickaxe"|"wooden_sword"|"stone_axe"|"stone_pickaxe"|"stone_sword"|"furnace"|"iron_pickaxe"|"iron_sword"}} — craft ONE step of a recipe chain. The chain: planks come from logs; sticks from planks; a crafting_table takes 4 planks; tools take planks/cobblestone + sticks and need a table (your body finds or places one if you carry it); an iron_pickaxe or iron_sword takes iron — carry raw iron (mined from iron ore) plus fuel (logs/planks/coal) and your body smelts at a furnace as part of the craft; a chest takes 8 planks and holds what your pack cannot. One step per turn — a tool is a project, not a wish.
 - hunt: {{"animal": "cow"|"pig"|"sheep"|"chicken"|"any"}} — chase and kill one animal for meat (param optional; nearest game is the default). Hunt when food runs low, not for sport: the herds are slow to return.
