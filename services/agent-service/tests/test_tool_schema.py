@@ -65,8 +65,9 @@ def test_arrival_ranges_are_bounded_enums():
     """The no-op move class. An unbounded `range` is not a loose constraint —
     a pathfinder goal is satisfied the moment the body is ALREADY within range,
     so a large value cancels the walk and still reports success. Measured on
-    the v8 deploy: 150 moves, median 30ms, blocksTraveled 0, model asking for
-    100/128/1000. Folded into the same bump before any v8 race."""
+    the v8 deploy: 150 moves at a median 30ms, 10 of 11 sampled completions
+    travelling zero blocks (the rest 0.8-2.8), model asking for 100/128/1000.
+    Folded into the same bump before any v8 race."""
     defs = _action_defs()
     for params in ("MoveParams", "FollowParams"):
         field = defs[params]["properties"]["range"]

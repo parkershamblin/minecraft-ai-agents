@@ -44,11 +44,19 @@ range` (and `FollowParams.range`) were UNBOUNDED numbers, and the prompt said
 only `"range": number` — so the model invented values (100, 128, **1000**). A
 pathfinder goal is satisfied the moment the body is ALREADY within range, so a
 large range does not relax the walk, it **cancels** it — and the command still
-reports success. Measured live: **150 consecutive moves, median 30ms,
-`blocksTraveled` 0 on every one** — roughly a third of all deliberation spent
-standing still while the ledger read "arrived". Almost certainly a contributor
-to the "deliberates a whole race from a spot that can never serve it" class
-that v5/v6 attacked from the executor side. FOLDED INTO v8 (not a v9: nothing
+reports success. Measured live: **150 moves completed in 25 min at a median
+30ms** (136/150 under 100ms), and in a separate sample **10 of 11 completions
+travelled zero blocks** — the rare non-zero walks were 0.8-2.8 blocks, a
+shuffle rather than a journey — while the ledger read "arrived" every time, so
+the villager never learned otherwise. (CORRECTION, same session: this was
+first written as "blocksTraveled 0 on every one" off a 4-sample snapshot, and
+that overstatement propagated into the commit message, PR #113 body, the v8
+history and this file before a wider sample corrected it. The conclusion did
+not change; the evidence had to. Same class the Phase-3 traceability review
+caught — measure before you write the number down.) Plausibly a contributor to
+the "deliberates a whole race from a spot that can never serve it" class that
+v5/v6 attacked from the executor side, though on this window the competing
+`INTERNAL` class was only 2 events against 311 completions. FOLDED INTO v8 (not a v9: nothing
 had raced under v8 yet, so it was free) — both ranges are now integer enums
 1..8, `clampRange` backs them in the executor, the SYSTEM_TEMPLATE line states
 the default and warns that a large range cancels the walk, and
