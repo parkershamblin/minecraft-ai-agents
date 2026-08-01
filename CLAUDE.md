@@ -29,6 +29,45 @@ name — for the `food` family that empties the box — now reads contents via
 `checkItemInsideChest` and plans against what is really there. Also fixed the
 memory-service twin of the known `.env` provider flake (pinned
 `llm_model_ollama` in the test, mirroring agent-service's fix).
+**Update (2026-07-31, same branch — DEPLOYED, and the deploy paid for itself):**
+v8 deployed to the live stack (infra + containerized Paper + 6 villagers on
+gemma3:12b at 30s tick) and the **first real `place` command landed**: attempt
+`019fbafb-02ff`, `ActionCompleted` with `position {x:-435,y:59,z:-247}` in
+7.0s, and RCON `execute if block` confirms the crafting table is really there
+— the executor -> BotSession.place -> registry -> placeItem -> world-verify
+path ran live for the first time. A `store` probe returned
+`CONTAINER_NOT_FOUND` with its full prescriptive message: a failure code that
+did not exist on the wire that morning, naming a recovery that only became
+possible because `chest` joined the craft enum in the same PR.
+**THE DEPLOY THEN FOUND A BIGGER BUG THAN THE ONE IT SHIPPED.** `MoveParams.
+range` (and `FollowParams.range`) were UNBOUNDED numbers, and the prompt said
+only `"range": number` — so the model invented values (100, 128, **1000**). A
+pathfinder goal is satisfied the moment the body is ALREADY within range, so a
+large range does not relax the walk, it **cancels** it — and the command still
+reports success. Best statistic, from a 21-command sample: **the fleet
+travelled 6.4 blocks in TOTAL — ~0.3 blocks per move command** (18 of 21
+exactly zero), at a median command duration of 30ms over a larger 150-command
+window, while the ledger read "arrived" every time. NOT an absolute block: a
+target farther away than its own range still walks (one 10.8-block journey
+observed), so this taxes movement rather than stopping it — but a third of a
+block per decision cannot cross the distance to a treeline. (CORRECTED TWICE
+in one session, worth remembering: first written as "blocksTraveled 0 on every
+one" off a FOUR-sample snapshot, which propagated into the commit message,
+PR #113, the v8 history and this file; an 11-sample pass corrected it, then a
+21-sample pass replaced the zero-fraction framing with the aggregate above
+after a real 10.8-block walk appeared and falsified "every". The conclusion
+never moved; the evidence moved twice. Same class the Phase-3 traceability
+review caught — sample first, then write the number, and prefer an aggregate
+over a "100% of N" claim when N is small.) Plausibly a contributor to
+the "deliberates a whole race from a spot that can never serve it" class that
+v5/v6 attacked from the executor side, though on this window the competing
+`INTERNAL` class was only 2 events against 311 completions. FOLDED INTO v8 (not a v9: nothing
+had raced under v8 yet, so it was free) — both ranges are now integer enums
+1..8, `clampRange` backs them in the executor, the SYSTEM_TEMPLATE line states
+the default and warns that a large range cancels the walk, and
+`test_arrival_ranges_are_bounded_enums` + 8 executor cases pin it shut.
+Suites after: minecraft 761, agent 247, memory 51, contracts 25, exit 0.
+
 **OWNER DECISION OPEN: the verb NAMES.** The design doc listed them DRAFT
 ("names settle at PR time with the owner"); they shipped as designed. Renaming
 is cheap NOW and expensive after the first v8 race — it would be a second

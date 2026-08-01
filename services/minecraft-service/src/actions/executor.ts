@@ -85,6 +85,24 @@ function clampStack(count: number | undefined): number {
   return Math.min(Math.max(Math.trunc(count), 1), 16)
 }
 
+/**
+ * Arrival radius for move/follow, clamped to the contract enum (1..8).
+ *
+ * This one is load-bearing, not decorative. A pathfinder goal is satisfied the
+ * moment the body is ALREADY within range, so an oversized range does not
+ * relax the walk — it cancels it, and the command still reports success.
+ * Measured live 2026-07-31 before the enum landed, with the model asking for
+ * range 100, 128 and 1000: a 21-command sample travelled 6.4 blocks in TOTAL,
+ * about 0.3 blocks per command. Not an absolute block — a target farther away
+ * than its own range still walks — but at a third of a block per decision a
+ * villager cannot reach a treeline. The schema now closes this at decode
+ * time; this clamp catches anything published by hand.
+ */
+function clampRange(range: number | undefined, fallback: number): number {
+  if (typeof range !== 'number' || !Number.isFinite(range)) return fallback
+  return Math.min(Math.max(Math.trunc(range), 1), 8)
+}
+
 const BUSY_BOUNCE = {
   escape: {
     errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
@@ -428,7 +446,7 @@ export class CommandExecutor {
             )
           }
         }
-        return await session.moveTo(to, range ?? 1)
+        return await session.moveTo(to, clampRange(range, 1))
       }
       case 'follow': {
         // One-shot follow: walk to within range of the target's CURRENT
@@ -443,7 +461,7 @@ export class CommandExecutor {
         if (!target?.active || !target.position) {
           throw new ActionError('PATH_NOT_FOUND', `target villager ${targetVillagerId} is not in the world`, true)
         }
-        return { targetVillagerId, ...(await session.moveTo(target.position, range ?? 2)) }
+        return { targetVillagerId, ...(await session.moveTo(target.position, clampRange(range, 2))) }
       }
       case 'chat': {
         const session = this.requireSession(payload.villagerId)

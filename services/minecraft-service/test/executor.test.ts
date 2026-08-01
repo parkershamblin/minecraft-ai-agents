@@ -770,3 +770,37 @@ describe('unit-10 skill verbs', () => {
     expect(h.outcomes[0]!.extra.errorCode).toBe('INTERNAL')
   })
 })
+
+describe('arrival range is bounded (the no-op move class)', () => {
+  // An oversized range does not relax a walk — a pathfinder goal is satisfied
+  // the moment the body is ALREADY within range, so the walk is cancelled and
+  // the command still reports success. Measured live before the enum landed:
+  // 150 moves, median 30ms, blocksTraveled 0, model asking for range 1000.
+  it.each([
+    [1000, 8],
+    [128, 8],
+    [100, 8],
+    [0, 1],
+    [-5, 1],
+    [undefined, 1],
+    [3, 3],
+  ] as const)('move range %s clamps to %s', async (given, expected) => {
+    const h = harness()
+    await h.executor.execute(
+      command('move', { to: { x: 10, y: 64, z: 0 }, ...(given === undefined ? {} : { range: given }) }),
+    )
+    expect(h.session.moveTo).toHaveBeenCalledWith({ x: 10, y: 64, z: 0 }, expected)
+  })
+
+  it('follow range clamps too, and defaults to 2 rather than move’s 1', async () => {
+    const target = sessionStub({ position: { x: 20, y: 64, z: 0 }, moveTo: vi.fn() })
+    const mover = sessionStub()
+    const h = harness({ getSession: (id) => (id === 'bram-id' ? target : mover) })
+    await h.executor.execute(command('follow', { targetVillagerId: 'bram-id', range: 999 }))
+    expect(mover.moveTo).toHaveBeenCalledWith({ x: 20, y: 64, z: 0 }, 8)
+
+    const h2 = harness({ getSession: (id) => (id === 'bram-id' ? target : mover) })
+    await h2.executor.execute(command('follow', { targetVillagerId: 'bram-id' }))
+    expect(mover.moveTo).toHaveBeenLastCalledWith({ x: 20, y: 64, z: 0 }, 2)
+  })
+})
