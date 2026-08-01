@@ -44,16 +44,21 @@ range` (and `FollowParams.range`) were UNBOUNDED numbers, and the prompt said
 only `"range": number` — so the model invented values (100, 128, **1000**). A
 pathfinder goal is satisfied the moment the body is ALREADY within range, so a
 large range does not relax the walk, it **cancels** it — and the command still
-reports success. Measured live: **150 moves completed in 25 min at a median
-30ms** (136/150 under 100ms), and in a separate sample **10 of 11 completions
-travelled zero blocks** — the rare non-zero walks were 0.8-2.8 blocks, a
-shuffle rather than a journey — while the ledger read "arrived" every time, so
-the villager never learned otherwise. (CORRECTION, same session: this was
-first written as "blocksTraveled 0 on every one" off a 4-sample snapshot, and
-that overstatement propagated into the commit message, PR #113 body, the v8
-history and this file before a wider sample corrected it. The conclusion did
-not change; the evidence had to. Same class the Phase-3 traceability review
-caught — measure before you write the number down.) Plausibly a contributor to
+reports success. Best statistic, from a 21-command sample: **the fleet
+travelled 6.4 blocks in TOTAL — ~0.3 blocks per move command** (18 of 21
+exactly zero), at a median command duration of 30ms over a larger 150-command
+window, while the ledger read "arrived" every time. NOT an absolute block: a
+target farther away than its own range still walks (one 10.8-block journey
+observed), so this taxes movement rather than stopping it — but a third of a
+block per decision cannot cross the distance to a treeline. (CORRECTED TWICE
+in one session, worth remembering: first written as "blocksTraveled 0 on every
+one" off a FOUR-sample snapshot, which propagated into the commit message,
+PR #113, the v8 history and this file; an 11-sample pass corrected it, then a
+21-sample pass replaced the zero-fraction framing with the aggregate above
+after a real 10.8-block walk appeared and falsified "every". The conclusion
+never moved; the evidence moved twice. Same class the Phase-3 traceability
+review caught — sample first, then write the number, and prefer an aggregate
+over a "100% of N" claim when N is small.) Plausibly a contributor to
 the "deliberates a whole race from a spot that can never serve it" class that
 v5/v6 attacked from the executor side, though on this window the competing
 `INTERNAL` class was only 2 events against 311 completions. FOLDED INTO v8 (not a v9: nothing

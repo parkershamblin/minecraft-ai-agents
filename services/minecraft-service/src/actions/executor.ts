@@ -91,11 +91,12 @@ function clampStack(count: number | undefined): number {
  * This one is load-bearing, not decorative. A pathfinder goal is satisfied the
  * moment the body is ALREADY within range, so an oversized range does not
  * relax the walk — it cancels it, and the command still reports success.
- * Measured live 2026-07-31 before the enum landed: 150 moves completed at a
- * median 30ms, and 10 of 11 sampled completions travelled zero blocks (the
- * rest 0.8-2.8 — a shuffle, not a journey), with the model asking for range
- * 100, 128 and 1000. The schema now closes this at decode time; this clamp
- * catches anything published by hand.
+ * Measured live 2026-07-31 before the enum landed, with the model asking for
+ * range 100, 128 and 1000: a 21-command sample travelled 6.4 blocks in TOTAL,
+ * about 0.3 blocks per command. Not an absolute block — a target farther away
+ * than its own range still walks — but at a third of a block per decision a
+ * villager cannot reach a treeline. The schema now closes this at decode
+ * time; this clamp catches anything published by hand.
  */
 function clampRange(range: number | undefined, fallback: number): number {
   if (typeof range !== 'number' || !Number.isFinite(range)) return fallback
