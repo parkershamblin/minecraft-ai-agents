@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 from typing import Any
 from uuid import UUID
 
@@ -20,6 +20,9 @@ class Action(StrEnum):
     idle = 'idle'
     craft = 'craft'
     hunt = 'hunt'
+    place = 'place'
+    store = 'store'
+    retrieve = 'retrieve'
 
 
 class ActionRequestedPayload(BaseModel):
@@ -33,11 +36,11 @@ class ActionRequestedPayload(BaseModel):
     villagerId: UUID
     action: Action = Field(
         ...,
-        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent).",
+        description="spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent). place/store/retrieve (unit 10) are the first verbs dispatched through the ported skill library rather than a bespoke executor path: each spends a turn, is irreversible or resource-spending, and depends on context the body cannot see — the §1 exposure rule. The chest a store/retrieve uses is FOUND by the executor, never named by the model (CONTAINER_NOT_FOUND when none is in range): coordinates off an LLM are the measured hallucination failure mode.",
     )
     params: dict[str, Any] = Field(
         ...,
-        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {}).',
+        description='Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams, place: PlaceParams, store: StoreParams, retrieve: RetrieveParams; despawn/idle take {}).',
     )
     priority: conint(ge=1, le=10) | None = 5
     timeoutMs: conint(ge=1000) = Field(
@@ -98,6 +101,17 @@ class Resource(StrEnum):
     iron_ore = 'iron_ore'
 
 
+class Count(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+    integer_3 = 3
+    integer_4 = 4
+    integer_5 = 5
+    integer_6 = 6
+    integer_7 = 7
+    integer_8 = 8
+
+
 class GatherParams(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -110,9 +124,9 @@ class GatherParams(BaseModel):
         48,
         description='Search radius in blocks. M1 shipped default 32; M2-1 raised it to 48 — the plaza sits ~40 blocks from the treeline and every M1 gather starved at small radii.',
     )
-    count: conint(ge=1, le=8) | None = Field(
+    count: Count | None = Field(
         1,
-        description='Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument.',
+        description='Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument. Expressed as an ENUM, not minimum/maximum (unit-10 rule R4): a bounded small integer range is the one constraint class every decode channel enforces — the Ollama grammar closes an enum at decode time and strict frontier tools keep it, while minimum/maximum is enforced by NO channel at decode time (grammar cannot; stripped for the frontier wire). 92.2% of malformed local decisions were numeric-bounds violations, and this field is the poster child.',
     )
 
 
@@ -149,6 +163,7 @@ class Item(StrEnum):
     stone_pickaxe = 'stone_pickaxe'
     stone_sword = 'stone_sword'
     furnace = 'furnace'
+    chest = 'chest'
     iron_pickaxe = 'iron_pickaxe'
     iron_sword = 'iron_sword'
 
@@ -159,5 +174,80 @@ class CraftParams(BaseModel):
     )
     item: Item = Field(
         ...,
-        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11).",
+        description="What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11). chest (unit 10) is the precondition of the store/retrieve verbs — without it CONTAINER_NOT_FOUND would be advice the villager cannot act on ('craft+place a chest' with no craftable chest is dead vocabulary); it takes 8 planks at a table and resolves through the same generic recipe path as furnace.",
+    )
+
+
+class Item1(StrEnum):
+    crafting_table = 'crafting_table'
+    furnace = 'furnace'
+    chest = 'chest'
+
+
+class PlaceParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    item: Item1 = Field(
+        ...,
+        description='What to place — the three pieces of village infrastructure a villager can also craft, so every PLACE_FAILED/MISSING_MATERIALS answer names a recovery the villager can actually perform. A block not carried fails MISSING_MATERIALS (craft it first).',
+    )
+    position: Position | None = Field(
+        None,
+        description='null (the default and the recommended value) = the executor picks a legal adjacent ground cell, verifying the world afterwards rather than trusting the client (the ghost-place lesson). Naming a cell is for the rare deliberate layout; a mid-air or occupied cell fails PLACE_FAILED.',
+    )
+
+
+class Item2(StrEnum):
+    wood = 'wood'
+    stone = 'stone'
+    coal = 'coal'
+    raw_iron = 'raw_iron'
+    food = 'food'
+
+
+class Count1(IntEnum):
+    integer_1 = 1
+    integer_2 = 2
+    integer_3 = 3
+    integer_4 = 4
+    integer_5 = 5
+    integer_6 = 6
+    integer_7 = 7
+    integer_8 = 8
+    integer_9 = 9
+    integer_10 = 10
+    integer_11 = 11
+    integer_12 = 12
+    integer_13 = 13
+    integer_14 = 14
+    integer_15 = 15
+    integer_16 = 16
+
+
+class StoreParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    item: Item2 = Field(
+        ...,
+        description='Resource family to deposit, resolved against what the villager actually carries (the GatherParams resource-family precedent, rule R6): the model picks the family, the executor picks the concrete stacks. Carrying none of the family fails MISSING_MATERIALS.',
+    )
+    count: Count1 | None = Field(
+        16,
+        description='How many items of the family to deposit; the executor deposits what it has if that is fewer. An ENUM by rule R4 — a bounded small integer range is the one numeric constraint every decode channel enforces.',
+    )
+
+
+class RetrieveParams(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    item: Item2 = Field(
+        ...,
+        description='Resource family to withdraw, resolved against what the chest actually holds (rule R6).',
+    )
+    count: Count1 | None = Field(
+        16,
+        description='How many items of the family to withdraw; the executor takes what is there if that is fewer. An ENUM by rule R4.',
     )

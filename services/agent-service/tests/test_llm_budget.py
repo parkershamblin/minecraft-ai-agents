@@ -16,7 +16,7 @@ class CountingProvider:
     async def complete(self, system: str, user: str) -> LLMResponse:
         self.calls += 1
         return LLMResponse(
-            text='{"action":"idle","params":{},"reasoning":"r","importance":1,"sentiment":0}',
+            text='{"action":"idle","params":{},"reasoning":"r","importance": 1,"sentiment": 0.0}',
             tokens_in=500,
             tokens_out=100,
             latency_seconds=0.01,

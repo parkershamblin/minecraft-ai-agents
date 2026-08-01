@@ -57,7 +57,7 @@ def _decision(action: str, params: dict) -> str:
             "params": params,
             "reasoning": "survival first",
             "importance": 5,
-            "sentiment": 0,
+            "sentiment": 0.0,
             "relationshipUpdates": None,
             "governanceAction": None,
         }

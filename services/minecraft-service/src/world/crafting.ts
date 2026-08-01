@@ -25,6 +25,10 @@ export const CRAFTABLE_ITEMS = [
   'stone_pickaxe',
   'stone_sword',
   'furnace',
+  // Unit 10: the precondition of store/retrieve. Resolves through the generic
+  // concrete-name path below (8 planks at a table), same as furnace — no
+  // bespoke chain, so the only thing it needed was permission.
+  'chest',
   'iron_pickaxe',
   'iron_sword',
 ] as const

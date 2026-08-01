@@ -10,8 +10,8 @@ def decision(**overrides) -> str:
         "action": "chat",
         "params": {"message": "Hello, Bram."},
         "reasoning": "Being friendly.",
-        "importance": 2.0,
-        "sentiment": 0.4,
+        "importance": 2,
+        "sentiment": 0.5,
         "relationshipUpdates": None,  # required-nullable (OpenAI strict mode)
         "governanceAction": None,  # required-nullable (M2-7)
     }
@@ -219,7 +219,7 @@ class TestToleranReaderNormalization:
 
     def test_decision_level_keys_stripped_from_params(self):
         parsed = validate_decision(
-            decision(params={"message": "hi", "importance": 5, "sentiment": 0.2})
+            decision(params={"message": "hi", "importance": 5, "sentiment": 0.25})
         )
         assert parsed.params == {"message": "hi"}
 

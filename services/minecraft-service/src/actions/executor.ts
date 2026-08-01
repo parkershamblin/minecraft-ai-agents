@@ -1,7 +1,7 @@
 import type { EventEnvelope, ActionRequestedPayload } from '@civ/events/ts'
 import type { Position } from '../world/position.ts'
 import type { BusyState } from '../bots/hazard.ts'
-import type { GatherResult } from '../bots/BotSession.ts'
+import type { GatherResult, PlaceResult, StoreResult, RetrieveResult } from '../bots/BotSession.ts'
 import type { CraftResult } from '../world/crafting.ts'
 import type { HuntResult } from '../world/hunting.ts'
 import { logger } from '../logging.ts'
@@ -19,6 +19,11 @@ export interface SessionActions {
   gather(resource: string, maxDistance: number, count: number): Promise<GatherResult>
   craft(item: string): Promise<CraftResult>
   hunt(animal: string, maxDistance: number): Promise<HuntResult>
+  /** unit-10 verbs — served out of the ported skill library, not a bespoke
+   *  executor path; they throw the same coded errors craft does. */
+  place(item: string, position: Position | null): Promise<PlaceResult>
+  store(item: string, count: number): Promise<StoreResult>
+  retrieve(item: string, count: number): Promise<RetrieveResult>
   stopMoving(): void
 }
 
@@ -71,6 +76,15 @@ class ActionError extends Error {
  */
 const LIFECYCLE_ACTIONS = new Set(['spawn', 'despawn'])
 
+/** store/retrieve counts, clamped to the contract's StoreParams/RetrieveParams
+ *  enum (1..16, default 16). The schema enum closes this at decode time on
+ *  every channel; the clamp is the belt to that braces — a hand-published
+ *  command never reaches the chest primitives with a nonsense count. */
+function clampStack(count: number | undefined): number {
+  if (typeof count !== 'number' || !Number.isFinite(count)) return 16
+  return Math.min(Math.max(Math.trunc(count), 1), 16)
+}
+
 const BUSY_BOUNCE = {
   escape: {
     errorCode: 'HAZARD_ESCAPE_IN_PROGRESS',
@@ -108,6 +122,11 @@ export function timeoutMessage(action: string, timeoutMs: number): string {
       return `the crafting errand ran past its ${budget} limit and was called off — if the walk to a crafting table ate the time, move nearer to one (or carry your own) and try again`
     case 'hunt':
       return `the hunt ran past its ${budget} limit and was called off — chase nearer game (smaller maxDistance) or move toward the herds before hunting`
+    case 'place':
+      return `setting the block down ran past its ${budget} limit and was called off — the ground nearby may be too broken to build on; move somewhere flatter and open, then try again`
+    case 'store':
+    case 'retrieve':
+      return `the errand to the chest ran past its ${budget} limit and was called off — the walk there may be the problem; move closer to the stores first, then try again`
     default:
       return `'${action}' ran past its ${budget} limit and was abandoned — try again with a smaller version of the same intent`
   }
@@ -509,9 +528,59 @@ export class CommandExecutor {
           throw err
         }
       }
+      // ---- unit-10 skill verbs -------------------------------------------
+      // Each dispatches into the ported skill library through BotSession.
+      // The bodies throw coded, prescriptive failures the same way crafting.ts
+      // does (skillVerbs.skillVerbError), so the pass-through below is the
+      // identical shape used by craft/hunt — the message is the villager's
+      // next percept and must arrive verbatim.
+      case 'place': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, position } = payload.params as { item?: string; position?: Position | null }
+        if (!item || typeof item !== 'string') {
+          throw new ActionError('INVALID_PARAMS', 'place requires params.item — what to put down', false)
+        }
+        return await this.runSkillVerb(() => session.place(item, position ?? null))
+      }
+      case 'store': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, count } = payload.params as { item?: string; count?: number }
+        if (!item || typeof item !== 'string') {
+          throw new ActionError('INVALID_PARAMS', 'store requires params.item — which goods to deposit', false)
+        }
+        // Defaults mirror the contract (StoreParams): count 16, clamped 1..16.
+        return await this.runSkillVerb(() => session.store(item, clampStack(count)))
+      }
+      case 'retrieve': {
+        const session = this.requireSession(payload.villagerId)
+        const { item, count } = payload.params as { item?: string; count?: number }
+        if (!item || typeof item !== 'string') {
+          throw new ActionError('INVALID_PARAMS', 'retrieve requires params.item — which goods to withdraw', false)
+        }
+        return await this.runSkillVerb(() => session.retrieve(item, clampStack(count)))
+      }
       default: {
         throw new ActionError('UNKNOWN_ACTION', `no handler for action '${payload.action}'`, false)
       }
+    }
+  }
+
+  /**
+   * Run one skill-library verb, translating its coded throw into ActionError.
+   * Identical in spirit to the craft/hunt catch blocks, factored out because
+   * three verbs share it — and because an UNCODED throw out of a skill must
+   * stay uncaught here: it is a genuine executor fault, and swallowing it into
+   * a tidy failure code would hide the bug behind an honest-looking percept.
+   */
+  private async runSkillVerb<T extends Record<string, unknown>>(run: () => Promise<T>): Promise<T> {
+    try {
+      return await run()
+    } catch (err) {
+      const { code, retryable } = err as Error & { code?: string; retryable?: boolean }
+      if (code) {
+        throw new ActionError(code, (err as Error).message, retryable ?? false)
+      }
+      throw err
     }
   }
 

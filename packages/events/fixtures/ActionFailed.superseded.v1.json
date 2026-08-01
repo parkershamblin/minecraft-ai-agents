@@ -1,0 +1,19 @@
+{
+  "eventId": "019f8e2b-0034-7000-8000-00000000a034",
+  "eventType": "ActionFailed",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-31T09:17:03.640Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000b2a44",
+  "correlationId": "019f8e2b-0030-7000-8000-c0de00000011",
+  "causationId": "019f8e2b-0029-7000-8000-00000000a029",
+  "payload": {
+    "commandId": "019f8e2b-0029-7000-8000-00000000a029",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "action": "gather",
+    "errorCode": "SUPERSEDED",
+    "errorMessage": "you changed your mind before this errand began — a newer intent took its place; nothing in the world refused it",
+    "retryable": false
+  }
+}

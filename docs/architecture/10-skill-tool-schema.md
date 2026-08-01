@@ -1,10 +1,15 @@
 # Skill tool-schema layer — what the LLM sees
 
-Status: **DESIGN (doc-only, unit 10 of the skills batch)**. Nothing here is
-wired; the skills kernel (`services/minecraft-service/src/skills/types.ts`,
-`names.ts`) landed with the explicit note that "nothing is wired to the
-decision contract in this batch" (types.ts:95–96). This doc is the design the
-wiring PR implements. It is "the part nobody hands us"
+Status: **PARTIALLY IMPLEMENTED** (`configVersion` 8). The wiring PR landed
+§3's failure vocabulary, §4's params rules R1–R9 plus the importance/sentiment
+rider, §5's first three verbs, and all of §6's debt — one atomic contract PR,
+one bump, as §5 requires. Still design-only: §2's staged namespaces (every
+verb ships in `overworld`, and the `GamePhase` ratchet has no milestones to
+read until the nether arc exists) and §7's UCB-ranked retrieval (the exposed
+set is small enough that the ≈30 cap does not bind yet, so `policy.ts` still
+feeds nothing). What shipped is recorded per section below.
+
+This doc remains "the part nobody hands us"
 (`docs/CONTEXT-agent-brief.md:118–121`): vendored plugins and ported Voyager
 skills give us mechanism, but the parameter types, the enums, the failure
 vocabulary the model reads to decide what to do next, and the choice of which
@@ -327,7 +332,29 @@ configVersion bump.** The RB-1 precedent is the model: "fixtures + task gen +
 FakeProvider rows + timeout-table rows, same commit (house rule)"
 (10-red-vs-blue.md:43).
 
-### 5.1 Draft new verbs (DRAFT — names settle at PR time with the owner)
+### 5.1 New verbs — SHIPPED at configVersion 8
+
+**Owner note:** the names below shipped as designed (`place`, `store`,
+`retrieve`). A rename is cheap *before* this lands in a benchmarked run and
+expensive after — it would be a second decode-grammar change and a second
+re-bench — so it is the one decision worth making now rather than later.
+
+Two changes from the draft, both forced by "a failure code with no verb that
+can return it is dead vocabulary" read in the other direction — a verb whose
+precondition nothing can satisfy is dead affordance:
+
+- `torch` left the `PlaceParams` enum. Nothing in the craft enum makes one, so
+  offering it would be a tool that can only ever fail.
+- `chest` JOINED the craft enum (8 planks, generic recipe path, no bespoke
+  chain). `CONTAINER_NOT_FOUND`'s prescribed recovery is "craft+place a
+  chest", which was advice no villager could take. The `CRAFTABLE_ITEMS`
+  assertion in `crafting.test.ts` caught this the moment the schema grew.
+
+One correction the implementation forced: `StoreParams.count` and
+`RetrieveParams.count` are TOTALS across the family, not per-stack. Retrieval
+therefore reads the chest (`checkItemInsideChest`) before withdrawing and
+plans against real contents — asking for `count` of every candidate name would
+withdraw a multiple of what was asked, and for `food` that is the whole box.
 
 Derived from the skill-local failure codes the kernel already declares (a
 failure code with no verb that can return it is dead vocabulary), and
@@ -481,6 +508,12 @@ channel has no equivalent, which is one more reason the cap is ≈30 and not
 "whatever fits".
 
 ## Appendix — what this doc pins vs leaves open
+
+Implementation status at `configVersion` 8 — SHIPPED: §3 vocabulary (all eight
+skill-local codes + `SUPERSEDED`), §3.2 (`ABORTED` plumbing, per-verb intent
+keying), §4 R1–R9 + the rating rider, §5 (three verbs, six seams, one bump),
+§6.1 and §6.2. NOT SHIPPED: §2 namespaces, §7 UCB retrieval — both wait on a
+surface big enough to need them.
 
 | Pinned by this doc | Left open (owner / PR time) |
 |---|---|

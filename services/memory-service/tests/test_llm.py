@@ -106,7 +106,12 @@ class TestChain:
                 return httpx.Response(200, json={"models": [{"name": "llama3.1:8b"}]})
             return httpx.Response(200, json={"message": {"content": "ok"}})
 
-        provider = await build_summarizer_provider(Settings(llm_provider="auto"), _client(handler))
+        # llm_model_ollama pinned explicitly: without it Settings reads the
+        # developer's .env, and a box that pins any model this fake /api/tags
+        # does not serve fails the warmup and returns None. Same flake, and
+        # same fix, as agent-service's test_llm_providers.py.
+        settings = Settings(llm_provider="auto", llm_model_ollama="llama3.1:8b")
+        provider = await build_summarizer_provider(settings, _client(handler))
         assert isinstance(provider, OllamaSummarizer)
         assert "/api/chat" in calls  # boot warmup happened
 

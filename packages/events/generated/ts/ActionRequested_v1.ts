@@ -14,11 +14,23 @@ export interface ActionRequestedPayload {
   commandId: string;
   villagerId: string;
   /**
-   * spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent).
+   * spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent). place/store/retrieve (unit 10) are the first verbs dispatched through the ported skill library rather than a bespoke executor path: each spends a turn, is irreversible or resource-spending, and depends on context the body cannot see — the §1 exposure rule. The chest a store/retrieve uses is FOUND by the executor, never named by the model (CONTAINER_NOT_FOUND when none is in range): coordinates off an LLM are the measured hallucination failure mode.
    */
-  action: "spawn" | "despawn" | "move" | "gather" | "chat" | "follow" | "idle" | "craft" | "hunt";
+  action:
+    | "spawn"
+    | "despawn"
+    | "move"
+    | "gather"
+    | "chat"
+    | "follow"
+    | "idle"
+    | "craft"
+    | "hunt"
+    | "place"
+    | "store"
+    | "retrieve";
   /**
-   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {}).
+   * Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams, place: PlaceParams, store: StoreParams, retrieve: RetrieveParams; despawn/idle take {}).
    */
   params: {
     [k: string]: unknown;

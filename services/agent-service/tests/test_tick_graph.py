@@ -216,8 +216,8 @@ async def test_governance_action_publishes_the_second_command_plane():
             "action": "chat",
             "params": {"message": "Bram has my vote — he shared his bread."},
             "reasoning": "The voting window is open and my mind is made up.",
-            "importance": 6.0,
-            "sentiment": 0.6,
+            "importance": 6,
+            "sentiment": 0.5,
             "relationshipUpdates": None,
             "governanceAction": {
                 "action": "vote",
@@ -296,7 +296,7 @@ async def test_civic_state_reaches_deliberation():
 
     spy = SpyLLM({
         "action": "idle", "params": {}, "reasoning": "listening",
-        "importance": 1.0, "sentiment": 0.0,
+        "importance": 1, "sentiment": 0.0,
         "relationshipUpdates": None, "governanceAction": None,
     })
     base = deps()
