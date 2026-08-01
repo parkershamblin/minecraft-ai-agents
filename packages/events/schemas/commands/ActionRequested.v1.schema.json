@@ -25,13 +25,16 @@
         "follow",
         "idle",
         "craft",
-        "hunt"
+        "hunt",
+        "place",
+        "store",
+        "retrieve"
       ],
-      "description": "spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent)."
+      "description": "spawn/despawn manage the bot session itself; the rest act in-world. There is deliberately NO eat verb: eating is a body reflex (survival cluster ruling — a tick buys one world action, and acquisition is the mind's job). hunt is the acquisition half: one animal per action (the single-block gather precedent). place/store/retrieve (unit 10) are the first verbs dispatched through the ported skill library rather than a bespoke executor path: each spends a turn, is irreversible or resource-spending, and depends on context the body cannot see — the §1 exposure rule. The chest a store/retrieve uses is FOUND by the executor, never named by the model (CONTAINER_NOT_FOUND when none is in range): coordinates off an LLM are the measured hallucination failure mode."
     },
     "params": {
       "type": "object",
-      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams; despawn/idle take {})."
+      "description": "Action-specific parameters; canonical shapes in $defs (spawn: SpawnParams, move: MoveParams, chat: ChatParams, follow: FollowParams, gather: GatherParams, craft: CraftParams, hunt: HuntParams, place: PlaceParams, store: StoreParams, retrieve: RetrieveParams; despawn/idle take {})."
     },
     "priority": {
       "type": "integer",
@@ -167,10 +170,9 @@
         },
         "count": {
           "type": "integer",
-          "minimum": 1,
-          "maximum": 8,
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8],
           "default": 1,
-          "description": "Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument."
+          "description": "Blocks to gather in one sustained session (SV-2): the executor loops pick→dig→collect per block and reports the total haul. Default 1 = the pre-survival single-block behavior. Capped at 8 so a full session stays inside the per-verb timeout ceiling (TIMEOUT_TABLE_MAX_MS = 60s) — the cap is load-bearing for every reflex-lockout safety argument. Expressed as an ENUM, not minimum/maximum (unit-10 rule R4): a bounded small integer range is the one constraint class every decode channel enforces — the Ollama grammar closes an enum at decode time and strict frontier tools keep it, while minimum/maximum is enforced by NO channel at decode time (grammar cannot; stripped for the frontier wire). 92.2% of malformed local decisions were numeric-bounds violations, and this field is the poster child."
         }
       },
       "additionalProperties": false
@@ -210,10 +212,95 @@
             "stone_pickaxe",
             "stone_sword",
             "furnace",
+            "chest",
             "iron_pickaxe",
             "iron_sword"
           ],
-          "description": "What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11)."
+          "description": "What to craft. planks/sticks are wood-type-abstract families — the executor resolves them against the logs/planks the villager actually carries (the GatherParams resource-family precedent); the rest name concrete items. Recipes needing a crafting table trigger the executor's acquire/place flow (SV-3). iron_pickaxe (RB-1, the T1 race win condition) additionally triggers the executor's chain-resolution: missing iron ingots are smelted from carried raw iron via the furnace acquire/place flow inside the one craft action — smelting is the body's job, not a verb (ADR-10). iron_sword (the guard arc) rides the same chain-resolution: 2 iron ingots (smelted in-craft from carried raw iron) + 1 stick at a table. Leather armor joins the enum with contract commit C (SV-11). chest (unit 10) is the precondition of the store/retrieve verbs — without it CONTAINER_NOT_FOUND would be advice the villager cannot act on ('craft+place a chest' with no craftable chest is dead vocabulary); it takes 8 planks at a table and resolves through the same generic recipe path as furnace."
+        }
+      },
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "PlaceParams": {
+      "type": "object",
+      "description": "Put one carried block into the world. Dispatched through the ported skill library's placeItem primitive (unit 10) — the first verb that is not a bespoke executor path.",
+      "properties": {
+        "item": {
+          "type": "string",
+          "enum": [
+            "crafting_table",
+            "furnace",
+            "chest"
+          ],
+          "description": "What to place — the three pieces of village infrastructure a villager can also craft, so every PLACE_FAILED/MISSING_MATERIALS answer names a recovery the villager can actually perform. A block not carried fails MISSING_MATERIALS (craft it first)."
+        },
+        "position": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Position"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null (the default and the recommended value) = the executor picks a legal adjacent ground cell, verifying the world afterwards rather than trusting the client (the ghost-place lesson). Naming a cell is for the rare deliberate layout; a mid-air or occupied cell fails PLACE_FAILED."
+        }
+      },
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "StoreParams": {
+      "type": "object",
+      "description": "Deposit carried goods into the nearest chest. The chest is FOUND by the executor, never named by the model — no chest in range fails CONTAINER_NOT_FOUND, whose recovery is craft+place one.",
+      "properties": {
+        "item": {
+          "type": "string",
+          "enum": [
+            "wood",
+            "stone",
+            "coal",
+            "raw_iron",
+            "food"
+          ],
+          "description": "Resource family to deposit, resolved against what the villager actually carries (the GatherParams resource-family precedent, rule R6): the model picks the family, the executor picks the concrete stacks. Carrying none of the family fails MISSING_MATERIALS."
+        },
+        "count": {
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+          "default": 16,
+          "description": "How many items of the family to deposit; the executor deposits what it has if that is fewer. An ENUM by rule R4 — a bounded small integer range is the one numeric constraint every decode channel enforces."
+        }
+      },
+      "required": [
+        "item"
+      ],
+      "additionalProperties": false
+    },
+    "RetrieveParams": {
+      "type": "object",
+      "description": "Take goods out of the nearest chest — the mirror of StoreParams, same executor-finds-the-chest rule. A full pack fails INVENTORY_FULL; a chest without the family fails TARGET_NOT_FOUND.",
+      "properties": {
+        "item": {
+          "type": "string",
+          "enum": [
+            "wood",
+            "stone",
+            "coal",
+            "raw_iron",
+            "food"
+          ],
+          "description": "Resource family to withdraw, resolved against what the chest actually holds (rule R6)."
+        },
+        "count": {
+          "type": "integer",
+          "enum": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+          "default": 16,
+          "description": "How many items of the family to withdraw; the executor takes what is there if that is fewer. An ENUM by rule R4."
         }
       },
       "required": [

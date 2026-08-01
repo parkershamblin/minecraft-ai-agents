@@ -15,6 +15,7 @@ from jsonschema import Draft202012Validator
 from agent_service.llm.contract import (
     _STRICT_UNSUPPORTED_KEYWORDS,
     DECISION_SCHEMA,
+    DELIBERATE_ACTIONS,
     decision_tool_schema,
 )
 
@@ -25,7 +26,7 @@ def _decision(action="gather", params=None, **overrides):
         "action": action,
         "params": params if params is not None else {"resource": "wood", "count": 2},
         "importance": 4,
-        "sentiment": 0.1,
+        "sentiment": 0.0,
         "relationshipUpdates": None,
         "governanceAction": None,
     }
@@ -37,12 +38,26 @@ def test_reasoning_is_the_first_property():
     assert next(iter(decision_tool_schema()["properties"])) == "reasoning"
 
 
-def test_base_decision_schema_is_untouched():
-    # The Ollama grammar path must not move: params stays free-form, action
-    # stays first. Any change here is a decode-grammar change for every
-    # local run and needs a benchmark configVersion bump.
+def test_base_decision_schema_keeps_its_shape():
+    # Structural invariants of the Ollama grammar path: params stays free-form
+    # (per-action $defs enforce it after the parse) and action stays first.
     assert next(iter(DECISION_SCHEMA["properties"])) == "action"
     assert DECISION_SCHEMA["properties"]["params"] == {"type": "object"}
+
+
+def test_bounded_ratings_are_enums_not_open_ranges():
+    # Unit-10 rule R4. This IS a decode-grammar change — it rode the one
+    # configVersion bump that unit 10 is allowed, deliberately, because it is
+    # the fix for the measured failure class: 92.2% of malformed local
+    # decisions were numeric-bounds violations, and bounds are enforced by no
+    # channel at decode time (the grammar cannot express them; the strict
+    # frontier wire strips them). An enum is enforced by both.
+    importance = DECISION_SCHEMA["properties"]["importance"]
+    sentiment = DECISION_SCHEMA["properties"]["sentiment"]
+    assert importance["enum"] == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    assert sentiment["enum"] == [-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0]
+    for field in (importance, sentiment):
+        assert "minimum" not in field and "maximum" not in field
 
 
 def test_params_union_accepts_every_verb_and_idle():
@@ -57,8 +72,14 @@ def test_params_union_accepts_every_verb_and_idle():
         "follow": {"targetVillagerId": "3f2504e0-4f89-41d3-9a0c-0305e82c3301", "range": None},
         "craft": {"item": "planks"},
         "hunt": {"animal": "cow", "maxDistance": None},
+        # Unit-10 skill verbs.
+        "place": {"item": "crafting_table", "position": None},
+        "store": {"item": "stone", "count": 12},
+        "retrieve": {"item": "raw_iron", "count": None},
         "idle": {},
     }
+    # "every verb" has to MEAN every verb, or a new one ships unexercised.
+    assert set(cases) - {"idle"} == set(DELIBERATE_ACTIONS) - {"idle"}
     for action, params in cases.items():
         errors = list(v.iter_errors(_decision(action=action, params=params)))
         assert errors == [], f"{action}: {[e.message for e in errors]}"

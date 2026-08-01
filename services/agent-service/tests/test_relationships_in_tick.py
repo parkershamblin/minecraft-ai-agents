@@ -72,7 +72,7 @@ def decision(**overrides):
         "action": "idle",
         "params": {},
         "reasoning": "thinking about my neighbors",
-        "importance": 2.0,
+        "importance": 2,
         "sentiment": 0.5,
         "relationshipUpdates": None,
         "governanceAction": None,  # required-nullable (M2-7)
@@ -119,7 +119,7 @@ async def test_heuristic_fallback_from_overheard_chat():
         "message": "Elara, your fences look sturdy today.",  # direct address -> ±8
         "sourceEventId": "x", "correlationId": "y", "occurredAt": "z",
     }]
-    await run_tick(graph_with(decision(sentiment=0.6), percepts=percepts, repo=repo, publish=published), ELARA)
+    await run_tick(graph_with(decision(sentiment=0.5), percepts=percepts, repo=repo, publish=published), ELARA)
 
     [(_, target, affinity, trust)] = repo.applied
     assert target == BRAM_ID and affinity == 8.0 and trust == 4.0
@@ -133,7 +133,7 @@ async def test_player_speech_moves_no_edges():
         "type": "ChatObserved", "speakerVillagerId": None, "speakerName": "ParkerTheCreator",
         "message": "good morning villagers", "sourceEventId": "x", "correlationId": "y", "occurredAt": "z",
     }]
-    await run_tick(graph_with(decision(sentiment=0.9), percepts=percepts, repo=repo), ELARA)
+    await run_tick(graph_with(decision(sentiment=1.0), percepts=percepts, repo=repo), ELARA)
     assert repo.applied == []
 
 

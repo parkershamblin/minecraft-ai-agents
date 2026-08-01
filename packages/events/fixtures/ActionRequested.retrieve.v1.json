@@ -1,0 +1,19 @@
+{
+  "eventId": "019f8e2b-0033-7000-8000-00000000a033",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-31T09:16:20.114Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0030-7000-8000-c0de00000010",
+  "causationId": "019f8e2b-0032-7000-8000-00000000a032",
+  "payload": {
+    "commandId": "019f8e2b-0033-7000-8000-00000000a033",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "action": "retrieve",
+    "params": { "item": "raw_iron", "count": 8 },
+    "priority": 5,
+    "timeoutMs": 30000
+  }
+}

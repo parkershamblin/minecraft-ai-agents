@@ -53,6 +53,11 @@ _TIMEOUT_MS_BY_ACTION = {
     # time + the walk/place — sits AT the ceiling, never past it. (SV-3's
     # table-only worst case was ~1s + a 16-block walk.)
     "hunt": 30_000,  # HUNT_CHASE_TIMEOUT_MS (20s) + collection reserve
+    # Unit-10 skill verbs. All three are walk-then-touch errands with no
+    # sustained loop, so they sit at the move budget, well under the ceiling.
+    "place": 30_000,
+    "store": 30_000,
+    "retrieve": 30_000,
 }
 _TIMEOUT_DEFAULT_MS = 30_000
 

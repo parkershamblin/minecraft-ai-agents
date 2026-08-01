@@ -1,0 +1,19 @@
+{
+  "eventId": "019f8e2b-0031-7000-8000-00000000a031",
+  "eventType": "ActionRequested",
+  "schemaVersion": 1,
+  "occurredAt": "2026-07-31T09:14:02.501Z",
+  "source": "agent-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+  "correlationId": "019f8e2b-0030-7000-8000-c0de00000010",
+  "causationId": "019f8e2b-0030-7000-8000-00000000a030",
+  "payload": {
+    "commandId": "019f8e2b-0031-7000-8000-00000000a031",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000e1a2a",
+    "action": "place",
+    "params": { "item": "crafting_table" },
+    "priority": 5,
+    "timeoutMs": 30000
+  }
+}

@@ -94,10 +94,29 @@ import {
   runCraftFlow,
 } from '../world/crafting.ts'
 import { type Position, distance, round1 } from '../world/position.ts'
+import { createSkillRegistry, type SkillRegistry } from '../skills/registry.ts'
+import {
+  planItemCounts,
+  resolveStorageItems,
+  skillVerbError,
+  storageFamilyCandidates,
+  unwrapSkillResult,
+} from '../world/skillVerbs.ts'
 
 /** What a gather command reports back to the mind: the session totals plus
  *  what was asked for — the prompt renders this JSON verbatim. */
 export type GatherResult = GatherSessionResult & { resource: string; requested: number }
+
+/** Outcomes of the three unit-10 skill verbs — rendered into the prompt
+ *  verbatim, so each says what actually moved, not just that it worked. */
+export type PlaceResult = { item: string; position: Position }
+export type StoreResult = { item: string; deposited: Record<string, number>; total: number }
+export type RetrieveResult = { item: string; taken: Record<string, number>; total: number }
+
+/** How far store/retrieve will look for a chest. Matched to the crafting
+ *  flow's table search (CRAFT_TABLE_SEARCH_DISTANCE): the walk has to fit
+ *  inside the verb's 30s watchdog alongside the container round-trip. */
+const CHEST_SEARCH_DISTANCE = 16
 
 const { pathfinder, Movements, goals } = mineflayerPathfinder
 const { plugin: collectBlockPlugin } = mineflayerCollectBlock
@@ -253,6 +272,11 @@ export class BotSession {
     }
     const { config } = this.deps
     this.log.info({ host: config.MC_HOST, version: config.MC_VERSION }, 'connecting bot')
+    // The skill registry's adapters close over the OLD bot. Keeping them past
+    // a reconnect would aim every skill at a dead connection whose promises
+    // never settle — the wedge class the executor's Promise.race exists to
+    // survive. Drop it here so the next verb rebuilds against the live body.
+    this.skills = null
     this.bot = mineflayer.createBot({
       host: config.MC_HOST,
       port: config.MC_PORT,
@@ -1731,6 +1755,141 @@ export class BotSession {
     if (bot && this.defaultMovements && bot.pathfinder.movements !== this.defaultMovements) {
       bot.pathfinder.setMovements(this.defaultMovements)
     }
+  }
+
+  /**
+   * The ported skill library, bound to this body. Built lazily and cached:
+   * the adapters close over `bot.registry`, which is only populated after
+   * login, and a fresh bot after a reconnect must not keep the dead one's
+   * adapters — `spawn()` clears the cache for exactly that reason.
+   *
+   * `bot.registry` IS the minecraft-data instance mineflayer resolved for the
+   * negotiated protocol version, so the library can never disagree with the
+   * body about what a block is called (the version-drift trap the guarded
+   * lookups in names.ts exist to catch).
+   */
+  private skills: SkillRegistry | null = null
+
+  private requireSkills(): SkillRegistry {
+    const bot = this.bot
+    if (!bot?.entity) {
+      throw skillVerbError('INTERNAL', 'the body is not in the world yet')
+    }
+    if (!this.skills) {
+      this.skills = createSkillRegistry(bot, bot.registry as never, (record) => {
+        // Mastery raw material. The stats table folds these; until it is wired
+        // to retrieval the row still belongs in the log, where the ledger
+        // seeding path can find it.
+        this.log.debug('skill invocation', {
+          skill: record.skill,
+          ok: record.ok,
+          failureCode: record.failureCode,
+          costMs: record.costMs,
+        })
+      })
+    }
+    return this.skills
+  }
+
+  /** place: put one carried block into the world. A null position means the
+   *  body picks legal ground — the recommended path, since a cell chosen by
+   *  an LLM is the measured hallucination failure mode. */
+  async place(item: string, position: Position | null): Promise<PlaceResult> {
+    const skills = this.requireSkills()
+    const cell = position ?? skills.adapters.findGroundCell()
+    if (!cell) {
+      throw skillVerbError(
+        'PLACE_FAILED',
+        `there is no clear ground beside you to set a ${item} on — move somewhere more open and try again`,
+      )
+    }
+    const outcome = unwrapSkillResult(
+      await skills.invoke('placeItem', { name: item, position: cell }),
+    ) as { position?: Position }
+    return { item, position: outcome.position ?? cell }
+  }
+
+  /** store: deposit a family of goods into the nearest chest. */
+  async store(item: string, count: number): Promise<StoreResult> {
+    const { skills, chest, plan } = this.prepareChestVerb(item, count)
+    const outcome = unwrapSkillResult(
+      await skills.invoke('depositItemIntoChest', { chestPosition: chest, items: plan }),
+    ) as { deposited?: Record<string, number> }
+    const deposited = outcome.deposited ?? {}
+    return { item, deposited, total: Object.values(deposited).reduce((sum, n) => sum + n, 0) }
+  }
+
+  /**
+   * retrieve: take a family of goods back out of the nearest chest.
+   *
+   * `count` is a TOTAL across the family, not a per-stack quantity — so the
+   * chest is read before anything is withdrawn (checkItemInsideChest) and the
+   * plan is built against what is actually in there. Asking for `count` of
+   * every candidate name instead would withdraw a multiple of what the mind
+   * asked for, which for the `food` family means every edible item in the box.
+   */
+  async retrieve(item: string, count: number): Promise<RetrieveResult> {
+    const skills = this.requireSkills()
+    const chest = skills.adapters.useChestDeps.findChest(CHEST_SEARCH_DISTANCE)
+    if (!chest) {
+      throw skillVerbError(
+        'CONTAINER_NOT_FOUND',
+        `no chest within ${CHEST_SEARCH_DISTANCE} blocks to take ${item} from — craft one (8 planks at a table) and place it, or walk to the village stores first`,
+      )
+    }
+    const inside = unwrapSkillResult(
+      await skills.invoke('checkItemInsideChest', { chestPosition: chest }),
+    ) as { contents?: { name: string; count: number }[] }
+    const contents = inside.contents ?? []
+    const family = new Set(storageFamilyCandidates(item, this.bot!.registry as never))
+    const available = contents.filter((stack) => family.has(stack.name))
+    if (available.length === 0) {
+      throw skillVerbError(
+        'TARGET_NOT_FOUND',
+        `the chest holds no ${item} — check another store, or gather some yourself`,
+      )
+    }
+    const plan = planItemCounts(
+      available.sort((a, b) => b.count - a.count).map((stack) => stack.name),
+      available,
+      count,
+    )
+    const outcome = unwrapSkillResult(
+      await skills.invoke('getItemFromChest', { chestPosition: chest, items: plan }),
+    ) as { taken?: Record<string, number> }
+    const taken = outcome.taken ?? {}
+    return { item, taken, total: Object.values(taken).reduce((sum, n) => sum + n, 0) }
+  }
+
+  /** Shared store-side preflight: a chest in range and a non-empty deposit
+   *  plan, or a coded refusal that names the missing step. Kept out of
+   *  store() so the two failure modes read in the order the villager meets
+   *  them — no chest, then nothing worth putting in it. */
+  private prepareChestVerb(
+    item: string,
+    count: number,
+  ): { skills: SkillRegistry; chest: Position; plan: Record<string, number> } {
+    const skills = this.requireSkills()
+    const chest = skills.adapters.useChestDeps.findChest(CHEST_SEARCH_DISTANCE)
+    if (!chest) {
+      throw skillVerbError(
+        'CONTAINER_NOT_FOUND',
+        `no chest within ${CHEST_SEARCH_DISTANCE} blocks to store ${item} in — craft one (8 planks at a table) and place it first`,
+      )
+    }
+    const carried = this.carriedStacks()
+    const names = resolveStorageItems(item, carried, this.bot!.registry as never)
+    if (names.length === 0) {
+      throw skillVerbError(
+        'MISSING_MATERIALS',
+        `you carry no ${item} to store — gather or craft some first`,
+      )
+    }
+    return { skills, chest, plan: planItemCounts(names, carried, count) }
+  }
+
+  private carriedStacks(): { name: string; count: number }[] {
+    return (this.bot?.inventory.items() ?? []).map((i) => ({ name: i.name, count: i.count }))
   }
 
   /** Intentional teardown — wins over auto-reconnect. */

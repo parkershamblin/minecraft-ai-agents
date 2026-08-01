@@ -68,10 +68,10 @@ interface Harness {
   seen: Set<string>
 }
 
-function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partial<SessionActions> = {}): Harness {
-  const outcomes: Harness['outcomes'] = []
-  const seen = new Set<string>()
-  const session: SessionActions = {
+/** One place that satisfies SessionActions, so growing the interface breaks
+ *  here and nowhere else. */
+function sessionStub(overrides: Partial<SessionActions> = {}): SessionActions {
+  return {
     active: true,
     position: { x: 0, y: 64, z: 0 },
     busy: null,
@@ -80,9 +80,26 @@ function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partia
     gather: vi.fn(async () => gatherResult()),
     craft: vi.fn(async () => craftResult()),
     hunt: vi.fn(async () => huntResult()),
+    place: vi.fn(async (item: string) => ({ item, position: { x: 1, y: 64, z: 0 } })),
+    store: vi.fn(async (item: string, count: number) => ({
+      item,
+      deposited: { cobblestone: count },
+      total: count,
+    })),
+    retrieve: vi.fn(async (item: string, count: number) => ({
+      item,
+      taken: { cobblestone: count },
+      total: count,
+    })),
     stopMoving: vi.fn(),
-    ...sessionOverrides,
+    ...overrides,
   }
+}
+
+function harness(overrides: Partial<ExecutorDeps> = {}, sessionOverrides: Partial<SessionActions> = {}): Harness {
+  const outcomes: Harness['outcomes'] = []
+  const seen = new Set<string>()
+  const session = sessionStub(sessionOverrides)
   const deps: ExecutorDeps = {
     getSession: () => session,
     spawn: vi.fn(async () => ({ alreadyActive: false, spawnReason: 'seed' })),
@@ -243,28 +260,10 @@ describe('CommandExecutor', () => {
   })
 
   it('follow resolves the target position and moves within range', async () => {
-    const target: SessionActions = {
-      active: true,
-      position: { x: 50, y: 64, z: 50 },
-      busy: null,
-      moveTo: vi.fn(),
-      chat: vi.fn(),
-      gather: vi.fn(async () => gatherResult()),
-      craft: vi.fn(async () => craftResult()),
-      hunt: vi.fn(async () => huntResult()),
-      stopMoving: vi.fn(),
-    }
-    const mover: SessionActions = {
-      active: true,
-      position: { x: 0, y: 64, z: 0 },
-      busy: null,
+    const target = sessionStub({ position: { x: 50, y: 64, z: 50 }, moveTo: vi.fn() })
+    const mover = sessionStub({
       moveTo: vi.fn(async () => ({ finalPosition: { x: 49, y: 64, z: 50 }, blocksTraveled: 70 })),
-      chat: vi.fn(),
-      gather: vi.fn(async () => gatherResult()),
-      craft: vi.fn(async () => craftResult()),
-      hunt: vi.fn(async () => huntResult()),
-      stopMoving: vi.fn(),
-    }
+    })
     const h = harness({ getSession: (id) => (id === 'bram-id' ? target : mover) })
     await h.executor.execute(command('follow', { targetVillagerId: 'bram-id', range: 2 }))
     expect(mover.moveTo).toHaveBeenCalledWith({ x: 50, y: 64, z: 50 }, 2)
@@ -714,5 +713,60 @@ describe('dispatch lanes (RB-2)', () => {
     h.executor.dispatch(commandFor('elara-id', 'c-c', 'chat', { message: 'three' }))
     await h.executor.drain()
     expect(h.outcomes).toHaveLength(3)
+  })
+})
+
+describe('unit-10 skill verbs', () => {
+  it('place passes the item through and defaults the position to null (body picks ground)', async () => {
+    const h = harness()
+    await h.executor.execute(command('place', { item: 'crafting_table' }))
+    expect(h.session.place).toHaveBeenCalledWith('crafting_table', null)
+    expect(h.outcomes[0]!.eventType).toBe('ActionCompleted')
+  })
+
+  it('place forwards an explicit position when the mind names one', async () => {
+    const h = harness()
+    const at = { x: 5, y: 64, z: -3 }
+    await h.executor.execute(command('place', { item: 'furnace', position: at }))
+    expect(h.session.place).toHaveBeenCalledWith('furnace', at)
+  })
+
+  it.each([
+    ['store', undefined, 16],
+    ['store', 4, 4],
+    ['retrieve', undefined, 16],
+    ['retrieve', 99, 16],
+    ['retrieve', 0, 1],
+  ] as const)('%s clamps count %s to %s', async (action, given, expected) => {
+    const h = harness()
+    await h.executor.execute(command(action, { item: 'stone', ...(given === undefined ? {} : { count: given }) }))
+    const spy = action === 'store' ? h.session.store : h.session.retrieve
+    expect(spy).toHaveBeenCalledWith('stone', expected)
+  })
+
+  it.each(['place', 'store', 'retrieve'] as const)('%s without an item is INVALID_PARAMS', async (action) => {
+    const h = harness()
+    await h.executor.execute(command(action, {}))
+    expect(h.outcomes[0]!.extra.errorCode).toBe('INVALID_PARAMS')
+  })
+
+  it('a coded skill failure reaches the ledger with its code, message and retryability intact', async () => {
+    const err = Object.assign(new Error('no chest within 16 blocks to store stone in — craft one'), {
+      code: 'CONTAINER_NOT_FOUND',
+      retryable: true,
+    })
+    const h = harness({}, { store: vi.fn(async () => { throw err }) })
+    await h.executor.execute(command('store', { item: 'stone' }))
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('CONTAINER_NOT_FOUND')
+    expect(h.outcomes[0]!.extra.errorMessage).toBe(err.message)
+    expect(h.outcomes[0]!.extra.retryable).toBe(true)
+  })
+
+  it('an UNCODED throw stays an INTERNAL fault — a real bug must not wear an honest failure code', async () => {
+    const h = harness({}, { place: vi.fn(async () => { throw new TypeError('cannot read id of undefined') }) })
+    await h.executor.execute(command('place', { item: 'chest' }))
+    expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
+    expect(h.outcomes[0]!.extra.errorCode).toBe('INTERNAL')
   })
 })

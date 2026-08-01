@@ -1,5 +1,42 @@
 ## HANDOFF (current session)
 
+**Update (2026-07-31, branch `unit10-skill-contract` — THE SKILL LIBRARY IS
+NO LONGER DARK CODE):** Before this, `createSkillRegistry` was imported by
+exactly two callers — its own unit test and `scripts/skill-bench.ts`. 13
+merged PRs, 27 skills, 11 filmed demos, and villagers could not invoke ONE of
+them. Unit-10 contract PR shipped per `docs/architecture/10-skill-tool-schema.md`:
+**ONE atomic PR, ONE `configVersion` 7 -> 8 bump**, all six seams. (1) THREE
+NEW VERBS `place`/`store`/`retrieve`, the first served out of the ported
+library instead of a bespoke executor path — BotSession builds the registry
+lazily off `bot.registry` (the negotiated minecraft-data, so body and library
+can never disagree about names) and drops it on reconnect; `src/world/
+skillVerbs.ts` is the pure, tested translation layer (families, count
+planning, retryability-by-code, SkillResult -> coded throw). (2) R4 GRAMMAR
+FIX — bounded small ints are now ENUMS not min/max (`GatherParams.count`,
+`importance` 0-10, `sentiment` quarter-steps): the measured 92.2%-of-malformed
+bounds class was enforced by NO channel at decode time (grammar can't express
+bounds; strict frontier wire strips them) while an enum is enforced by both.
+(3) DEBT PAID: `SUPERSEDED` finally in the `ActionFailed` enum it has emitted
+into since v7 (schema was FALSE about the wire), + 7 skill-local codes;
+`ABORTED` joined `_PLUMBING_CODES` in the same commit that let it reach the
+wire. Suites: minecraft 753, agent 246, memory 51, contracts 25, `task test`
+exit 0. TWO REAL BUGS the work caught: (a) `chest` was not craftable, so
+`CONTAINER_NOT_FOUND`'s prescribed recovery ("craft+place a chest") was advice
+no villager could take — added to the craft enum, and `crafting.test.ts`'s
+`CRAFTABLE_ITEMS` assertion fired LOUD the instant the schema grew, exactly as
+designed; (b) `retrieve` first asked the chest for `count` of EVERY candidate
+name — for the `food` family that empties the box — now reads contents via
+`checkItemInsideChest` and plans against what is really there. Also fixed the
+memory-service twin of the known `.env` provider flake (pinned
+`llm_model_ollama` in the test, mirroring agent-service's fix).
+**OWNER DECISION OPEN: the verb NAMES.** The design doc listed them DRAFT
+("names settle at PR time with the owner"); they shipped as designed. Renaming
+is cheap NOW and expensive after the first v8 race — it would be a second
+grammar change and a second re-bench. **NOT DEPLOYED, NOT RACED**: v8 rows are
+not comparable to v7, so the published model table stands until re-benched.
+Still design-only in the doc: §2 staged namespaces (needs the nether arc's
+milestones) and §7 UCB retrieval (the ≈30 cap does not bind yet).
+
 **Last checkpoint:** PHASE 2 MODEL SWEEP COMPLETE (2026-07-25, branch
 `phase2-model-sweep`). 25/25 honest runs (zero dirty), 5 models × N=5
 under `bench/race/frozen-config.json`: llama3.1:8b 5/5 wins 945.3s±329.2,

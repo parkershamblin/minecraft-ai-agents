@@ -27,6 +27,11 @@ _PLUMBING_CODES = {
     "HAZARD_ESCAPE_IN_PROGRESS",
     "SELF_DEFENSE_IN_PROGRESS",
     "BOT_DISCONNECTED",
+    # The harness cancelled a skill mid-flight (shutdown, supersede, reflex
+    # preemption). Added in the same commit that let it reach the wire, per
+    # the unit-10 rule: a plumbing code must never arrive at awareness before
+    # its classification does, or it books streaks against innocent intents.
+    "ABORTED",
 }
 
 # A streak that goes this many note_outcomes() calls (≈ ticks) without a fresh
@@ -81,6 +86,19 @@ def _intent_identity(action: str, params: dict[str, Any]) -> tuple[str, str]:
     if action == "follow":
         salient = str(params.get("targetVillagerId") or "?")
         return f"follow:{salient}", f"follow villager {salient}"
+    # Unit-10 skill verbs. Each MUST key on its item, not fall through to the
+    # generic bucket below: an unkeyed verb merges distinct intents ("place a
+    # chest" vs "place a furnace") into one streak, so three refusals spread
+    # across different items would abandon all of them at once.
+    if action == "place":
+        salient = str(params.get("item") or "?")
+        return f"place:{salient}", f"place {salient}"
+    if action == "store":
+        salient = str(params.get("item") or "?")
+        return f"store:{salient}", f"store {salient}"
+    if action == "retrieve":
+        salient = str(params.get("item") or "?")
+        return f"retrieve:{salient}", f"retrieve {salient}"
     return f"{action}:", action
 
 

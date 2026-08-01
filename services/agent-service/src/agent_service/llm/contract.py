@@ -19,7 +19,20 @@ from jsonschema import Draft202012Validator
 # Villagers may not spawn/despawn themselves — those are platform commands.
 # craft + hunt joined with the survival cluster (there is deliberately NO eat
 # verb — eating is a body reflex; acquisition is the mind's job).
-DELIBERATE_ACTIONS = ("move", "gather", "chat", "follow", "idle", "craft", "hunt")
+# place/store/retrieve joined with unit 10 — the first verbs the executor
+# serves out of the ported skill library instead of a bespoke path.
+DELIBERATE_ACTIONS = (
+    "move",
+    "gather",
+    "chat",
+    "follow",
+    "idle",
+    "craft",
+    "hunt",
+    "place",
+    "store",
+    "retrieve",
+)
 
 # The civic verbs (M2-7). Laws (M3) and factions (M4) are deliberately absent.
 GOVERNANCE_ACTIONS = ("declare_candidacy", "vote")
@@ -33,8 +46,19 @@ DECISION_SCHEMA: dict[str, Any] = {
         "action": {"type": "string", "enum": list(DELIBERATE_ACTIONS)},
         "params": {"type": "object"},
         "reasoning": {"type": "string", "maxLength": 600},
-        "importance": {"type": "number", "minimum": 0, "maximum": 10},
-        "sentiment": {"type": "number", "minimum": -1, "maximum": 1},
+        # ENUMS, not minimum/maximum (unit-10 rule R4 + its rider). A bounded
+        # small range is the ONE numeric constraint class every decode channel
+        # enforces: the Ollama grammar closes an enum at decode time, and enum
+        # survives the strict-tool strip (_STRICT_UNSUPPORTED_KEYWORDS) that
+        # removes minimum/maximum for the frontier wire. Bounds were therefore
+        # enforced by no channel at decode time and only caught post-parse —
+        # 92.2% of malformed local decisions were bounds violations, and these
+        # two plus GatherParams.count are the bounded fields a grammar can
+        # actually close. Quarter steps are exact in binary floating point, so
+        # enum membership never turns into a float-equality trap; sentiment
+        # feeds memory scoring, which loses nothing at that resolution.
+        "importance": {"type": "integer", "enum": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]},
+        "sentiment": {"type": "number", "enum": [-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0]},
         # REQUIRED-NULLABLE, not optional: OpenAI strict structured outputs
         # reject any property missing from `required` (M1 review blocker).
         "relationshipUpdates": {
@@ -102,6 +126,9 @@ _PARAMS_DEF_BY_ACTION = {
     "gather": "GatherParams",
     "craft": "CraftParams",
     "hunt": "HuntParams",
+    "place": "PlaceParams",
+    "store": "StoreParams",
+    "retrieve": "RetrieveParams",
 }
 
 
