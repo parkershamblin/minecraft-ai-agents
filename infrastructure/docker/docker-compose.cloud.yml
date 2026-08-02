@@ -1,0 +1,27 @@
+# Cloud-agent / nested-Docker override.
+#
+# Cursor Cloud VMs run Docker inside a container whose cgroup-v2 namespace root
+# is `domain threaded` and only has the `cpuset cpu pids` controllers delegated
+# (no `memory`/`io`). Any container that sets `mem_limit` makes runc try to
+# write memory.max into a threaded cgroup and dies at startup with:
+#   runc create failed: unable to apply cgroup configuration:
+#   cannot enter cgroupv2 "/sys/fs/cgroup/docker" with domain controllers
+#   -- it is in threaded mode
+#
+# Setting mem_limit to 0 (unlimited) makes Docker skip the memory controller
+# entirely, so the containers start. This file changes nothing else and is a
+# no-op on hosts where the memory controller IS available.
+#
+# Bring the stack up on a Cloud VM by layering this file on top of the base:
+#   docker compose -f infrastructure/docker/docker-compose.yml \
+#     -f infrastructure/docker/docker-compose.cloud.yml \
+#     --env-file .env --profile infra --profile app up -d --wait
+services:
+  postgres:
+    mem_limit: 0
+  redpanda:
+    mem_limit: 0
+  minecraft:
+    mem_limit: 0
+  pov-rig:
+    mem_limit: 0
