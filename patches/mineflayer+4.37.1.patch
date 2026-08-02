@@ -1,0 +1,148 @@
+diff --git a/node_modules/mineflayer/lib/plugins/digging.js b/node_modules/mineflayer/lib/plugins/digging.js
+index 5ae5552..db4f191 100644
+--- a/node_modules/mineflayer/lib/plugins/digging.js
++++ b/node_modules/mineflayer/lib/plugins/digging.js
+@@ -244,11 +244,15 @@ function inject (bot) {
+       enchantments = enchantments.concat(helmetEnchantments)
+     }
+
++    if (block.material === 'incorrect_for_wooden_tool') {
++      block.material = 'mineable/pickaxe'
++    }
++
+     const creative = bot.game.gameMode === 'creative'
+     return block.digTime(
+       type,
+       creative,
+-      ['water', 'flowing_water'].includes(bot._getBlockAtEyeLevel()?.name),
++      false, // Water dig-time calculation is unreliable in this application.
+       !bot.entity.onGround,
+       enchantments,
+       bot.entity.effects
+diff --git a/node_modules/mineflayer/lib/plugins/entities.js b/node_modules/mineflayer/lib/plugins/entities.js
+index 94e57de..6e13d54 100644
+--- a/node_modules/mineflayer/lib/plugins/entities.js
++++ b/node_modules/mineflayer/lib/plugins/entities.js
+@@ -911,6 +911,25 @@ function inject (bot) {
+ 
+   function useEntity (target, leftClick, x, y, z) {
+     const sneaking = bot.getControlState('sneak')
++    if (bot.supportFeature('useEntityUsesEntityId') || bot.version.startsWith('26.')) {
++      if (leftClick === 1 && bot.supportFeature('attackUsesOwnPacket')) {
++        bot._client.write('attack', { entityId: target.id })
++        return
++      }
++
++      bot._client.write('use_entity', {
++        entityId: target.id,
++        hand: 0,
++        location: {
++          x: x ?? 0,
++          y: y ?? 0,
++          z: z ?? 0
++        },
++        usingSecondaryAction: sneaking
++      })
++      return
++    }
++
+     if (x && y && z) {
+       bot._client.write('use_entity', {
+         target: target.id,
+diff --git a/node_modules/mineflayer/lib/plugins/inventory.js b/node_modules/mineflayer/lib/plugins/inventory.js
+index b9983a2..0f92828 100644
+--- a/node_modules/mineflayer/lib/plugins/inventory.js
++++ b/node_modules/mineflayer/lib/plugins/inventory.js
+@@ -243,6 +243,16 @@ function inject (bot, { hideErrors }) {
+   async function activateEntity (entity) {
+     // TODO: tell the server that we are not sneaking while doing this
+     await bot.lookAt(entity.position.offset(0, 1, 0), false)
++    if (bot.supportFeature('useEntityUsesEntityId') || bot.version.startsWith('26.')) {
++      bot._client.write('use_entity', {
++        entityId: entity.id,
++        hand: 0,
++        location: { x: 0, y: 0, z: 0 },
++        usingSecondaryAction: false
++      })
++      return
++    }
++
+     bot._client.write('use_entity', {
+       target: entity.id,
+       mouse: 0, // interact with entity
+@@ -254,6 +264,20 @@ function inject (bot, { hideErrors }) {
+   async function activateEntityAt (entity, position) {
+     // TODO: tell the server that we are not sneaking while doing this
+     await bot.lookAt(position, false)
++    if (bot.supportFeature('useEntityUsesEntityId') || bot.version.startsWith('26.')) {
++      bot._client.write('use_entity', {
++        entityId: entity.id,
++        hand: 0,
++        location: {
++          x: position.x - entity.position.x,
++          y: position.y - entity.position.y,
++          z: position.z - entity.position.z
++        },
++        usingSecondaryAction: false
++      })
++      return
++    }
++
+     bot._client.write('use_entity', {
+       target: entity.id,
+       mouse: 2, // interact with entity at
+diff --git a/node_modules/mineflayer/lib/plugins/place_block.js b/node_modules/mineflayer/lib/plugins/place_block.js
+index fdaec6b..08983b6 100644
+--- a/node_modules/mineflayer/lib/plugins/place_block.js
++++ b/node_modules/mineflayer/lib/plugins/place_block.js
+@@ -11,7 +11,7 @@ function inject (bot) {
+     let newBlock = bot.blockAt(dest)
+     if (oldBlock.type === newBlock.type) {
+       [oldBlock, newBlock] = await onceWithCleanup(bot, `blockUpdate:${dest}`, {
+-        timeout: 5000,
++        timeout: 500,
+         // Condition to wait to receive block update actually changing the block type, in case the bot receives block updates with no changes
+         // oldBlock and newBlock will both be null when the world unloads
+         checkCondition: (oldBlock, newBlock) => !oldBlock || !newBlock || oldBlock.type !== newBlock.type
+diff --git a/node_modules/mineflayer/lib/plugins/time.js b/node_modules/mineflayer/lib/plugins/time.js
+index 0b9411d..09cd479 100644
+--- a/node_modules/mineflayer/lib/plugins/time.js
++++ b/node_modules/mineflayer/lib/plugins/time.js
+@@ -13,9 +13,13 @@ function inject (bot) {
+     age: null
+   }
+   bot._client.on('update_time', (packet) => {
+-    const time = longToBigInt(packet.time)
+-    const age = longToBigInt(packet.age)
+-    const doDaylightCycle = packet.tickDayTime !== undefined ? !!packet.tickDayTime : time >= 0n
++    const clockId = bot.game.dimension === 'the_end' ? 1 : 0
++    const clockUpdate = packet.clockUpdates?.find(clock => clock.clock === clockId) ?? packet.clockUpdates?.[0]
++    const time = toBigInt(clockUpdate?.totalTicks ?? packet.time ?? bot.time.bigTime ?? 0)
++    const age = toBigInt(packet.gameTime ?? packet.age ?? bot.time.bigAge ?? 0)
++    const doDaylightCycle = clockUpdate
++      ? clockUpdate.rate !== 0
++      : (packet.tickDayTime !== undefined ? !!packet.tickDayTime : time >= 0n)
+     // When doDaylightCycle is false, we need to take the absolute value of time
+     const finalTime = doDaylightCycle ? time : (time < 0n ? -time : time)
+
+@@ -33,6 +37,9 @@ function inject (bot) {
+   })
+ }
+
+-function longToBigInt (arr) {
++function toBigInt (value) {
++  if (typeof value === 'bigint') return value
++  if (typeof value === 'number') return BigInt(Math.trunc(value))
++  const arr = value
+   return BigInt.asIntN(64, (BigInt(arr[0]) << 32n)) | BigInt(arr[1])
+ }
+diff --git a/node_modules/mineflayer/lib/version.js b/node_modules/mineflayer/lib/version.js
+index c4843bb..4ff3f33 100644
+--- a/node_modules/mineflayer/lib/version.js
++++ b/node_modules/mineflayer/lib/version.js
+@@ -1,4 +1,4 @@
+-const testedVersions = ['1.8.8', '1.9.4', '1.10.2', '1.11.2', '1.12.2', '1.13.2', '1.14.4', '1.15.2', '1.16.5', '1.17.1', '1.18.2', '1.19', '1.19.2', '1.19.3', '1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.9', '1.21.11']
++const testedVersions = ['1.8.8', '1.9.4', '1.10.2', '1.11.2', '1.12.2', '1.13.2', '1.14.4', '1.15.2', '1.16.5', '1.17.1', '1.18.2', '1.19', '1.19.2', '1.19.3', '1.19.4', '1.20.1', '1.20.2', '1.20.4', '1.20.6', '1.21.1', '1.21.3', '1.21.4', '1.21.5', '1.21.6', '1.21.8', '1.21.9', '1.21.11', '26.2']
+ module.exports = {
+
+   testedVersions,

@@ -54,10 +54,27 @@ interface SessionInternals {
 }
 
 function makeFakeBot() {
+  // Minimal _client so installProtocolErrorSuppression (wired first) can
+  // wrap emit without needing a real minecraft-protocol connection.
+  const listeners = new Map<string | symbol, Set<(...args: unknown[]) => void>>()
+  const client = {
+    emit(event: string | symbol, ...args: unknown[]): boolean {
+      const set = listeners.get(event)
+      if (!set) return false
+      for (const fn of set) fn(...args)
+      return true
+    },
+    on(event: string | symbol, fn: (...args: unknown[]) => void) {
+      if (!listeners.has(event)) listeners.set(event, new Set())
+      listeners.get(event)!.add(fn)
+      return client
+    },
+  }
   return {
     loadPlugin: vi.fn(),
     on: vi.fn(),
     once: vi.fn(),
+    _client: client,
   }
 }
 
@@ -159,6 +176,12 @@ describe('BotSession plugin wiring (structural — fake bot, no mineflayer conne
     expect(loaded).toContain(autoEatPlugin)
     expect(loaded).toContain(armorManagerPlugin)
     expect(bot.loadPlugin).toHaveBeenCalledTimes(6)
+    // 26.2 body reliability: PartialReadError tally is on the bot after wire()
+    const withTally = bot as unknown as {
+      getSuppressedProtocolErrors: () => { total: number; byPacket: Record<string, number> }
+    }
+    expect(typeof withTally.getSuppressedProtocolErrors).toBe('function')
+    expect(withTally.getSuppressedProtocolErrors()).toEqual({ total: 0, byPacket: {} })
   })
 
   it('flags OFF: wire() loads pathfinder only', () => {

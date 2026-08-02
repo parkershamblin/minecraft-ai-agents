@@ -53,7 +53,7 @@ describe('skill result helpers', () => {
   })
 })
 
-describe('guarded name lookups (1.21.6)', () => {
+describe('guarded name lookups', () => {
   it('resolves Voyager-era aliases instead of throwing', () => {
     const r = guardedItem(mcData, 'leather_cap')
     expect(r.ok).toBe(true)
@@ -79,7 +79,6 @@ describe('guarded name lookups (1.21.6)', () => {
     expect(WOOD_LOGS).toContain('cherry_log')
     expect(WOOD_LOGS).toContain('pale_oak_log')
     expect(WOOD_LOGS).toContain('bamboo_block')
-    // and the 1.21.6 world actually resolves the 1.20+ names
     expect(guardedBlock(mcData, 'cherry_log').ok).toBe(true)
     expect(guardedBlock(mcData, 'pale_oak_log').ok).toBe(true)
   })

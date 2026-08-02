@@ -300,7 +300,8 @@ docker compose -f infrastructure/docker/docker-compose.yml --env-file .env --pro
 ```
 
 (Or point `MC_HOST=host.docker.internal` at your own `online-mode=false`
-server.) Then:
+server.) Optional host-run **26.2** profile (`MC_VERSION=26.2`,
+`MC_PORT=55916`): see `docs/runbooks/minecraft-26.2-local.md`. Then:
 
 ```sh
 task smoke                  # canary: one bot connects and chats

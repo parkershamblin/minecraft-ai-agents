@@ -3,10 +3,10 @@
 // craftCraftingTable.js (MIT — see ../VENDORED.md). Voyager counted
 // bot.inventory and bailed with a chat line; the port is failure-driven
 // instead: attempt the craft, recover MISSING_MATERIALS by mining the
-// matching log, retry once. Generalized from oak-only to the full 1.21.6
-// log family from names.ts.
+// matching log, retry once. Generalized from oak-only to the full
+// WOOD_LOGS family from names.ts (1.21.6 and 26.2).
 
-import { WOOD_LOGS } from '../names.ts'
+import { WOOD_LOGS, plankNameFor } from '../names.ts'
 import {
   skillFail,
   skillOk,
@@ -46,10 +46,8 @@ export interface CraftPlanksOutcome {
   planks: string
 }
 
-/** oak_log -> oak_planks; bamboo_block -> bamboo_planks (the 1.20 bamboo "log"). */
-export function plankNameFor(log: string): string {
-  return log === 'bamboo_block' ? 'bamboo_planks' : log.replace(/_log$/, '_planks')
-}
+// plankNameFor lives in names.ts so gather/craft/store share the bamboo case.
+export { plankNameFor }
 
 /** Logs needed for `planks` items: a log yields 4 planks, a bamboo block 2. */
 function logsNeededFor(log: string, planks: number): number {
@@ -82,7 +80,7 @@ export async function craftPlanks(
   if (params.log != null && !WOOD_LOGS.includes(params.log)) {
     return skillFail(
       'UNSUPPORTED_NAME',
-      `craftPlanks: "${params.log}" is not a 1.21.6 log (expected one of ${WOOD_LOGS.join(', ')})`,
+      `craftPlanks: "${params.log}" is not a known log (expected one of ${WOOD_LOGS.join(', ')})`,
       costMs,
       ctx,
     )

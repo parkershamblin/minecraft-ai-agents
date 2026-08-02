@@ -1,3 +1,4 @@
+import { logNameForPlanks, plankNameFor } from '../skills/names.ts'
 import type { Position } from './position.ts'
 import { RESOURCE_BLOCKS } from './resources.ts'
 
@@ -34,9 +35,10 @@ export const CRAFTABLE_ITEMS = [
 ] as const
 
 /** log → plank family map, derived from the gather families so the two verbs
- *  can never disagree about what wood is. */
+ *  can never disagree about what wood is. bamboo_block is not a `_log`
+ *  suffix — plankNameFor owns that special case. */
 const LOG_TO_PLANKS: Record<string, string> = Object.fromEntries(
-  (RESOURCE_BLOCKS.wood as readonly string[]).map((log) => [log, log.replace(/_log$/, '_planks')]),
+  (RESOURCE_BLOCKS.wood as readonly string[]).map((log) => [log, plankNameFor(log)]),
 )
 
 /** How far the flow looks for a standing crafting table. Small on purpose:
@@ -123,7 +125,7 @@ export const SMELTABLES: Record<string, string> = {
 const FUEL_RANKING: ReadonlyArray<{ matches: (name: string) => boolean; smeltsPerItem: number }> = [
   { matches: (n) => n === 'coal' || n === 'charcoal', smeltsPerItem: 8 },
   { matches: (n) => n.endsWith('_planks'), smeltsPerItem: 1.5 },
-  { matches: (n) => n.endsWith('_log'), smeltsPerItem: 1.5 },
+  { matches: (n) => n.endsWith('_log') || n === 'bamboo_block', smeltsPerItem: 1.5 },
 ]
 
 /** Choose ONE carried stack to burn (a furnace fuel slot holds one item
@@ -214,7 +216,12 @@ export function furnacePlacedAnnouncement(position: Position): string {
  *  than exotic equivalents (bamboo sticks, blackstone furnaces). */
 function knownMaterial(name: string): boolean {
   return (
-    name.endsWith('_planks') || name.endsWith('_log') || name === 'stick' || name === 'cobblestone' || name === 'crafting_table'
+    name.endsWith('_planks') ||
+    name.endsWith('_log') ||
+    name === 'bamboo_block' ||
+    name === 'stick' ||
+    name === 'cobblestone' ||
+    name === 'crafting_table'
   )
 }
 
@@ -227,7 +234,7 @@ function makeableFrom(missingName: string, carried: readonly CarriedStack[]): bo
     return true
   }
   if (missingName.endsWith('_planks')) {
-    const log = missingName.replace(/_planks$/, '_log')
+    const log = logNameForPlanks(missingName)
     return carried.some((stack) => stack.name === log && stack.count > 0)
   }
   if (missingName === 'stick') {

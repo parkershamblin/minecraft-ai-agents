@@ -46,8 +46,13 @@ import {
 import { type CombatBot, FightDriver, type FightSlots } from './combat.ts'
 import { type SimCapableBot, installSimBlockCache } from './physicsSimCache.ts'
 import {
+  type BotWithProtocolErrors,
+  installProtocolErrorSuppression,
+} from './protocolErrors.ts'
+import {
   HUNT_BLACKLIST_MS,
   HUNT_FAMILIES,
+  type AgeableRegistryLike,
   type HuntBot,
   type HuntResult,
   type HuntableEntity,
@@ -57,6 +62,7 @@ import {
   huntNotFoundMessage,
   huntStartAnnouncement,
   huntSuccessAnnouncement,
+  isAgeableBaby,
   isHuntYield,
   pickHuntTarget,
   runKillLoop,
@@ -286,11 +292,31 @@ export class BotSession {
       // Bots navigate by pathfinder, not by sight — 'tiny' keeps 20 bots from
       // holding 20 copies of the world (the single biggest RAM lever).
       viewDistance: 'tiny',
+      // Temporary 26.2 protocol data cannot decode inline painting variants
+      // yet; minecraft-protocol drops those non-critical metadata packets —
+      // hideErrors keeps its parser from flooding the console.
+      hideErrors: true,
+      // 60s keep-alive check (default 30s) — reduces disconnects on slow /
+      // busy Paper servers under a 20-bot fleet.
+      checkTimeoutInterval: 60_000,
     })
     this.wire(this.bot)
   }
 
+  /** Per-packet PartialReadError tally installed at wire time (reconnect-safe). */
+  getSuppressedProtocolErrors(): ReturnType<BotWithProtocolErrors['getSuppressedProtocolErrors']> {
+    const bot = this.bot as BotWithProtocolErrors | null
+    if (!bot?.getSuppressedProtocolErrors) {
+      return { total: 0, byPacket: {} }
+    }
+    return bot.getSuppressedProtocolErrors()
+  }
+
   private wire(bot: Bot): void {
+    // Install before plugins so login/spawn traffic is already tallied.
+    installProtocolErrorSuppression(bot, (msg, detail) => {
+      this.log.warn({ detail }, msg)
+    })
     bot.loadPlugin(pathfinder)
     // Tier 1 plugin wiring — this stays the ONLY loadPlugin site. Each load
     // is gated by its PLUGIN_* flag (default ON; 0 = off/fallback).
@@ -819,9 +845,10 @@ export class BotSession {
     return out.sort((a, b) => a.distance - b.distance)
   }
 
-  /** Huntable passive mobs with the ageable baby flag (metadata index 16 on
-   *  1.21.6 — heights never rescale, so metadata is the only working
-   *  exclusion; spike-pinned). */
+  /** Huntable passive mobs with the ageable baby flag (metadataKeys `baby`
+   *  when the registry exposes it, else index 16 — heights never rescale, so
+   *  metadata is the only working exclusion). Index must be live-confirmed
+   *  on 26.2 if metadataKeys is absent. */
   private huntableEntities(): HuntableEntity[] {
     const bot = this.bot
     const origin = this.position
@@ -829,6 +856,7 @@ export class BotSession {
       return []
     }
     const names = HUNT_FAMILIES.any as readonly string[]
+    const registry = bot.registry as unknown as AgeableRegistryLike
     const out: HuntableEntity[] = []
     for (const entity of Object.values(bot.entities)) {
       if (!entity.name || !names.includes(entity.name) || !entity.position) {
@@ -839,7 +867,7 @@ export class BotSession {
         name: entity.name,
         position: { x: entity.position.x, y: entity.position.y, z: entity.position.z },
         distance: distance(origin, entity.position),
-        baby: (entity.metadata as unknown[] | undefined)?.[16] === true,
+        baby: isAgeableBaby(entity, registry),
       })
     }
     return out

@@ -2,6 +2,7 @@ import type { Bot } from 'mineflayer'
 import type { Vec3 } from 'vec3'
 import type { CamAssignment } from './roster.ts'
 import type { RconGate } from './rconGate.ts'
+import { wrapBotForViewer } from './viewerBot.ts'
 import { logger } from '../logging.ts'
 
 /**
@@ -109,7 +110,10 @@ export class CamSession {
       if (this.stopped || bot !== this.bot) {
         return
       }
-      viewer.mineflayer(bot, {
+      // 26.x: translate chunk state IDs + spoof version so prismarine-viewer
+      // meshes with 1.21.4 assets. 1.21.6: identity wrap.
+      const viewerBot = wrapBotForViewer(bot)
+      viewer.mineflayer(viewerBot, {
         port: this.assignment.port,
         firstPerson: true,
         viewDistance: this.deps.viewDistance,

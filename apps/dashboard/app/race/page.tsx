@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BenchControls } from '@/components/BenchControls'
 import { RaceScoreboard } from '@/components/RaceScoreboard'
 
 export default function RacePage() {
@@ -16,8 +17,17 @@ export default function RacePage() {
           <Link href="/" className="hover:text-zinc-300">
             ← Overview
           </Link>
+          <Link href="/bench" className="hover:text-zinc-300">
+            Bench launcher →
+          </Link>
+          <Link href="/mission-control" className="hover:text-zinc-300">
+            Mission Control →
+          </Link>
         </nav>
       </header>
+      <div className="mb-8">
+        <BenchControls compact />
+      </div>
       <RaceScoreboard />
     </main>
   )

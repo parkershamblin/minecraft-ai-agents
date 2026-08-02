@@ -134,10 +134,35 @@ export function MissionControl() {
     return undefined
   }, [config.mode, promLive, ledgerLive])
 
+  const showingDemoRace = !ledgerLive
+
   return (
     <div className={config.showCaptions ? undefined : 'nocap'}>
       <div style={{ maxWidth: 1460, margin: '0 auto', padding: '0 22px' }}>
         <Header tab={tab} onTab={setTab} rangeLabel={model.rangeLabel} badge={badge} />
+
+        {showingDemoRace && (
+          <div
+            style={{
+              margin: '10px 2px 0',
+              padding: '10px 12px',
+              borderRadius: 8,
+              border: '1px solid color-mix(in srgb, var(--mc-accent) 35%, var(--mc-divider))',
+              background: 'color-mix(in srgb, var(--mc-accent) 8%, transparent)',
+              fontSize: 12.5,
+              lineHeight: 1.5,
+              color: muted(80),
+            }}
+          >
+            No live <span style={{ fontFamily: 'var(--mc-mono)' }}>AttemptStarted</span> race on the ledger — panels
+            below are <strong style={{ fontWeight: 600, color: muted(92) }}>demo / replay telemetry</strong>, not your
+            current village session. For live villagers use{' '}
+            <a href="/" style={{ color: 'var(--mc-accent-300)' }}>
+              the home dashboard
+            </a>{' '}
+            (fleet controls + event feed), or start a Red vs Blue attempt to populate this page.
+          </div>
+        )}
 
         <p
           style={{

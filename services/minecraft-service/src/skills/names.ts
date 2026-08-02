@@ -1,8 +1,9 @@
-// 1.21.6 name guard layer. Voyager's 1.19-era skills do unguarded
-// mcData.itemsByName[x].id lookups that throw TypeError on renamed/absent
-// keys, and hard-code pre-1.20 block lists. Every ported primitive and skill
-// resolves names through this module instead — throw-free, alias-aware, and
-// current for MC 1.21.6 (MC_VERSION pin in .env).
+// Name guard layer for ported skills and world verbs. Voyager's 1.19-era
+// skills do unguarded mcData.itemsByName[x].id lookups that throw TypeError
+// on renamed/absent keys, and hard-code pre-1.20 block lists. Every ported
+// primitive and skill resolves names through this module instead — throw-free,
+// alias-aware, and version-agnostic across the MC_VERSION pin (1.21.6) and
+// the 26.2 registry slice.
 
 /** Voyager-era → modern minecraft-data names (their index.js patched these at runtime). */
 export const NAME_ALIASES: Readonly<Record<string, string>> = {
@@ -14,9 +15,10 @@ export const NAME_ALIASES: Readonly<Record<string, string>> = {
 }
 
 /**
- * Complete log-family list for 1.21.6. Voyager's list stops at mangrove
- * (1.19); cherry_log is 1.20, pale_oak_log is 1.21.4, bamboo_block is the
- * 1.20 bamboo "log" equivalent.
+ * Complete overworld log-family list shared by skills and gather/craft/store.
+ * Voyager's list stops at mangrove (1.19); cherry_log is 1.20, pale_oak_log
+ * is 1.21.4, bamboo_block is the 1.20 bamboo "log" equivalent. All resolve
+ * on both 1.21.6 and 26.2 registry data.
  */
 export const WOOD_LOGS: readonly string[] = [
   'oak_log',
@@ -30,6 +32,16 @@ export const WOOD_LOGS: readonly string[] = [
   'pale_oak_log',
   'bamboo_block',
 ]
+
+/** oak_log -> oak_planks; bamboo_block -> bamboo_planks (not a naive _log replace). */
+export function plankNameFor(log: string): string {
+  return log === 'bamboo_block' ? 'bamboo_planks' : log.replace(/_log$/, '_planks')
+}
+
+/** Inverse of plankNameFor for makeable-from / gap prose. */
+export function logNameForPlanks(planks: string): string {
+  return planks === 'bamboo_planks' ? 'bamboo_block' : planks.replace(/_planks$/, '_log')
+}
 
 /** The slice of minecraft-data the guards need — mockable in tests. */
 export interface McDataLike {

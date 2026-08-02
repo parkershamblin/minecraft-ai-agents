@@ -2,29 +2,35 @@ import { describe, expect, it } from 'vitest'
 import { createDeserializer, states } from 'minecraft-protocol'
 
 /**
- * Sentinel for patches/minecraft-data+3.111.0.patch (trail particle def).
+ * Sentinel for patches/minecraft-data-base+3.112.0.patch (trail particle def).
  *
- * minecraft-data 3.111.0 ships the 1.21.6 trail particle as
- * {target: vec3f64, color: u8} — the real wire format (minecraft.wiki
- * protocol docs, confirmed by live capture below) is color Int (0xRRGGBB)
- * + duration VarInt. The u8 underread left trailing bytes on every trail
- * world_particles packet: protodef logged "Chunk size is 77 but only 73
- * was read ; partial packet" and pushed a corrupt particle (color mangled,
- * duration missing) into every fleet bot — mineflayer's own particle
- * plugin subscribes world_particles unconditionally, so this bit the fleet
- * with or without the POV rig (docs/demo-rb.md's old fleet-lethal note
- * blamed prismarine-viewer; the misparse itself was fleet-wide).
+ * Root `minecraft-data` is the vendored 26.2 wrapper
+ * (`vendor/minecraft-data-26.2`); non-26.2 versions (including 1.21.6)
+ * come from its nested dependency `minecraft-data-base` (= upstream
+ * `minecraft-data@3.112.0`). That base still ships the 1.21.6 trail
+ * particle as {target: vec3f64, color: u8} — the real wire format
+ * (minecraft.wiki protocol docs, confirmed by live capture below) is
+ * color Int (0xRRGGBB) + duration VarInt. The u8 underread left trailing
+ * bytes on every trail world_particles packet: protodef logged "Chunk
+ * size is 77 but only 73 was read ; partial packet" and pushed a corrupt
+ * particle (color mangled, duration missing) into every fleet bot —
+ * mineflayer's own particle plugin subscribes world_particles
+ * unconditionally, so this bit the fleet with or without the POV rig
+ * (docs/demo-rb.md's old fleet-lethal note blamed prismarine-viewer; the
+ * misparse itself was fleet-wide).
  *
  * The fixture is a REAL packet captured 2026-07-22 from the containerized
  * Paper 1.21.6 server (rcon: `execute at trail_probe run particle
  * minecraft:trail{target:[10.5d,80.0d,-3.25d],color:255,duration:7}
  * ~ ~1 ~ 0 0 0 0 1 force @a`). Full-consumption assertion makes this test
- * FAIL whenever the patch is not applied (fresh checkout without
+ * FAIL whenever the nest patch is not applied (fresh checkout without
  * postinstall, image built without patches/) — it doubles as the
  * patch-application canary in CI and in the Docker image.
  *
  * A future MC_VERSION bump must re-verify the def and refresh the patch
- * (the atomic-pin-move PR; see CLAUDE.md conventions).
+ * (the atomic-pin-move PR; see CLAUDE.md conventions). The retired
+ * patches/minecraft-data+3.111.0.patch targeted the old top-level package
+ * and no longer applies once the vendor owns `minecraft-data`.
  */
 
 // 77-byte framed play packet: id 0x29 (world_particles) + payload.
@@ -35,7 +41,7 @@ const CAPTURED_TRAIL_PACKET = Buffer.from(
   'hex',
 )
 
-describe('trail particle wire format (minecraft-data patch sentinel)', () => {
+describe('trail particle wire format (minecraft-data-base patch sentinel)', () => {
   it('parses a real 1.21.6 trail world_particles packet consuming every byte', () => {
     const deserializer = createDeserializer({
       state: states.PLAY,

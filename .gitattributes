@@ -6,3 +6,17 @@
 *.ico binary
 *.pdf filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
+
+# Vendored 26.2 data is pinned by SHA256SUMS — bytes must survive checkout
+# unchanged. Without this, autocrlf on Windows rewrites endings and every
+# checksum in the manifest fails (MineBot lesson).
+vendor/minecraft-data-26.2/** -text
+
+# Viewer atlas assets for 26.2 (canvas is stubbed in this repo; postinstall
+# copies these into prismarine-viewer/public).
+vendor/prismarine-viewer-26.2-assets/** -text
+vendor/prismarine-viewer-26.2-assets/**/*.png binary
+
+# patch-package matches patches against file contents; line-ending rewrites
+# make a patch fail to apply for reasons that are very hard to see in a diff.
+patches/** -text

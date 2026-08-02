@@ -1,3 +1,4 @@
+import { WOOD_LOGS } from '../skills/names.ts'
 import { type Position, distance, round1 } from './position.ts'
 
 /**
@@ -5,18 +6,12 @@ import { type Position, distance, round1 } from './position.ts'
  * (tool choice, failure prose). The contract speaks in families
  * (wood/stone/dirt); Minecraft speaks in blocks. Unit-tested, and the
  * single place to extend when new resources join the economy.
+ *
+ * `wood` is the same list as skills/names WOOD_LOGS so gather, craft,
+ * store, and mineWoodLog never disagree about pale oak / bamboo.
  */
 export const RESOURCE_BLOCKS: Record<string, readonly string[]> = {
-  wood: [
-    'oak_log',
-    'birch_log',
-    'spruce_log',
-    'jungle_log',
-    'acacia_log',
-    'dark_oak_log',
-    'mangrove_log',
-    'cherry_log',
-  ],
+  wood: WOOD_LOGS,
   stone: ['stone', 'cobblestone', 'andesite', 'diorite', 'granite'],
   dirt: ['dirt', 'grass_block'],
   // The T1 mining families (RB-1). Ore blocks only drop to a sufficient

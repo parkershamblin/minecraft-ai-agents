@@ -5,12 +5,16 @@ FROM node:22-slim
 WORKDIR /repo
 
 # Dependency layer: manifests only, cached until a dependency actually changes.
-# patches/ must land before npm ci — the root postinstall runs patch-package
-# (minecraft-data trail def; test/trailParticleParse.test.ts is the canary).
+# vendor/ + patches/ must land before npm ci — root postinstall runs
+# patch-package (--error-on-fail) and prepare-prismarine-viewer-26.2.cjs.
+# trailParticleParse.test.ts is the 1.21.6 trail-def canary.
 COPY package.json package-lock.json ./
+COPY vendor/minecraft-data-26.2/ vendor/minecraft-data-26.2/
+COPY vendor/prismarine-viewer-26.2-assets/ vendor/prismarine-viewer-26.2-assets/
 COPY patches/ patches/
 COPY packages/events/package.json packages/events/
 COPY services/minecraft-service/package.json services/minecraft-service/
+COPY scripts/prepare-prismarine-viewer-26.2.cjs scripts/prepare-prismarine-viewer-26.2.cjs
 RUN npm ci --no-audit --no-fund
 
 # Source: the contract package (types + schemas) and this service.

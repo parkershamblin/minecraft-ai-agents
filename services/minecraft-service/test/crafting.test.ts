@@ -58,6 +58,10 @@ describe('resolveCraftTarget', () => {
     ).toBe('spruce_planks')
   })
 
+  it('bamboo_block maps to bamboo_planks (not a naive _log replace)', () => {
+    expect(resolveCraftTarget('planks', [{ name: 'bamboo_block', count: 2 }])).toBe('bamboo_planks')
+  })
+
   it('log counts aggregate across stacks before the most-carried pick', () => {
     expect(
       resolveCraftTarget('planks', [

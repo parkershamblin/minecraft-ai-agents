@@ -4,7 +4,7 @@
 // a stall watchdog, and the honest-race deltas read from Prometheus.
 //
 // Usage:
-//   node scripts/race-rb2.mjs [--label take-1] [--difficulty easy|normal]
+//   node scripts/race-rb2.mjs [--label take-1] [--difficulty peaceful|easy|normal|hard]
 //     [--red x,y,z] [--blue x,y,z] [--separation 300] [--stall-minutes 75]
 //     [--practice]   (practice: skip the hard budget/tick preset checks)
 //     [--mobs]       (restore hostile spawns — default is a mob-free race)
@@ -27,7 +27,7 @@ const flag = (name, fallback = null) => {
 const has = (name) => args.includes(`--${name}`)
 
 const label = flag('label', `rb2-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}`)
-const wantDifficulty = flag('difficulty', 'easy')
+const wantDifficulty = flag('difficulty', 'peaceful')
 const separation = Number(flag('separation', '300'))
 // 75m default: attempt 3's wood age needed ~45m before its first milestone —
 // 45m was nearly the whole bootstrap, so a slow-but-honest start read as a stall.

@@ -9,13 +9,34 @@
   "scripts": {
     "gen": "npm run gen --workspace @civ/events",
     "test:contracts": "npm test --workspace @civ/events",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package --error-on-fail && node scripts/prepare-prismarine-viewer-26.2.cjs",
+    "bench": "node scripts/civ-bench.mjs",
+    "race": "node scripts/civ-bench.mjs race",
+    "race:practice": "node scripts/civ-bench.mjs race:practice",
+    "race:drill": "node scripts/civ-bench.mjs drill",
+    "race:drill:body": "node scripts/civ-bench.mjs drill:body",
+    "race:replay": "node scripts/civ-bench.mjs replay",
+    "race:skill-bench": "node scripts/civ-bench.mjs skill-bench",
+    "race:sweep": "node scripts/civ-bench.mjs sweep",
+    "race:aggregate": "node scripts/civ-bench.mjs aggregate"
+  },
+  "dependencies": {
+    "minecraft-assets": "1.16.0",
+    "minecraft-data": "file:vendor/minecraft-data-26.2"
   },
   "overrides": {
     "canvas": "npm:noop2@2.0.0",
     "mineflayer-utils": {
       "mineflayer": "4.37.1"
-    }
+    },
+    "minecraft-data": "$minecraft-data",
+    "minecraft-protocol": "1.66.2",
+    "prismarine-chunk": "1.40.0",
+    "prismarine-physics": "1.11.0",
+    "prismarine-viewer": "1.33.0",
+    "mineflayer-pathfinder": "2.4.5",
+    "mineflayer-pvp": "1.3.2",
+    "protodef": "1.19.0"
   },
   "devDependencies": {
     "patch-package": "8.0.0",

@@ -1,14 +1,17 @@
 import { readFileSync } from 'node:fs'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  AGEABLE_BABY_METADATA_INDEX_FALLBACK,
   HUNT_FAMILIES,
   type HuntBot,
   type HuntableEntity,
   allHuntTargetsBlacklistedMessage,
+  babyMetadataIndex,
   groupAnimalSightings,
   huntNotFoundMessage,
   huntStartAnnouncement,
   huntSuccessAnnouncement,
+  isAgeableBaby,
   isHuntYield,
   pickHuntTarget,
   runKillLoop,
@@ -53,6 +56,21 @@ describe('pickHuntTarget', () => {
 
   it('babies are NEVER targeted (the metadata flag — heights lie)', () => {
     expect(pickHuntTarget([cow({ baby: true, distance: 2 })], 'cow', 32, new Map(), 0)).toBeNull()
+  })
+
+  it('isAgeableBaby prefers metadataKeys index when present, else falls back to 16', () => {
+    expect(babyMetadataIndex(undefined, 'cow')).toBe(AGEABLE_BABY_METADATA_INDEX_FALLBACK)
+    expect(babyMetadataIndex({ entitiesByName: { cow: { metadataKeys: ['flags', 'air', 'baby'] } } }, 'cow')).toBe(2)
+    expect(
+      isAgeableBaby(
+        { name: 'cow', metadata: [0, 0, true] },
+        { entitiesByName: { cow: { metadataKeys: ['flags', 'air', 'baby'] } } },
+      ),
+    ).toBe(true)
+    const meta: unknown[] = []
+    meta[16] = true
+    expect(isAgeableBaby({ name: 'cow', metadata: meta })).toBe(true)
+    expect(isAgeableBaby({ name: 'cow', metadata: [] })).toBe(false)
   })
 
   it('beyond the chase budget is out of the hunt', () => {

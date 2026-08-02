@@ -49,9 +49,40 @@ export interface HuntableEntity {
   name: string
   position: Position
   distance: number
-  /** the ageable metadata flag (index 16 on 1.21.6) — heights never rescale,
-   *  so metadata is the ONLY working baby exclusion (spike-pinned) */
+  /** ageable baby flag — see isAgeableBaby; heights never rescale in
+   *  mineflayer, so metadata is the ONLY working baby exclusion */
   baby: boolean
+}
+
+/**
+ * Registry slice that may expose mineflayer/minecraft-data metadataKeys.
+ * When present, prefer the named `baby` index over the 1.21.6 fallback.
+ */
+export interface AgeableRegistryLike {
+  entitiesByName?: Record<string, { metadataKeys?: readonly string[] } | undefined>
+}
+
+/** Spike-pinned on Paper 1.21.6 (cow/pig/sheep/chicken). Live-confirm on 26.2. */
+export const AGEABLE_BABY_METADATA_INDEX_FALLBACK = 16
+
+/** Resolve the ageable `baby` metadata index for an entity name. */
+export function babyMetadataIndex(registry: AgeableRegistryLike | undefined, entityName: string): number {
+  const keys = registry?.entitiesByName?.[entityName]?.metadataKeys
+  if (Array.isArray(keys)) {
+    const idx = keys.indexOf('baby')
+    if (idx >= 0) return idx
+  }
+  return AGEABLE_BABY_METADATA_INDEX_FALLBACK
+}
+
+/** True when entity.metadata[babyIndex] === true. */
+export function isAgeableBaby(
+  entity: { name?: string | null; metadata?: unknown[] | null },
+  registry?: AgeableRegistryLike,
+): boolean {
+  if (!entity.name) return false
+  const idx = babyMetadataIndex(registry, entity.name)
+  return (entity.metadata as unknown[] | undefined)?.[idx] === true
 }
 
 /** Group live animals into the snapshot's nearbyAnimals shape (adults only —

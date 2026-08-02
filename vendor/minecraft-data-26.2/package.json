@@ -1,0 +1,12 @@
+{
+  "name": "minecraft-data",
+  "version": "3.112.0",
+  "description": "Minecraft-data 3.112.0 with bundled Java Edition 26.2 protocol 776 data",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "minecraft-data-base": "npm:minecraft-data@3.112.0"
+  }
+}

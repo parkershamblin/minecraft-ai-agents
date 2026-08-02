@@ -4,6 +4,7 @@
 // the retryability ruling per failure code. BotSession owns the bot-touching
 // half; this file owns every judgement call.
 
+import { plankNameFor } from '../skills/names.ts'
 import type { SkillFailureCode, SkillResult } from '../skills/types.ts'
 import { RESOURCE_BLOCKS } from './resources.ts'
 
@@ -20,7 +21,8 @@ import { RESOURCE_BLOCKS } from './resources.ts'
 const WOOD_LOGS: readonly string[] = RESOURCE_BLOCKS.wood ?? []
 
 export const STORAGE_FAMILIES: Record<string, readonly string[]> = {
-  wood: [...WOOD_LOGS, ...WOOD_LOGS.map((log) => log.replace(/_log$/, '_planks'))],
+  // plankNameFor keeps bamboo_block → bamboo_planks (naive _log replace cannot)
+  wood: [...WOOD_LOGS, ...WOOD_LOGS.map((log) => plankNameFor(log))],
   stone: ['cobblestone', 'stone'],
   coal: ['coal'],
   raw_iron: ['raw_iron'],

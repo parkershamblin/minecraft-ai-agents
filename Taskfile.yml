@@ -70,16 +70,51 @@ tasks:
       - node scripts/provision-topics.mjs
       - "{{.COMPOSE}} -f infrastructure/docker/docker-compose.dev.yml --profile infra --profile app up -d"
 
-  race:replay:
-    desc: "Offline race-brain replay — seconds, NO world/docker/tick. Decision histogram at a rung against real Ollama. Args: RUNG=bare|coal|iron|furnace|ingot|win|all N=20"
-    dir: services/agent-service
+  # --- Races / benchmarks (see: node scripts/civ-bench.mjs --help) ---
+  bench:
+    desc: "Unified benchmark CLI help / dispatch. Args after -- go to civ-bench.mjs (list|race|drill|…)"
     cmds:
-      - 'uv run python scripts/replay_race_brain.py --rung {{.RUNG | default "bare"}} --n {{.N | default "20"}}'
+      - node scripts/civ-bench.mjs {{.CLI_ARGS}}
+
+  race:
+    desc: "Full 3v3 Red-vs-Blue race (race-rb2). Needs compose Paper + 6 seeded racers. Extra flags after --"
+    cmds:
+      - node scripts/civ-bench.mjs race {{.CLI_ARGS}}
+
+  race:practice:
+    desc: "RB-2 race with --practice (skips hard budget/tick preset checks). Extra flags after --"
+    cmds:
+      - node scripts/civ-bench.mjs race:practice {{.CLI_ARGS}}
 
   race:drill:
-    desc: "Fast LIVE brain drill — one isolated bot, dense resource arena, honest full ladder in single-digit minutes (vs 11-75m for the 3v3). Args: BOT=Elara STALL=8"
+    desc: "Fast LIVE brain drill — one bot, staged arena (drill-rb2). Args: --bot Elara --stall-minutes 8"
     cmds:
-      - 'node scripts/drill-rb2.mjs --bot {{.BOT | default "Elara"}} --stall-minutes {{.STALL | default "8"}}'
+      - node scripts/civ-bench.mjs drill {{.CLI_ARGS}}
+
+  race:drill:body:
+    desc: "RB-1 body/rig drill — staged world, raw command plane, no LLM (drill-rb1)"
+    cmds:
+      - node scripts/civ-bench.mjs drill:body {{.CLI_ARGS}}
+
+  race:replay:
+    desc: "Offline race-brain replay (Ollama, no world). Args: --rung bare|coal|iron|furnace|ingot|win|all --n 20"
+    cmds:
+      - node scripts/civ-bench.mjs replay {{.CLI_ARGS}}
+
+  race:skill-bench:
+    desc: "Ported-skill iron_pickaxe chain (no LLM). Host MC :25565, script pinned to 1.21.6. Args: [runs]"
+    cmds:
+      - node scripts/civ-bench.mjs skill-bench {{.CLI_ARGS}}
+
+  race:sweep:
+    desc: "Honesty-gated model/axis sweep. Requires --world-snapshot path. See docs/runbooks/race-sensitivity-sweep.md"
+    cmds:
+      - node scripts/civ-bench.mjs sweep {{.CLI_ARGS}}
+
+  race:aggregate:
+    desc: "Rebuild RACE_REPORT.md / AXIS_REPORT.md from bench/results/sweep"
+    cmds:
+      - node scripts/civ-bench.mjs aggregate {{.CLI_ARGS}}
 
   test:
     desc: Run all test suites (contracts, minecraft, agent, memory, event, government, bench)

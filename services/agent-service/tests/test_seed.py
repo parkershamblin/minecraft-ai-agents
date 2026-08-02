@@ -14,7 +14,7 @@ from sqlalchemy import text
 from agent_service.db import make_engine, make_session_factory
 from agent_service.settings import Settings
 from agent_service.villagers.repo import VillagerRepo
-from agent_service.villagers.seed import find_seed_file, seed_villagers
+from agent_service.villagers.seed import clamp_seed_count, find_seed_file, seed_villagers
 
 PERSONAS = json.loads(find_seed_file().read_text(encoding="utf-8"))
 
@@ -27,6 +27,13 @@ WREN = "019f8e2a-0000-7000-8000-0000000c3e55"
 
 def test_cast_is_exactly_twenty():
     assert len(PERSONAS) == 20
+
+
+def test_clamp_seed_count_bounds_to_roster():
+    assert clamp_seed_count(1, roster_size=20) == 1
+    assert clamp_seed_count(6, roster_size=20) == 6
+    assert clamp_seed_count(99, roster_size=20) == 20
+    assert clamp_seed_count(0, roster_size=20) == 1
 
 
 def test_founding_three_lead_the_file_with_stable_ids():

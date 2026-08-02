@@ -137,6 +137,7 @@ console.log(`${drill.minecraftUsername} is in the world; others despawned`)
 console.log('— dense arena (RCON) —')
 rcon('time set day')
 rcon('weather clear')
+rcon('difficulty peaceful')
 rcon('gamerule doMobSpawning false')
 rcon('gamerule keepInventory true')
 for (const hostile of ['skeleton', 'zombie', 'creeper', 'spider', 'stray', 'phantom', 'drowned', 'witch', 'enderman']) {

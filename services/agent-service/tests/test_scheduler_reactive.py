@@ -71,6 +71,25 @@ class TestReactiveGuards:
         assert scheduler.request_reactive("nobody", "x") is False
 
 
+async def test_release_cancels_running_loop():
+    """Fleet trim must stop ticks so a despawned villager does not keep deciding."""
+    scheduler = TickScheduler(None, 60)
+    key = str(ELARA.id)
+    task = asyncio.create_task(asyncio.sleep(3600), name="tick:Elara")
+    scheduler._tasks[key] = task
+    scheduler._wakeups[key] = asyncio.Event()
+    scheduler._next_scheduled_at[key] = 1.0
+    scheduler._last_tick_at[key] = 0.0
+    assert scheduler.release(key) is True
+    assert key not in scheduler._tasks
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    assert task.cancelled()
+    assert scheduler.release(key) is False
+
+
 async def test_wakeup_produces_reactive_tick_with_cause(monkeypatch):
     """Loop integration with tiny timings: a wakeup fires an early tick that
     threads the cause; the next tick is scheduled a full interval later."""

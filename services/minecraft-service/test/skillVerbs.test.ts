@@ -35,6 +35,10 @@ describe('storage families', () => {
   it('wood counts logs AND the planks they became — storage thinks in packs, not drops', () => {
     expect(STORAGE_FAMILIES.wood).toContain('oak_log')
     expect(STORAGE_FAMILIES.wood).toContain('oak_planks')
+    expect(STORAGE_FAMILIES.wood).toContain('pale_oak_log')
+    expect(STORAGE_FAMILIES.wood).toContain('bamboo_block')
+    expect(STORAGE_FAMILIES.wood).toContain('bamboo_planks')
+    expect(STORAGE_FAMILIES.wood).not.toContain('bamboo_block_planks')
   })
 
   it('food is absent from the static table — the edible set is version data', () => {

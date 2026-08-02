@@ -24,12 +24,24 @@ def find_seed_file(start: Path | None = None) -> Path:
     raise FileNotFoundError("seed/villagers.json not found")
 
 
+def load_seed_personas() -> list[dict[str, Any]]:
+    return json.loads(find_seed_file().read_text(encoding="utf-8"))
+
+
+def clamp_seed_count(count: int, roster_size: int | None = None) -> int:
+    """Bound a seed target to [1, len(villagers.json)]."""
+    size = roster_size if roster_size is not None else len(load_seed_personas())
+    if size < 1:
+        raise ValueError("seed roster is empty")
+    return max(1, min(int(count), size))
+
+
 async def seed_villagers(
     repo: VillagerRepo,
     publisher: EventPublisher,
     count: int,
 ) -> dict[str, list[str]]:
-    personas: list[dict[str, Any]] = json.loads(find_seed_file().read_text(encoding="utf-8"))[:count]
+    personas: list[dict[str, Any]] = load_seed_personas()[: clamp_seed_count(count)]
     seeded, existing = [], []
 
     for persona in personas:
@@ -59,6 +71,9 @@ async def seed_villagers(
             )
             seeded.append(persona["name"])
         else:
+            # Re-seed after a fleet trim must revive despawned rows so
+            # list_alive / tick loops pick them up again.
+            await repo.set_status(villager_id, "alive")
             existing.append(persona["name"])
 
         # Spawn regardless — the executor treats an active session as a no-op,

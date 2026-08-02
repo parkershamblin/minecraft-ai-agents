@@ -1,0 +1,143 @@
+diff --git a/node_modules/prismarine-chunk/src/index.js b/node_modules/prismarine-chunk/src/index.js
+index 10ff985..7be8d14 100644
+--- a/node_modules/prismarine-chunk/src/index.js
++++ b/node_modules/prismarine-chunk/src/index.js
+@@ -13,7 +13,8 @@ const chunkImplementations = {
+     1.18: require('./pc/1.18/chunk'),
+     1.19: require('./pc/1.18/chunk'),
+     '1.20': require('./pc/1.18/chunk'),
+-    1.21: require('./pc/1.18/chunk')
++    1.21: require('./pc/1.18/chunk'),
++    26.2: require('./pc/1.18/chunk')
+   },
+   bedrock: {
+     0.14: require('./bedrock/0.14/chunk'),
+diff --git a/node_modules/prismarine-chunk/src/pc/1.18/ChunkColumn.js b/node_modules/prismarine-chunk/src/pc/1.18/ChunkColumn.js
+index 88163f2..b2d69ab 100644
+--- a/node_modules/prismarine-chunk/src/pc/1.18/ChunkColumn.js
++++ b/node_modules/prismarine-chunk/src/pc/1.18/ChunkColumn.js
+@@ -13,6 +13,8 @@ const CAVES_UPDATE_WORLD_HEIGHT = 384
+ module.exports = (Block, mcData) => {
+   // 1.21.5+ writes no size prefix before chunk containers, it's computed dynamically to save 1 byte
+   const noSizePrefix = mcData.version['>=']('1.21.5')
++  // 26.2 adds a fluid-state count after the solid-block count in every section.
++  const hasFluidCount = mcData.version['>=']('26.2')
+   return class ChunkColumn extends CommonChunkColumn {
+     static get section () { return ChunkSection }
+     constructor (options) {
+@@ -24,7 +26,7 @@ module.exports = (Block, mcData) => {
+       this.maxBitsPerBiome = neededBits(Object.values(mcData.biomes).length)
+
+       this.sections = options?.sections ?? Array.from(
+-        { length: this.numSections }, _ => new ChunkSection({ noSizePrefix, maxBitsPerBlock: this.maxBitsPerBlock })
++        { length: this.numSections }, _ => new ChunkSection({ noSizePrefix, hasFluidCount, maxBitsPerBlock: this.maxBitsPerBlock })
+       )
+       this.biomes = options?.biomes ?? Array.from(
+         { length: this.numSections }, _ => new BiomeSection({ noSizePrefix })
+@@ -252,7 +254,7 @@ module.exports = (Block, mcData) => {
+     load (data) {
+       const reader = SmartBuffer.fromBuffer(data)
+       for (let i = 0; i < this.numSections; ++i) {
+-        this.sections[i] = ChunkSection.read(reader, this.maxBitsPerBlock, noSizePrefix)
++        this.sections[i] = ChunkSection.read(reader, this.maxBitsPerBlock, noSizePrefix, hasFluidCount)
+         this.biomes[i] = BiomeSection.read(reader, this.maxBitsPerBiome, noSizePrefix)
+       }
+     }
+@@ -317,6 +319,7 @@ module.exports = (Block, mcData) => {
+       const raiseUnknownBiome = biome => { throw new Error(`Failed to map ${JSON.stringify(biome)} to a biome ID`) }
+       this.sections[y + minCY] = ChunkSection.fromLocalPalette({
+         noSizePrefix,
++        hasFluidCount,
+         data: BitArray.fromLongArray(blockStates.data || {}, blockStates.bitsPerBlock),
+         palette: blockStates.palette
+           .map(e => Block.fromProperties(e.Name.replace('minecraft:', ''), e.Properties || {}) ?? raiseUnknownBlock(e))
+diff --git a/node_modules/prismarine-chunk/src/pc/common/PaletteChunkSection.js b/node_modules/prismarine-chunk/src/pc/common/PaletteChunkSection.js
+index b2b2835..b5cabbf 100644
+--- a/node_modules/prismarine-chunk/src/pc/common/PaletteChunkSection.js
++++ b/node_modules/prismarine-chunk/src/pc/common/PaletteChunkSection.js
+@@ -12,6 +12,8 @@ function getBlockIndex (pos) {
+ class ChunkSection {
+   constructor (options) {
+     this.noSizePrefix = options?.noSizePrefix // 1.21.5+ writes no size prefix before chunk containers, it's computed dynamically to save 1 byte
++    this.hasFluidCount = options?.hasFluidCount ?? false
++    this.fluidCount = options?.fluidCount ?? 0
+     this.data = options?.data
+     if (!this.data) {
+       const value = options?.singleValue ?? 0
+@@ -38,7 +40,9 @@ class ChunkSection {
+   toJson () {
+     return JSON.stringify({
+       data: this.data.toJson(),
+-      solidBlockCount: this.solidBlockCount
++      solidBlockCount: this.solidBlockCount,
++      hasFluidCount: this.hasFluidCount,
++      fluidCount: this.fluidCount
+     })
+   }
+
+@@ -46,7 +50,9 @@ class ChunkSection {
+     const parsed = JSON.parse(j)
+     return new ChunkSection({
+       data: paletteContainer.fromJson(parsed.data),
+-      solidBlockCount: parsed.solidBlockCount
++      solidBlockCount: parsed.solidBlockCount,
++      hasFluidCount: parsed.hasFluidCount,
++      fluidCount: parsed.fluidCount
+     })
+   }
+
+@@ -74,12 +80,14 @@ class ChunkSection {
+
+   write (smartBuffer) {
+     smartBuffer.writeInt16BE(this.solidBlockCount)
++    if (this.hasFluidCount) smartBuffer.writeUInt16BE(this.fluidCount)
+     this.data.write(smartBuffer)
+   }
+
+-  static fromLocalPalette ({ data, palette, noSizePrefix }) {
++  static fromLocalPalette ({ data, palette, noSizePrefix, hasFluidCount }) {
+     return new ChunkSection({
+       noSizePrefix,
++      hasFluidCount,
+       data: palette.length === 1
+         ? new SingleValueContainer({
+           noSizePrefix,
+@@ -96,15 +104,18 @@ class ChunkSection {
+     })
+   }
+
+-  static read (smartBuffer, maxBitsPerBlock = constants.GLOBAL_BITS_PER_BLOCK, noSizePrefix) {
++  static read (smartBuffer, maxBitsPerBlock = constants.GLOBAL_BITS_PER_BLOCK, noSizePrefix, hasFluidCount = false) {
+     const solidBlockCount = smartBuffer.readInt16BE()
++    const fluidCount = hasFluidCount ? smartBuffer.readUInt16BE() : 0
+     const bitsPerBlock = smartBuffer.readUInt8()
+-    if (bitsPerBlock > 16) throw new Error(`Bits per block is too big: ${bitsPerBlock}`)
++    if (bitsPerBlock > Math.max(16, maxBitsPerBlock)) throw new Error(`Bits per block is too big: ${bitsPerBlock}`)
+     // Case 1: Single Value Container (all blocks in the section are the same)
+     if (bitsPerBlock === 0) {
+       const section = new ChunkSection({
+         noSizePrefix,
+         solidBlockCount,
++        hasFluidCount,
++        fluidCount,
+         singleValue: varInt.read(smartBuffer),
+         maxBitsPerBlock
+       })
+@@ -117,6 +128,8 @@ class ChunkSection {
+       return new ChunkSection({
+         noSizePrefix,
+         solidBlockCount,
++        hasFluidCount,
++        fluidCount,
+         data: new DirectPaletteContainer({
+           noSizePrefix,
+           bitsPerValue: maxBitsPerBlock,
+@@ -135,6 +148,8 @@ class ChunkSection {
+     return new ChunkSection({
+       noSizePrefix,
+       solidBlockCount,
++      hasFluidCount,
++      fluidCount,
+       data: new IndirectPaletteContainer({
+         noSizePrefix,
+         bitsPerValue: bitsPerBlock,

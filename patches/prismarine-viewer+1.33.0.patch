@@ -1,0 +1,239 @@
+diff --git a/node_modules/prismarine-viewer/viewer/lib/entity/Entity.js b/node_modules/prismarine-viewer/viewer/lib/entity/Entity.js
+index 8945452..dab25be 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/entity/Entity.js
++++ b/node_modules/prismarine-viewer/viewer/lib/entity/Entity.js
+@@ -1,5 +1,7 @@
+ /* global THREE */
+ 
++const THREE = globalThis.THREE || require('three')
++
+ const entities = require('./entities.json')
+ const { loadTexture } = globalThis.isElectron ? require('../utils.electron.js') : require('../utils')
+ 
+@@ -171,6 +173,6 @@ function getMesh (texture, jsonModel) {
+   const rootBones = []
+   for (const jsonBone of jsonModel.bones) {
+-    if (jsonBone.parent) bones[jsonBone.parent].add(bones[jsonBone.name])
++    if (jsonBone.parent && bones[jsonBone.parent]) bones[jsonBone.parent].add(bones[jsonBone.name])
+     else rootBones.push(bones[jsonBone.name])
+   }
+ 
+@@ -203,7 +205,7 @@ function getMesh (texture, jsonModel) {
+ class Entity {
+   constructor (version, type, scene) {
+     const e = entities[type]
+-    if (!e) throw new Error(`Unknown entity ${type}`)
++    if (!e) return
+ 
+     this.mesh = new THREE.Object3D()
+     for (const [name, jsonModel] of Object.entries(e.geometry)) {
+diff --git a/node_modules/prismarine-viewer/viewer/lib/entities.js b/node_modules/prismarine-viewer/viewer/lib/entities.js
+index d43528e..08fa1a9 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/entities.js
++++ b/node_modules/prismarine-viewer/viewer/lib/entities.js
+@@ -35,8 +35,10 @@ function getEntityMesh (entity, scene) {
+     }
+   }
+ 
+-  const geometry = new THREE.BoxGeometry(entity.width, entity.height, entity.width)
+-  geometry.translate(0, entity.height / 2, 0)
++  const width = Number.isFinite(entity.width) ? entity.width : 0.6
++  const height = Number.isFinite(entity.height) ? entity.height : 1.8
++  const geometry = new THREE.BoxGeometry(width, height, width)
++  geometry.translate(0, height / 2, 0)
+   const material = new THREE.MeshBasicMaterial({ color: 0xff00ff })
+   const cube = new THREE.Mesh(geometry, material)
+   return cube
+diff --git a/node_modules/prismarine-viewer/viewer/lib/modelsBuilder.js b/node_modules/prismarine-viewer/viewer/lib/modelsBuilder.js
+index a7736c6..e35d31e 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/modelsBuilder.js
++++ b/node_modules/prismarine-viewer/viewer/lib/modelsBuilder.js
+@@ -1,8 +1,23 @@
+ function cleanupBlockName (name) {
++  name = getTextureName(name)
++  if (name === null) return 'missing_texture'
+   if (name.startsWith('block') || name.startsWith('minecraft:block')) return name.split('/')[1]
+   return name
+ }
+ 
++function getTextureName (texture) {
++  if (texture === null || texture === undefined) return null
++  if (typeof texture === 'string') return texture
++  if (typeof texture.sprite === 'string') return texture.sprite
++  if (typeof texture.texture === 'string') return texture.texture
++  return null
++}
++
++function resolveTexture (texture, texturesJson) {
++  const name = cleanupBlockName(texture)
++  return JSON.parse(JSON.stringify(texturesJson[name] || texturesJson.missing_texture))
++}
++
+ function getModel (name, blocksModels) {
+   name = cleanupBlockName(name)
+   const data = blocksModels[name]
+@@ -36,32 +51,30 @@ function getModel (name, blocksModels) {
+ function prepareModel (model, texturesJson) {
+   // resolve texture names eg west: #all -> blocks/stone
+   for (const tex in model.textures) {
+-    let root = model.textures[tex]
+-    while (root.charAt(0) === '#') {
+-      root = model.textures[root.substr(1)]
++    let root = getTextureName(model.textures[tex])
++    while (root && root.charAt(0) === '#') {
++      root = getTextureName(model.textures[root.substr(1)])
+     }
+-    model.textures[tex] = root
++    model.textures[tex] = root || 'missing_texture'
+   }
+   for (const tex in model.textures) {
+-    let name = model.textures[tex]
+-    name = cleanupBlockName(name)
+-    model.textures[tex] = texturesJson[name]
++    model.textures[tex] = resolveTexture(model.textures[tex], texturesJson)
+   }
+   for (const elem of model.elements) {
+     for (const sideName of Object.keys(elem.faces)) {
+       const face = elem.faces[sideName]
++      const faceTextureName = getTextureName(face.texture)
+ 
+-      if (face.texture.charAt(0) === '#') {
+-        face.texture = JSON.parse(JSON.stringify(model.textures[face.texture.substr(1)]))
++      if (faceTextureName && faceTextureName.charAt(0) === '#') {
++        face.texture = JSON.parse(JSON.stringify(model.textures[faceTextureName.substr(1)]))
+       } else if (
+-        !(cleanupBlockName(face.texture) in texturesJson) &&
+-        face.texture in model.textures
++        !(cleanupBlockName(faceTextureName) in texturesJson) &&
++        faceTextureName &&
++        faceTextureName in model.textures
+       ) {
+-        face.texture = JSON.parse(JSON.stringify(model.textures[face.texture]))
++        face.texture = JSON.parse(JSON.stringify(model.textures[faceTextureName]))
+       } else {
+-        let name = face.texture
+-        name = cleanupBlockName(name)
+-        face.texture = JSON.parse(JSON.stringify(texturesJson[name]))
++        face.texture = resolveTexture(faceTextureName, texturesJson)
+       }
+ 
+       let uv = face.uv
+diff --git a/node_modules/prismarine-viewer/viewer/lib/version.js b/node_modules/prismarine-viewer/viewer/lib/version.js
+index 39e3ad8..7c610ad 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/version.js
++++ b/node_modules/prismarine-viewer/viewer/lib/version.js
+@@ -1,4 +1,4 @@
+-const supportedVersions = ['1.8.8', '1.9.4', '1.10.2', '1.11.2', '1.12.2', '1.13.2', '1.14.4', '1.15.2', '1.16.1', '1.16.4', '1.17.1', '1.18.1', '1.19', '1.20.1', '1.21.1', '1.21.4']
++const supportedVersions = ['1.8.8', '1.9.4', '1.10.2', '1.11.2', '1.12.2', '1.13.2', '1.14.4', '1.15.2', '1.16.1', '1.16.4', '1.17.1', '1.18.1', '1.19', '1.20.1', '1.21.1', '1.21.4', '26.2']
+ 
+ const lastOfMajor = {}
+ for (const version of supportedVersions) {
+diff --git a/node_modules/prismarine-viewer/viewer/lib/viewer.js b/node_modules/prismarine-viewer/viewer/lib/viewer.js
+index db02d90..70c6eff 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/viewer.js
++++ b/node_modules/prismarine-viewer/viewer/lib/viewer.js
+@@ -41,8 +41,8 @@ class Viewer {
+     version = getVersion(version)
+     if (version === null) {
+       const msg = `${version} is not supported`
+-      window.alert(msg)
+-      console.log(msg)
++      if (typeof window !== 'undefined' && typeof window.alert === 'function') window.alert(msg)
++      console.warn(msg)
+       return false
+     }
+     console.log('Using version: ' + version)
+diff --git a/node_modules/prismarine-viewer/viewer/lib/worker.js b/node_modules/prismarine-viewer/viewer/lib/worker.js
+index b743167..d5584f0 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/worker.js
++++ b/node_modules/prismarine-viewer/viewer/lib/worker.js
+@@ -32,7 +32,7 @@ function setSectionDirty (pos, value = true) {
+   if (!value) {
+     delete dirtySections[key]
+     postMessage({ type: 'sectionFinished', key })
+-  } else if (chunk && chunk.sections[Math.floor(y / 16)]) {
++  } else if (hasSection(chunk, y)) {
+     dirtySections[key] = value
+   } else {
+     postMessage({ type: 'sectionFinished', key })
+@@ -74,7 +74,7 @@ setInterval(() => {
+     y = parseInt(y, 10)
+     z = parseInt(z, 10)
+     const chunk = world.getColumn(x, z)
+-    if (chunk && chunk.sections[Math.floor(y / 16)]) {
++    if (hasSection(chunk, y)) {
+       delete dirtySections[key]
+       const geometry = getSectionGeometry(x, y, z, world, blocksStates)
+       const transferable = [geometry.positions.buffer, geometry.normals.buffer, geometry.colors.buffer, geometry.uvs.buffer]
+@@ -85,3 +85,9 @@ setInterval(() => {
+   // const time = performance.now() - start
+   // console.log(`Processed ${sections.length} sections in ${time} ms (${time / sections.length} ms/section)`)
+ }, 50)
++
++function hasSection (chunk, y) {
++  if (!chunk) return false
++  const minY = chunk.minY ?? 0
++  return Boolean(chunk.sections[(y - minY) >> 4])
++}
+diff --git a/node_modules/prismarine-viewer/viewer/lib/worldrenderer.js b/node_modules/prismarine-viewer/viewer/lib/worldrenderer.js
+index 744224a..6830cb5 100644
+--- a/node_modules/prismarine-viewer/viewer/lib/worldrenderer.js
++++ b/node_modules/prismarine-viewer/viewer/lib/worldrenderer.js
+@@ -16,6 +16,7 @@ class WorldRenderer {
+     this.version = undefined
+     this.scene = scene
+     this.loadedChunks = {}
++    this.loadedChunkRanges = {}
+     this.sectionsOutstanding = new Set()
+     this.renderUpdateEmitter = new EventEmitter()
+     this.blockStatesData = undefined
+@@ -70,6 +71,8 @@ class WorldRenderer {
+       this.scene.remove(mesh)
+     }
+     this.sectionMeshs = {}
++    this.loadedChunks = {}
++    this.loadedChunkRanges = {}
+     for (const worker of this.workers) {
+       worker.postMessage({ type: 'reset' })
+     }
+@@ -109,10 +112,12 @@ class WorldRenderer {
+ 
+   addColumn (x, z, chunk) {
+     this.loadedChunks[`${x},${z}`] = true
++    const range = getChunkVerticalRange(chunk)
++    this.loadedChunkRanges[`${x},${z}`] = range
+     for (const worker of this.workers) {
+       worker.postMessage({ type: 'chunk', x, z, chunk })
+     }
+-    for (let y = 0; y < 256; y += 16) {
++    for (let y = range.minY; y < range.maxY; y += 16) {
+       const loc = new Vec3(x, y, z)
+       this.setSectionDirty(loc)
+       this.setSectionDirty(loc.offset(-16, 0, 0))
+@@ -124,10 +129,12 @@ class WorldRenderer {
+ 
+   removeColumn (x, z) {
+     delete this.loadedChunks[`${x},${z}`]
++    const range = this.loadedChunkRanges[`${x},${z}`] || { minY: 0, maxY: 256 }
++    delete this.loadedChunkRanges[`${x},${z}`]
+     for (const worker of this.workers) {
+       worker.postMessage({ type: 'unloadChunk', x, z })
+     }
+-    for (let y = 0; y < 256; y += 16) {
++    for (let y = range.minY; y < range.maxY; y += 16) {
+       this.setSectionDirty(new Vec3(x, y, z), false)
+       const key = `${x},${y},${z}`
+       const mesh = this.sectionMeshs[key]
+@@ -181,4 +188,12 @@ class WorldRenderer {
+   }
+ }
+ 
++function getChunkVerticalRange (chunk) {
++  if (!chunk) return { minY: 0, maxY: 256 }
++  const data = typeof chunk === 'string' ? JSON.parse(chunk) : chunk
++  const minY = data.minY ?? 0
++  const worldHeight = data.worldHeight ?? 256
++  return { minY, maxY: minY + worldHeight }
++}
++
+ module.exports = { WorldRenderer }

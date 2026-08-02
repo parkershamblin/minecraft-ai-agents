@@ -29,6 +29,9 @@ if (config.POV_VIEWER !== 1) {
 if (!config.RCON_HOST) {
   // Spectator enforcement is mandatory: without RCON we cannot verify cams
   // are non-interfering, so refuse loudly (vanilla-host fallback unsupported).
+  // 26.2 vanilla host: enable enable-rcon=true + rcon.password in
+  // server.properties (Paper compose already exposes RCON). The sidecar still
+  // needs RCON on every MC version — chunk translation does not replace it.
   log.fatal('RCON_HOST is empty — cannot enforce spectator cams; pov sidecar refusing to start')
   process.exit(1)
 }

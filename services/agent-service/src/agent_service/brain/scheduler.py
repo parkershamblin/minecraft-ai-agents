@@ -90,6 +90,22 @@ class TickScheduler:
             )
             logger.info("tick loop scheduled", villager=villager.name, initial_delay_s=round(delay, 1))
 
+    def release(self, villager_id: str) -> bool:
+        """Stop one villager's tick loop (despawn / fleet trim). Returns True if
+        a running loop was cancelled."""
+        key = str(villager_id)
+        task = self._tasks.pop(key, None)
+        self._wakeups.pop(key, None)
+        self._next_scheduled_at.pop(key, None)
+        self._last_tick_at.pop(key, None)
+        self._reactive_times.pop(key, None)
+        self._pending_cause.pop(key, None)
+        if task is None or task.done():
+            return False
+        task.cancel()
+        logger.info("tick loop released", villager_id=key)
+        return True
+
     async def stop(self) -> None:
         self._stopped = True
         for task in self._tasks.values():

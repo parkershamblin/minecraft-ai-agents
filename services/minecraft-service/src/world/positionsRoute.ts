@@ -1,6 +1,7 @@
 import type http from 'node:http'
 
 export interface PositionSnapshotEntry {
+  villagerId: string
   username: string
   x: number
   y: number

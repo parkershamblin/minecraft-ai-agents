@@ -48,3 +48,27 @@ class VillagerRepo:
                 select(Villager).where(Villager.status == "alive").order_by(Villager.created_at).limit(limit)
             )
             return list(rows.scalars())
+
+    async def list_all(self, limit: int) -> list[Villager]:
+        """Every row regardless of status — used to despawn orphan bodies whose
+        DB status was already flipped while the bot session stayed online."""
+        async with self._sessions() as session:
+            rows = await session.execute(select(Villager).order_by(Villager.created_at).limit(limit))
+            return list(rows.scalars())
+
+    async def get_by_name(self, name: str) -> Villager | None:
+        async with self._sessions() as session:
+            row = await session.execute(select(Villager).where(Villager.name == name).limit(1))
+            return row.scalar_one_or_none()
+
+    async def set_status(self, villager_id: uuid.UUID, status: str) -> bool:
+        """Update status (alive|despawned). True if a row was updated."""
+        now = datetime.now(UTC)
+        async with self._sessions() as session:
+            villager = await session.get(Villager, villager_id)
+            if villager is None:
+                return False
+            villager.status = status
+            villager.updated_at = now
+            await session.commit()
+            return True
