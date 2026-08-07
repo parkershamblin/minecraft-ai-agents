@@ -71,7 +71,7 @@ function produce(villagerId, action, params, timeoutMs = 30_000) {
   }
   execFileSync(
     'docker',
-    ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', villagerId],
+    ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-z', 'none', '-k', villagerId],
     { input: JSON.stringify(envelope) + '\n', stdio: ['pipe', 'ignore', 'inherit'] },
   )
 }

@@ -58,7 +58,7 @@ const lines = villagers.map((v) => {
 
 execFileSync(
   'docker',
-  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-f', '%k %v\\n'],
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-z', 'none', '-f', '%k %v\\n'],
   { input: lines.join('\n') + '\n', stdio: ['pipe', 'inherit', 'inherit'] },
 )
 const roster = villagers.map((v) => `${v.minecraftUsername}(${v.team})`).join(', ')

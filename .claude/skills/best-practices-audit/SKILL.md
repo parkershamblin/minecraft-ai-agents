@@ -72,17 +72,11 @@ other services' settings files when scope touches them.
 
 ### C4 — `task test` covers what HANDOFF calls green (domain: testing/CI)
 
-`Taskfile.yml`'s `test` task runs seven suites but NOT
-`npm run typecheck --workspace @civ/minecraft-service`, while HANDOFF cites
-"tsc clean" as part of green. Until fixed, an audit of "suite green" claims
-must run it manually:
-
-```powershell
-npm run typecheck --workspace @civ/minecraft-service
-```
-
-Also verify claimed suite COUNTS by running the suite, never by copying
-prose (see V11 below and the session-handoff skill).
+`Taskfile.yml`'s `test` task includes the minecraft-service typecheck since
+2026-08-07 (V10 fixed). The check remains: whenever a doc claims a suite or
+gate is "part of green", confirm the `test:` task actually runs it, and
+verify claimed suite COUNTS by running the suite, never by copying prose
+(see V11 below and the session-handoff skill).
 
 ### C5 — prose numbers match generated artifacts (domain: reporting)
 
@@ -126,10 +120,10 @@ Scripts that `rpk topic produce` onto live topics should pass `-z none`
 Select-String -Path scripts\*.mjs -Pattern "rpk', 'topic', 'produce'" -List | Select-Object Filename
 ```
 
-Any listed script without `-z none` in its rpk argv is a finding. As of
-2026-08-07 all seven hits (produce-cmd, produce-gov-cmd, spawn-fleet,
-despawn-fleet, spawn-teams, drill-rb1, drill-rb2) lack it — safe only while
-no Python service consumes `commands.*`.
+Any listed script without `-z none` in its rpk argv is a finding. All seven
+hits (produce-cmd, produce-gov-cmd, spawn-fleet, despawn-fleet, spawn-teams,
+drill-rb1, drill-rb2) gained the flag 2026-08-07 (V9 fixed) — the check
+remains for NEW scripts that produce onto live topics.
 
 ### C9 — failure-code classification is TRUE about the wire (domain: contracts/brain)
 
@@ -140,38 +134,37 @@ commit that lets it reach the wire. Check: grep new `errorCode` emissions in
 the diff against both tables, plus `RETRYABLE_BY_CODE`
 (`services/minecraft-service/src/world/skillVerbs.ts`).
 
-## B. Known open violations — baseline 2026-08-07
+## B. Violations baseline — found 2026-08-07, dispositions updated 2026-08-07
 
-Re-verify before reporting (section C); some may be fixed by the time you run.
-Format: V# (check that finds it) — location: finding.
+Twelve of sixteen were fixed the same day (branch `best-practices-skills`).
+Re-verify every disposition before reporting (section C) — FIXED items can
+regress and OPEN items can have been fixed since.
+Format: V# (check that finds it) [disposition] — location: finding.
 
 **Contracts / tripwires**
-- V1 (C9) — `docs/architecture/10-skill-tool-schema.md` §3.1 vs `awareness.py:23`: INTERNAL is substantive-by-omission from `_PLUMBING_CODES`, yet that doc's own corpus (§3.1's bench window) counts ~4,361 of 4,905 INTERNAL occurrences as one pathfinder-timeout infrastructure string; carve-out flagged, designed nowhere. (The 4,399/4,280 pair quoted in bench-report comes from the narrative report's different window — two measurements, not a disagreement; don't cross-correct.)
-- V2 (C1) — same doc §6.2: WHY the drift gate missed a revert-shaped divergence is unanswered; a gate that misses reverts will miss the next one.
-- V3 (C2) — `skillVerbs.ts` `STORAGE_FAMILIES` mirrors the Store/Retrieve item enum but `skillVerbs.test.ts` never loads the schema — enum can grow silently.
-- V4 (C2) — `PlaceParams.item` enum (crafting_table/furnace/chest) has no schema-reading tripwire; only crafting.test.ts and hunting.test.ts read the schema.
-- V5 (C2) — doc rule R1 claims stub-params-vs-$defs divergence "is a CI failure", but no test compares `SkillSchemaStub.params` to the schema $defs.
+- V1 (C9) [OPEN — design decision, owner territory] — `docs/architecture/10-skill-tool-schema.md` §3.1 vs `awareness.py:23`: INTERNAL is substantive-by-omission from `_PLUMBING_CODES`, yet that doc's own corpus (§3.1's bench window) counts ~4,361 of 4,905 INTERNAL occurrences as one pathfinder-timeout infrastructure string; carve-out flagged, designed nowhere. (The 4,399/4,280 pair quoted in bench-report comes from the narrative report's different window — two measurements, not a disagreement; don't cross-correct.)
+- V2 (C1) [OPEN — needs investigation] — same doc §6.2: WHY the drift gate missed a revert-shaped divergence is unanswered; a gate that misses reverts will miss the next one.
+- V3 (C2) [FIXED 2026-08-07] — `skillVerbs.test.ts` "contract tripwire (schema-read)" now pins STORAGE_FAMILIES (+food) to the Store/Retrieve item enums.
+- V4 (C2) [FIXED 2026-08-07] — same describe block asserts every `PlaceParams.item` member is craftable (the CONTAINER_NOT_FOUND recovery invariant).
+- V5 (C2) [OPEN — doc overclaims] — doc rule R1 claims stub-params-vs-$defs divergence "is a CI failure", but no test compares `SkillSchemaStub.params` to the schema $defs; either build the test or soften the doc.
 
 **Deploy / compose**
-- V6 (C3) — compose does not forward `MOVE_MAX_DISTANCE` (config.ts, wired in src/index.ts): far-target gate untunable in deploys; recorded in `docs/CONTEXT-agent-brief.md`.
-- V7 (C3) — compose does not forward `PLUGIN_COLLECTBLOCK/TOOL/PVP/AUTO_EAT/ARMOR_MANAGER`: the documented PLUGIN_ARMOR_MANAGER=0 toggle cannot reach a deployed fleet.
-- V8 (C3) — compose does not forward `COMMAND_MAX_AGE_SECONDS`: freshness-guard window fixed at 600 in deploys.
-- V9 (C8) — produce-cmd/spawn-fleet/despawn-fleet (and four more scripts C8 finds) rpk-produce without `-z none`.
+- V6–V8 (C3) [FIXED 2026-08-07] — `MOVE_MAX_DISTANCE`, the five `PLUGIN_*` flags, and `COMMAND_MAX_AGE_SECONDS` now forwarded in the minecraft-service compose block with code-default values.
+- V9 (C8) [FIXED 2026-08-07] — all seven rpk-producing scripts pass `-z none`; check remains for new scripts.
 
 **Testing / CI**
-- V10 (C4) — Taskfile `test` omits the minecraft-service typecheck script; "tsc clean" must be remembered manually.
+- V10 (C4) [FIXED 2026-08-07] — Taskfile `test` now runs the minecraft-service typecheck between the vitest suite and the Python suites.
 
 **Docs / prose drift**
-- V11 (C4) — CLAUDE.md HANDOFF labels the 25-test pytest suite "contracts 25"; the 25-count suite is bench (contracts is the validate.mjs fixture gate).
-- V12 (C5) — `docs/runbooks/race-sensitivity-sweep.md` "Results" still claims ctx 4096/8192/16384 all 5/5, but the manifest shows ALL FIVE ctx-16384 rows retroactively discarded (contaminated) — AXIS_REPORT.md correctly shows the arm at 0 kept.
-- V13 (C5) — CLAUDE.md "3b RESULTS" paragraph carries the same stale "all 5/5" claim.
+- V11 (C4) [FIXED 2026-08-07] — CLAUDE.md "contracts 25" corrected in place to "bench 25" with the correction stated.
+- V12 (C5) [FIXED 2026-08-07] — `docs/runbooks/race-sensitivity-sweep.md` Results section corrected in place: 25 kept rows, ctx conclusion rests on two arms, the −224 s figure withdrawn.
+- V13 (C5) [FIXED 2026-08-07] — CLAUDE.md "3b RESULTS" paragraph corrected the same way.
 
 **Name families**
-- V14 (C6) — `RESOURCE_BLOCKS.wood` is 8 logs ending at cherry_log; `WOOD_LOGS` carries 10 (adds pale_oak_log, bamboo_block): a wood gather cannot see logs the skill layer can mine.
-- V15 (C6) — `STORAGE_FAMILIES.wood` derives from `RESOURCE_BLOCKS.wood`, inheriting the gap into store/retrieve; the food family resolves live off the registry and is the fix pattern.
+- V14/V15 (C6) [FIXED 2026-08-07] — `RESOURCE_BLOCKS.wood` now derives from `WOOD_LOGS` (bamboo_block filtered as a non-world block), so STORAGE_FAMILIES inherits pale oak; regression test "pale oak counts as wood end-to-end" in skillVerbs.test.ts.
 
 **Session hygiene**
-- V16 (session-handoff skill) — tree held uncommitted work at 2026-08-07 session start (untracked .vscode/, demos/event-driven-vs-wallclock/, papers/Many-agentSimulationsTowardAICivilization.pdf; modified papers/MineLand.pdf) against the green-boundary push rule. Re-check: `git status --porcelain`.
+- V16 (session-handoff skill) [OPEN — owner's files] — tree held uncommitted work at 2026-08-07 session start (untracked .vscode/, demos/event-driven-vs-wallclock/, papers/Many-agentSimulationsTowardAICivilization.pdf; modified papers/MineLand.pdf) against the green-boundary push rule. Not committed by the audit session: they are the owner's working files. Re-check: `git status --porcelain`.
 
 ## C. Audit procedure
 

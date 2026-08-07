@@ -167,6 +167,19 @@ services:
       # fleet, stance brave = armed villagers stand their ground vs melee.
       THREAT_MAX_CONCURRENT_FIGHTS: ${THREAT_MAX_CONCURRENT_FIGHTS:-4}
       THREAT_DEFAULT_STANCE: ${THREAT_DEFAULT_STANCE:-cautious}
+      # Deploy-tunable knobs (2026-08-07): compose forwards only listed vars,
+      # so an unlisted env-read knob is silently fixed at its code default in
+      # every deploy. These three groups were documented as tunable (HANDOFF's
+      # "run PLUGIN_ARMOR_MANAGER=0", the far-target move gate, the command
+      # freshness window) but unreachable in containers until listed here.
+      # Defaults mirror config.ts exactly — adding them changes nothing.
+      MOVE_MAX_DISTANCE: ${MOVE_MAX_DISTANCE:-128}
+      COMMAND_MAX_AGE_SECONDS: ${COMMAND_MAX_AGE_SECONDS:-600}
+      PLUGIN_COLLECTBLOCK: ${PLUGIN_COLLECTBLOCK:-1}
+      PLUGIN_TOOL: ${PLUGIN_TOOL:-1}
+      PLUGIN_PVP: ${PLUGIN_PVP:-1}
+      PLUGIN_AUTO_EAT: ${PLUGIN_AUTO_EAT:-1}
+      PLUGIN_ARMOR_MANAGER: ${PLUGIN_ARMOR_MANAGER:-1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

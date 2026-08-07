@@ -118,12 +118,12 @@ LAZILY in `requireSkills()` (registry is only populated after login) and set
 to null in `connect()` — adapters close over the OLD bot, and keeping them
 past a reconnect aims every skill at a dead connection.
 
-Three name-family sources exist and are KNOWN to diverge: `RESOURCE_BLOCKS`
-(`src/world/resources.ts`, wood = 8 logs ending at cherry_log), `WOOD_LOGS`
-(`src/skills/names.ts`, 10 — adds pale_oak_log, bamboo_block), and
-`STORAGE_FAMILIES` (`src/world/skillVerbs.ts`, derives from RESOURCE_BLOCKS
-and inherits its gap). Touching any family: reconcile all three or state why
-not; the food family does it right (resolves live against registry foods).
+Name families are single-sourced since 2026-08-07: `RESOURCE_BLOCKS.wood`
+(`src/world/resources.ts`) derives from the canonical `WOOD_LOGS`
+(`src/skills/names.ts`), filtering out `bamboo_block` (a crafted plank
+source, not a world gather target), and `STORAGE_FAMILIES`
+(`src/world/skillVerbs.ts`) derives from RESOURCE_BLOCKS. The food family
+resolves live against registry foods. New family: derive, never hardcode a twin.
 
 ## 5. Failure codes, retryability, messages
 

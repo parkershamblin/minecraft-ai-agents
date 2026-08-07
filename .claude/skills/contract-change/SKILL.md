@@ -51,11 +51,11 @@ said otherwise; unit-10's chest bug was the same class).
 **Riders in the SAME PR:**
 
 - [ ] `task gen` output committed (§5).
-- [ ] FakeProvider `_SCRIPT` row per new verb in `llm/providers.py` (unit-10
-  precedent: place/store/retrieve each got one; `test_llm_providers.py` walks
-  every scripted row through `validate_decision`). This is a MANUAL checklist
-  item, not a CI gate — nothing asserts full-verb coverage, and `hunt`/`follow`
-  have no rows today, so CI stays green if you forget.
+- [ ] FakeProvider `_SCRIPT` row per new verb in `llm/providers.py`.
+  CI-enforced since 2026-08-07:
+  `test_llm_providers.py::test_script_covers_every_deliberate_action` asserts
+  `_SCRIPT` covers `DELIBERATE_ACTIONS` exactly (before that, hunt/follow
+  silently had no rows), and every scripted row walks `validate_decision`.
 - [ ] `test_tool_schema.py::test_params_union_accepts_every_verb_and_idle` case
   added — it asserts `set(cases) == DELIBERATE_ACTIONS`, so an unexercised verb fails.
 - [ ] Body-side enum tripwire for any executor table mirroring a schema enum:

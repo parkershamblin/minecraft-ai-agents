@@ -165,6 +165,28 @@ class FakeProvider:
             "relationshipUpdates": None,
             "governanceAction": None,
         },
+        # Coverage-closing rows (2026-08-07): hunt and follow were the two
+        # DELIBERATE_ACTIONS with no scripted row — the house rule above was
+        # aspirational until test_script_covers_every_deliberate_action
+        # started asserting it.
+        {
+            "action": "hunt",
+            "params": {"animal": "cow", "maxDistance": 24},
+            "reasoning": "The smokehouse is empty and the meadow herd wanders close.",
+            "importance": 3,
+            "sentiment": 0.0,
+            "relationshipUpdates": None,
+            "governanceAction": None,
+        },
+        {
+            "action": "follow",
+            "params": {"targetVillagerId": "019f8e2a-0000-7000-8000-0000000b2a44", "range": 2},
+            "reasoning": "A neighbour knows the way to the ridge; better to walk together.",
+            "importance": 2,
+            "sentiment": 0.25,
+            "relationshipUpdates": None,
+            "governanceAction": None,
+        },
     ]
 
     def __init__(self) -> None:

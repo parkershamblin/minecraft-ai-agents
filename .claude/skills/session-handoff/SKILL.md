@@ -40,23 +40,20 @@ the **regression-test** skill; demo STATUS.md/RESULT.json check-off is the
 
 ## 3. Suite-size honesty — run, never copy
 
-Cite a suite count only from output produced **this session**. The standing
-incident: CLAUDE.md's HANDOFF labelled the 25-test suite "contracts 25", but
-the 25-count pytest suite is **bench** (`bench/test_race_metrics.py`);
-contracts is the `packages/events/test/validate.mjs` fixture gate, a different
-thing entirely — copied counts drift into mislabels.
+Cite a suite count only from output produced **this session**. The canonical
+incident (corrected in CLAUDE.md 2026-08-07): the HANDOFF labelled the
+25-test suite "contracts 25", but the 25-count pytest suite is **bench**
+(`bench/test_race_metrics.py`); contracts is the
+`packages/events/test/validate.mjs` fixture gate — copied counts drift into
+mislabels.
 
 ```powershell
 task test          # all seven suites; record each suite's count from its own output
 ```
 
 Per-suite commands live in the `test:` task of `Taskfile.yml` (and the
-regression-test skill). Note `task test` does NOT run the minecraft-service
-typecheck — if the entry claims "tsc clean", run it explicitly:
-
-```powershell
-npm run typecheck --workspace @civ/minecraft-service
-```
+regression-test skill); it includes the minecraft-service typecheck
+(added 2026-08-07), so `task test` exit 0 now covers "tsc clean".
 
 ## 4. Corrections: stated in place, never silent
 

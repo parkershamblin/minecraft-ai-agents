@@ -27,7 +27,9 @@ const envelope = {
 }
 execFileSync(
   'docker',
-  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', villagerId],
+  // -z none: defense-in-depth — rpk's default snappy killed a python consumer
+  // once (2026-07-22); kafkajs handles it today, but the flag costs nothing.
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-z', 'none', '-k', villagerId],
   { input: JSON.stringify(envelope) + '\n' },
 )
 console.log(`${action} command ${commandId} -> ${villagerId}`)

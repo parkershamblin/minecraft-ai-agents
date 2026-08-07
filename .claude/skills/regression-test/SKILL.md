@@ -182,7 +182,7 @@ from PowerShell, not Git Bash, which mangles `cmd /c`):
 task test                                            # all seven suites, in order
 npm test --workspace @civ/events                     # contracts: validate.mjs fixture gate
 npm test --workspace @civ/minecraft-service          # 761 tests / 51 files
-npm run typecheck --workspace @civ/minecraft-service # tsc --noEmit — NOT in task test
+npm run typecheck --workspace @civ/minecraft-service # tsc --noEmit (in task test since 2026-08-07)
 cd services/agent-service; uv run pytest -q          # 247
 cd services/memory-service; uv run pytest -q         # 51
 cd services/event-service; cmd /c .\gradlew.bat test
@@ -190,10 +190,9 @@ cd services/government-service; cmd /c .\gradlew.bat test
 cd bench; uv run --python 3.12 --with pytest pytest -q   # 25 — bench has NO pyproject by design
 ```
 
-Traps: `task test` omits the minecraft typecheck even though HANDOFF counts
-"tsc clean" as green — run it manually. The 25-test pytest suite is **bench**
-(HANDOFF's "contracts 25" label is a mislabel; contracts is the validate.mjs
-gate, not a counted pytest suite). Java integration suites need Docker up.
+Traps: the 25-test pytest suite is **bench** — contracts is the validate.mjs
+gate, not a counted pytest suite (HANDOFF's old "contracts 25" label was
+corrected 2026-08-07). Java integration suites need Docker up.
 
 ## Verification
 

@@ -79,12 +79,12 @@ a silent code-default (memory-service ran every pre-v3 "greedy" benchmark's
 reflections at 0.7 because `LLM_TEMPERATURE` wasn't forwarded; bit twice).
 When a PR adds an env-read knob, the same PR adds it to the compose block.
 
-Live examples of the trap (verified 2026-08-07 — env-read in
-`services/minecraft-service/src/config.ts`, absent from the minecraft-service
-compose block, so untunable in deployed containers):
-`MOVE_MAX_DISTANCE`, all five `PLUGIN_*` flags (the documented
-`PLUGIN_ARMOR_MANAGER=0` toggle cannot reach a compose fleet),
-`COMMAND_MAX_AGE_SECONDS` (freshness window fixed at 600).
+The trap's 2026-08-07 catch (fixed the same day — all now forwarded with
+code-default values): `MOVE_MAX_DISTANCE`, the five `PLUGIN_*` flags, and
+`COMMAND_MAX_AGE_SECONDS` were env-read in
+`services/minecraft-service/src/config.ts` but absent from the compose block,
+so no deploy could tune them — the documented `PLUGIN_ARMOR_MANAGER=0` toggle
+could not reach a fleet. When a knob seems ignored, check the block, not the docs.
 
 ## 4. Fleet recovery after a minecraft-service recreate
 

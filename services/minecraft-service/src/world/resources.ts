@@ -1,3 +1,4 @@
+import { WOOD_LOGS } from '../skills/names.ts'
 import { type Position, distance, round1 } from './position.ts'
 
 /**
@@ -7,16 +8,12 @@ import { type Position, distance, round1 } from './position.ts'
  * single place to extend when new resources join the economy.
  */
 export const RESOURCE_BLOCKS: Record<string, readonly string[]> = {
-  wood: [
-    'oak_log',
-    'birch_log',
-    'spruce_log',
-    'jungle_log',
-    'acacia_log',
-    'dark_oak_log',
-    'mangrove_log',
-    'cherry_log',
-  ],
+  // Derived from the skill library's canonical 1.21.6 log list so the two
+  // can never drift again (they did: this list stopped at cherry_log, so a
+  // 'wood' gather could not see the pale_oak_log the skill layer mined).
+  // bamboo_block is filtered out: it is a crafted plank SOURCE, not a
+  // world-generating gather target.
+  wood: WOOD_LOGS.filter((name) => name.endsWith('_log')),
   stone: ['stone', 'cobblestone', 'andesite', 'diorite', 'granite'],
   dirt: ['dirt', 'grass_block'],
   // The T1 mining families (RB-1). Ore blocks only drop to a sufficient

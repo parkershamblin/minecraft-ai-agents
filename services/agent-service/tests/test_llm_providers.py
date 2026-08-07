@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 
-from agent_service.llm.contract import validate_decision
+from agent_service.llm.contract import DELIBERATE_ACTIONS, validate_decision
 from agent_service.llm.providers import (
     AnthropicProvider,
     FakeProvider,
@@ -28,6 +28,14 @@ class TestFakeProvider:
             response = await provider.complete("system", "user")
             validate_decision(response.text)  # raises on violation
             assert response.tokens_in == 0
+
+    def test_script_covers_every_deliberate_action(self):
+        # The contract-commit house rule: every verb the contract offers is
+        # walked through the brain seam by CI. Aspirational until 2026-08-07
+        # (hunt and follow had no rows and nothing noticed) — now asserted, so
+        # a new verb without a scripted row fails HERE, not in a live fleet.
+        scripted = {row["action"] for row in FakeProvider._SCRIPT}
+        assert scripted == set(DELIBERATE_ACTIONS)
 
 
 class TestOpenAIProvider:
