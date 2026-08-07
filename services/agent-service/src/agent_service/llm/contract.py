@@ -196,12 +196,32 @@ def _normalize_params(action: str, params: dict[str, Any]) -> tuple[dict[str, An
 # params, and empty strings under minLength. Those are real misunderstandings
 # of the verb rather than a scalar landing outside a window the model was
 # never shown, and inventing a value would put words in the villager's mouth.
-def _clamp_to_enum(value: float, members: list[Any]) -> Any | None:
-    """Nearest enum member; ties go to the smaller (a range of 0 means 1)."""
-    ints = [m for m in members if isinstance(m, int) and not isinstance(m, bool)]
-    if not ints or value in ints:
+def _repair_int_enum(value: float, spec: dict[str, Any]) -> Any | None:
+    """Out-of-enum resolves to the schema's DECLARED DEFAULT, not the nearest
+    member — the one place this file makes a semantic judgement, so here is why.
+
+    A value outside an R4 enum is not a near miss; it is a category error about
+    the field's units (the live emissions were 10, 16, 20, 100 and 1000 for
+    'how close counts as arrived, in blocks'). The contract already declares
+    what to do with a field the model did not understand: `default`. Nearest-
+    member would instead map every one of those to 8 — the MAXIMUM — and for
+    `range` the failure is asymmetric: a move is satisfied the moment the body
+    is already within range, so the largest value is the most no-op-prone one.
+    Snapping 1000 to 8 would preserve a weakened form of the exact bug PR #113
+    fixed; snapping it to the default of 1 always produces a real walk.
+
+    The same rule reads correctly on the other R4 fields rather than by luck:
+    GatherParams.count 50 -> 1 avoids committing to a long haul against the
+    known 60s trip budget, and Store/RetrieveParams.count 100 -> 16 lands on
+    'as much as fits', which is what the default already means there.
+    """
+    members = [m for m in spec["enum"] if isinstance(m, int) and not isinstance(m, bool)]
+    if not members or value in members:
         return None
-    return min(ints, key=lambda member: (abs(member - value), member))
+    fallback = spec.get("default")
+    if fallback in members:
+        return fallback
+    return min(members, key=lambda member: (abs(member - value), member))
 
 
 def _truncate(text: str, cap: int) -> str:
@@ -221,8 +241,8 @@ def _repair_value(value: Any, spec: dict[str, Any]) -> Any | None:
     kind = spec.get("type")
     is_number = isinstance(value, (int, float)) and not isinstance(value, bool)
 
-    if kind == "integer" and is_number and (members := spec.get("enum")):
-        return _clamp_to_enum(value, members)
+    if kind == "integer" and is_number and "enum" in spec:
+        return _repair_int_enum(value, spec)
 
     if kind in ("number", "integer") and is_number and "enum" not in spec:
         low, high = spec.get("minimum"), spec.get("maximum")

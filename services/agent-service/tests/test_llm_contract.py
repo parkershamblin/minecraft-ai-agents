@@ -253,25 +253,29 @@ class TestBoundsRepair:
     """
 
     # The exact values gemma3:12b emitted live, with their observed counts.
-    @pytest.mark.parametrize("emitted", [10, 100, 16, 1000, 20])
-    def test_move_range_above_the_enum_clamps_to_8(self, emitted):
+    @pytest.mark.parametrize("emitted", [10, 100, 16, 1000, 20, 0])
+    def test_move_range_outside_the_enum_falls_to_the_default(self, emitted):
         parsed = validate_decision(
             decision(action="move", params={"to": {"x": 1, "y": 64, "z": -3}, "range": emitted})
         )
         assert parsed.action == "move", "the tick must survive, not fall back to idle"
-        assert parsed.params["range"] == 8
-
-    def test_range_below_the_enum_clamps_up_to_1(self):
-        parsed = validate_decision(
-            decision(action="move", params={"to": {"x": 1, "y": 64, "z": -3}, "range": 0})
-        )
+        # NOT the nearest member (8) — 8 is the most no-op-prone value a move
+        # can carry, which is the bug PR #113 fixed. The schema default walks.
         assert parsed.params["range"] == 1
 
-    def test_follow_range_clamps_on_the_same_rule(self):
+    def test_follow_range_falls_to_its_own_default_not_moves(self):
         parsed = validate_decision(
             decision(action="follow", params={"targetVillagerId": "abc", "range": 50})
         )
-        assert parsed.params["range"] == 8
+        assert parsed.params["range"] == 2  # FollowParams declares default 2
+
+    def test_repair_reads_the_default_per_field_not_a_constant(self):
+        # Store/RetrieveParams.count default to 16 ("as much as fits"), so the
+        # same rule must NOT drag them down to move's 1.
+        parsed = validate_decision(
+            decision(action="store", params={"item": "wood", "count": 999})
+        )
+        assert parsed.params["count"] == 16
 
     def test_in_bounds_values_are_left_exactly_alone(self):
         parsed = validate_decision(
