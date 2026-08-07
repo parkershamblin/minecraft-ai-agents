@@ -87,7 +87,7 @@ find its generated source (`bench/results/AXIS_REPORT.md`, `RACE_REPORT.md`,
 doctrine: the bench-report skill.
 
 ```powershell
-Select-String -Path docs\runbooks\race-sensitivity-sweep.md, CLAUDE.md -Pattern '16384'   # the live example, V12/V13
+Select-String -Path docs\runbooks\race-sensitivity-sweep.md, CLAUDE.md -Pattern '16384'   # V12/V13: hits must be the stated CORRECTIONs, not bare 5/5 claims
 ```
 
 ### C6 — name families agree (domain: runtime)

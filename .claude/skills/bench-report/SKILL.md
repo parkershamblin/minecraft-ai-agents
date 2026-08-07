@@ -134,15 +134,14 @@ into BOTH reports from earlier PR prose.
 ## 7. The stale-prose scan
 
 Generated artifacts self-correct on regeneration; hand-written narrative
-does not. The live example this discipline exists for (still open): the
-"Results, and why the axes are closed" section of
-`docs/runbooks/race-sensitivity-sweep.md` claims ctx "4096 / 8192 / 16384
-all went 5/5" and quotes "The 16384 arm's −224 s" — but the manifest shows
-ALL FIVE ctx-16384 rows retroactively discarded (`outcome:
-"contaminated"`, Elara reconnect storm) plus one block-setup failure, and
-the generated `AXIS_REPORT.md` correctly shows N=0. The ctx-insensitivity
-conclusion rests on 2 arms, not 3. CLAUDE.md's HANDOFF "3b RESULTS"
-paragraph carries the same stale claim.
+does not. The canonical example (found and corrected in place 2026-08-07):
+the "Results" section of `docs/runbooks/race-sensitivity-sweep.md` and
+CLAUDE.md's "3b RESULTS" paragraph both claimed ctx "4096 / 8192 / 16384
+all went 5/5" for over a week AFTER the manifest showed all five ctx-16384
+rows retroactively discarded (`outcome: "contaminated"`, Elara reconnect
+storm) plus one block-setup failure — the generated `AXIS_REPORT.md`
+showed N=0 the whole time. The corrections now sit in those docs as the
+model for stating a correction where the number lived.
 
 When touching ANY prose that quotes sweep numbers:
 
@@ -154,8 +153,8 @@ uv run python -c "import json; rs=json.load(open('bench/results/sweep/manifest.j
 
       (`uv run python`, never bare `python` — the CLAUDE.md stale-3.8 gotcha.)
 - [ ] Derive the number fresh or date it ("as of the 2026-07-26 sweep");
-      same for suite counts — run the suite, don't copy (the HANDOFF
-      "contracts 25" mislabel is the bench pytest suite's count).
+      same for suite counts — run the suite, don't copy (the HANDOFF's old
+      "contracts 25" mislabel, corrected 2026-08-07, was a copied count).
 - [ ] If prose and a generated artifact disagree, the generated artifact
       wins: fix the prose and state the correction in place.
 
