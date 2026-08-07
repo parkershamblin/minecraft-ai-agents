@@ -769,6 +769,35 @@ describe('unit-10 skill verbs', () => {
     expect(h.outcomes[0]!.eventType).toBe('ActionFailed')
     expect(h.outcomes[0]!.extra.errorCode).toBe('INTERNAL')
   })
+
+  // 2026-08-07: bare mineflayer-pathfinder rejections reached this catch and
+  // became INTERNAL — 12,067 "Took to long to decide path to goal!" and 2,278
+  // "No path to the goal!" in the ledger, every one of them counting toward an
+  // abandonment streak. The classifier runs HERE so all ten goto call sites
+  // are covered at once.
+  it('a pathfinder search-budget rejection is PLUMBING, not the villager\'s fault', async () => {
+    const h = harness({}, { moveTo: vi.fn(async () => { throw new Error('Took to long to decide path to goal!') }) })
+    await h.executor.execute(command('move', { to: { x: 10, y: 64, z: 10 }, range: 2 }))
+    expect(h.outcomes[0]!.extra.errorCode).toBe('PATH_SEARCH_EXHAUSTED')
+    expect(h.outcomes[0]!.extra.retryable).toBe(true)
+    expect(h.outcomes[0]!.extra.errorMessage).toMatch(/search budget|thinking time/i)
+  })
+
+  it('"No path to the goal!" is the world\'s verdict — PATH_NOT_FOUND, not retryable', async () => {
+    const h = harness({}, { moveTo: vi.fn(async () => { throw new Error('No path to the goal!') }) })
+    await h.executor.execute(command('move', { to: { x: 10, y: 64, z: 10 }, range: 2 }))
+    expect(h.outcomes[0]!.extra.errorCode).toBe('PATH_NOT_FOUND')
+    expect(h.outcomes[0]!.extra.retryable).toBe(false)
+  })
+
+  it('a coded ActionError still wins over classification', async () => {
+    // Ordering guard: classification must never rewrite a code the skill
+    // layer already ruled on.
+    const err = Object.assign(new Error('No path to the goal!'), { code: 'CONTAINER_NOT_FOUND', retryable: true })
+    const h = harness({}, { store: vi.fn(async () => { throw err }) })
+    await h.executor.execute(command('store', { item: 'stone', count: 4 }))
+    expect(h.outcomes[0]!.extra.errorCode).toBe('CONTAINER_NOT_FOUND')
+  })
 })
 
 describe('arrival range is bounded (the no-op move class)', () => {

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type {
   SkillInvocationContext,
@@ -326,19 +327,49 @@ describe('seedFromLedger', () => {
     expect(records[3]?.costMs).toBe(0) // absent durationMs
   })
 
-  it('isPlumbingCode knows the awareness.py canonical set and nothing else', () => {
-    for (const code of [
-      'SUPERSEDED',
-      'STALE_COMMAND',
-      'BODY_BUSY',
-      'HAZARD_ESCAPE_IN_PROGRESS',
-      'SELF_DEFENSE_IN_PROGRESS',
-      'BOT_DISCONNECTED',
-    ]) {
-      expect(isPlumbingCode(code)).toBe(true)
-    }
+  it('isPlumbingCode mirrors awareness.py EXACTLY — parsed, not transcribed', () => {
+    // Written 2026-08-07 after this test's predecessor missed a real drift: it
+    // asserted true for six hardcoded codes and false for three others, so
+    // when ABORTED joined awareness.py in the unit-10 PR and never reached
+    // stats.ts, the mastery table booked skill failures the brain had already
+    // ruled plumbing — and the suite stayed green. Set equality against the
+    // canonical Python source is the only shape that catches that class.
+    const py = readFileSync(
+      new URL(
+        '../../agent-service/src/agent_service/brain/awareness.py',
+        import.meta.url,
+      ),
+      'utf8',
+    )
+    const block = py.match(/_PLUMBING_CODES\s*=\s*\{([\s\S]*?)\}/)?.[1]
+    expect(block, 'awareness.py no longer declares _PLUMBING_CODES as a set literal').toBeTruthy()
+    const canonical = [...(block ?? '').matchAll(/"([A-Z_]+)"/g)]
+      .map((m) => m[1])
+      .filter((c): c is string => c !== undefined)
+      .sort()
+    // Sanity floor: an empty or truncated parse must fail loudly rather than
+    // pass vacuously (the noPovInFleet.test.ts guard pattern).
+    expect(canonical.length).toBeGreaterThanOrEqual(6)
+
+    for (const code of canonical) expect(isPlumbingCode(code), `${code} missing here`).toBe(true)
+
+    // ...and nothing beyond it: every other code the wire can carry is
+    // substantive, so a stray addition on this side is caught too.
+    const wire: string[] = JSON.parse(
+      readFileSync(
+        new URL('../../../packages/events/schemas/world/ActionFailed.v1.schema.json', import.meta.url),
+        'utf8',
+      ),
+    ).properties.errorCode.enum
+    const plumbingOnThisSide = wire.filter((c) => isPlumbingCode(c)).sort()
+    expect(plumbingOnThisSide).toEqual(canonical)
+
     expect(isPlumbingCode('TIMEOUT')).toBe(false)
     expect(isPlumbingCode('RESOURCE_NOT_FOUND')).toBe(false)
+    // The split's load-bearing asymmetry: the search budget is plumbing, the
+    // world's "no route exists" verdict is not.
+    expect(isPlumbingCode('PATH_SEARCH_EXHAUSTED')).toBe(true)
+    expect(isPlumbingCode('PATH_NOT_FOUND')).toBe(false)
     expect(isPlumbingCode('')).toBe(false)
   })
 

@@ -131,10 +131,20 @@ git diff --exit-code -- packages/events/generated   # the exact CI check — run
 
 Commit schemas + fixtures + `generated/` in ONE commit. CI
 (`.github/workflows/events-contracts.yml`) re-runs codegen and fails on any
-diff — but it only triggers on `packages/events/**` paths and demonstrably
-missed the 56823ad revert (stale generated types until #110). **After any
-revert or cherry-pick touching schemas, run `task gen` and check the diff
-yourself; do not trust the gate to have run.**
+diff.
+
+**The `56823ad` incident, correctly diagnosed (2026-08-07):** the gate did NOT
+miss it. PR #109's `contracts` check concluded `failure` and the PR merged 18
+seconds later, because `main` had no branch protection — the check was
+advisory. Stale generated types then sat on main until #110. `main` now
+requires `contracts` + `ci / test` (admins exempt). The transferable rule: **a
+gate whose result nothing consumes is a report, not a gate** — when you add
+one, verify enforcement (`gh api .../branches/main/protection`), not just that
+the workflow file exists.
+
+On Windows, check drift with `git diff --numstat -- packages/events/generated`
+rather than `git status`: `task gen` writes CRLF, and `.gitattributes`
+normalizes to LF on add, so `git status` reports content-identical files.
 
 ## 6. configVersion: bump, fold, or free
 

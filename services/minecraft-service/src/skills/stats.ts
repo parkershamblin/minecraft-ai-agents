@@ -20,6 +20,7 @@ import type {
 const ALL_FAILURE_CODES: Record<SkillFailureCode, null> = {
   RESOURCE_NOT_FOUND: null,
   PATH_NOT_FOUND: null,
+  PATH_SEARCH_EXHAUSTED: null,
   TOOL_REQUIRED: null,
   TOOL_TIER_REQUIRED: null,
   TIMEOUT: null,
@@ -45,6 +46,10 @@ const SKILL_FAILURE_CODE_SET: ReadonlySet<string> = new Set(
 // body was busy, the bot wasn't in the world), so counting them as skill
 // failures would teach the table to distrust skills the world never
 // actually refused.
+// Drift found 2026-08-07: ABORTED joined awareness.py in the unit-10 PR but
+// never reached this mirror, so the mastery table booked skill failures the
+// brain had already ruled plumbing. skillsStats.test.ts now asserts EXACT set
+// equality by parsing awareness.py, so the two can no longer diverge silently.
 const PLUMBING_CODES: ReadonlySet<string> = new Set([
   'SUPERSEDED',
   'STALE_COMMAND',
@@ -52,6 +57,8 @@ const PLUMBING_CODES: ReadonlySet<string> = new Set([
   'HAZARD_ESCAPE_IN_PROGRESS',
   'SELF_DEFENSE_IN_PROGRESS',
   'BOT_DISCONNECTED',
+  'ABORTED',
+  'PATH_SEARCH_EXHAUSTED',
 ])
 
 /**

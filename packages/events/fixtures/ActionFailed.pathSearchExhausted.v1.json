@@ -1,0 +1,19 @@
+{
+  "eventId": "019fdb92-0041-7000-8000-00000000b041",
+  "eventType": "ActionFailed",
+  "schemaVersion": 1,
+  "occurredAt": "2026-08-07T09:41:12.118Z",
+  "source": "minecraft-service",
+  "aggregateType": "Villager",
+  "aggregateId": "019f8e2a-0000-7000-8000-0000000b2a44",
+  "correlationId": "019fdb92-0030-7000-8000-c0de00000021",
+  "causationId": "019fdb92-0029-7000-8000-00000000b029",
+  "payload": {
+    "commandId": "019fdb92-0029-7000-8000-00000000b029",
+    "villagerId": "019f8e2a-0000-7000-8000-0000000b2a44",
+    "action": "move",
+    "errorCode": "PATH_SEARCH_EXHAUSTED",
+    "errorMessage": "the route search ran out of thinking time before it found a way there — this is a search budget, not a verdict on the target. Move to open ground nearer the goal and ask again, or pick a closer target.",
+    "retryable": true
+  }
+}

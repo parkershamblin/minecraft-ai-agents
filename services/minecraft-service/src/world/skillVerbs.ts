@@ -119,6 +119,10 @@ export function planItemCounts(
 const RETRYABLE_BY_CODE: Record<SkillFailureCode, boolean> = {
   RESOURCE_NOT_FOUND: true,
   PATH_NOT_FOUND: false,
+  // Retryable where PATH_NOT_FOUND is not: the search budget ran out, so the
+  // identical command CAN succeed later (shorter queue, closer body, simpler
+  // terrain) — that difference is the whole point of splitting the two.
+  PATH_SEARCH_EXHAUSTED: true,
   TOOL_REQUIRED: false,
   TOOL_TIER_REQUIRED: false,
   TIMEOUT: true,

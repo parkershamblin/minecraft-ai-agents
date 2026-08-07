@@ -20,6 +20,12 @@ venv/
 .DS_Store
 Thumbs.db
 
+# editor-local settings — this repo has never tracked IDE config, and the file
+# that prompted this rule was auto-written by the VS Code Java extension, not a
+# shared project decision. Ignoring keeps it on disk and off the tree.
+.vscode/
+.idea/
+
 # The local Minecraft server (world data + server jar) lives beside the repo
 # but is not part of it — multi-GB world saves don't belong in git.
 Minecraft 1.21.6 Server/

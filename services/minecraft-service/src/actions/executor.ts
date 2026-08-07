@@ -6,6 +6,7 @@ import type { CraftResult } from '../world/crafting.ts'
 import type { HuntResult } from '../world/hunting.ts'
 import { logger } from '../logging.ts'
 import { commandLaneDepth, commandsProcessed } from '../metrics.ts'
+import { classifyPathfinderError } from '../world/pathfinderErrors.ts'
 
 /** The slice of BotSession the executor drives — mockable in tests. */
 export interface SessionActions {
@@ -379,10 +380,17 @@ export class CommandExecutor {
           log.info({ durationMs: Date.now() - startedAt }, 'command completed')
         }
       } catch (err) {
+        // Coded errors pass through. Uncoded ones get ONE chance at honest
+        // classification (bare pathfinder rejections — ~14.6k of the INTERNAL
+        // corpus), and anything still unrecognised stays INTERNAL: a real
+        // executor bug must never wear a tidy failure code.
+        const classified = err instanceof ActionError ? null : classifyPathfinderError(err)
         const failure =
           err instanceof ActionError
             ? err
-            : new ActionError('INTERNAL', err instanceof Error ? err.message : String(err), true)
+            : classified
+              ? new ActionError(classified.code, classified.message, classified.retryable)
+              : new ActionError('INTERNAL', err instanceof Error ? err.message : String(err), true)
         const emitted = await outcome('ActionFailed', {
           errorCode: failure.errorCode,
           errorMessage: failure.message,
