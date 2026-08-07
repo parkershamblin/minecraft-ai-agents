@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   STORAGE_FAMILIES,
@@ -8,6 +9,7 @@ import {
   storageFamilyCandidates,
   unwrapSkillResult,
 } from '../src/world/skillVerbs.ts'
+import { RESOURCE_BLOCKS } from '../src/world/resources.ts'
 import { skillFail, skillOk, type SkillInvocationContext } from '../src/skills/types.ts'
 
 const ctx: SkillInvocationContext = {
@@ -31,10 +33,37 @@ const registry = {
   foods: { 1: {}, 2: {} },
 }
 
+describe('contract tripwire (schema-read)', () => {
+  const schema = JSON.parse(
+    readFileSync(new URL('../../../packages/events/schemas/commands/ActionRequested.v1.schema.json', import.meta.url), 'utf8'),
+  )
+
+  it('STORAGE_FAMILIES (+ registry-resolved food) covers exactly the Store/Retrieve item enums — a contract commit that grows a family fails HERE until the body catches up', () => {
+    const bodyFamilies = [...Object.keys(STORAGE_FAMILIES), 'food'].sort()
+    expect(bodyFamilies).toEqual([...schema.$defs.StoreParams.properties.item.enum].sort())
+    expect(schema.$defs.RetrieveParams.properties.item.enum).toEqual(schema.$defs.StoreParams.properties.item.enum)
+  })
+
+  it('every placeable is craftable — CONTAINER_NOT_FOUND prescribes "craft one and place it", which must be advice a villager can take (the unit-10 chest lesson)', () => {
+    const craftable = schema.$defs.CraftParams.properties.item.enum
+    for (const item of schema.$defs.PlaceParams.properties.item.enum) {
+      expect(craftable).toContain(item)
+    }
+  })
+})
+
 describe('storage families', () => {
   it('wood counts logs AND the planks they became — storage thinks in packs, not drops', () => {
     expect(STORAGE_FAMILIES.wood).toContain('oak_log')
     expect(STORAGE_FAMILIES.wood).toContain('oak_planks')
+  })
+
+  it('pale oak counts as wood end-to-end — the name families reconciled (2026-08-07: resources.ts stopped at cherry_log while the skill layer mined pale oak)', () => {
+    expect(RESOURCE_BLOCKS.wood).toContain('pale_oak_log')
+    expect(STORAGE_FAMILIES.wood).toContain('pale_oak_log')
+    expect(STORAGE_FAMILIES.wood).toContain('pale_oak_planks')
+    // bamboo_block is a crafted plank source, not a world gather target
+    expect(RESOURCE_BLOCKS.wood).not.toContain('bamboo_block')
   })
 
   it('food is absent from the static table — the edible set is version data', () => {

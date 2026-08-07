@@ -49,7 +49,7 @@ function produce(action, params, timeoutMs) {
   }
   execFileSync(
     'docker',
-    ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-k', drill.id],
+    ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.minecraft', '-z', 'none', '-k', drill.id],
     { input: JSON.stringify(envelope) + '\n', stdio: ['pipe', 'ignore', 'inherit'] },
   )
   console.log(`  -> ${action} ${JSON.stringify(params)} (command ${commandId})`)

@@ -1,5 +1,33 @@
 ## HANDOFF (current session)
 
+**Update (2026-08-07, branch `best-practices-skills` — PROJECT SKILLS +
+CONFORMANCE PASS):** Ten Claude Code project skills now live in
+`.claude/skills/` (contract-change, deploy-service, mineflayer-runtime,
+regression-test, race-sweep, bench-report, live-forensics, demo-filming,
+session-handoff, best-practices-audit) — mined from the repo by one
+workflow (7 agents), authored + adversarially verified by another (15
+agents; 20 verify findings, all applied). The audit skill carries a
+16-violation baseline; TWELVE fixed same-day in this branch: wood name
+families single-sourced (`RESOURCE_BLOCKS.wood` now derives from
+`WOOD_LOGS`, so pale_oak_log is finally gatherable/storable — regression
+test in skillVerbs.test.ts; bamboo_block deliberately filtered as a
+non-world block), two new schema tripwires (STORAGE_FAMILIES ↔
+Store/Retrieve enums; every placeable craftable — the chest-lesson
+invariant), FakeProvider hunt/follow rows +
+`test_script_covers_every_deliberate_action` (the "every verb walked by
+CI" comment was aspirational: hunt/follow had NO rows and nothing
+noticed), compose now forwards MOVE_MAX_DISTANCE / five PLUGIN_* /
+COMMAND_MAX_AGE_SECONDS (code-default values, behavior-preserving), all
+7 rpk producer scripts pass `-z none`, `task test` now runs the
+minecraft typecheck, and the stale ctx-16384 prose corrected in place
+(this file + the sensitivity runbook — the arm was fully retro-discarded,
+so the ctx conclusion rests on 4096/8192) along with "contracts 25" →
+"bench 25". STILL OPEN (owner/design): V1 INTERNAL plumbing carve-out,
+V2 why the drift gate missed the revert, V5 stub-params CI claim, V16
+uncommitted owner files (.vscode/, demos/event-driven-vs-wallclock/,
+papers). Suites after (run this session): minecraft 764 (3 new) + tsc
+clean, agent 248 (1 new), bench 25, `task test` exit 0.
+
 **Update (2026-07-31, branch `unit10-skill-contract` — THE SKILL LIBRARY IS
 NO LONGER DARK CODE):** Before this, `createSkillRegistry` was imported by
 exactly two callers — its own unit test and `scripts/skill-bench.ts`. 13
@@ -19,8 +47,10 @@ bounds; strict frontier wire strips them) while an enum is enforced by both.
 (3) DEBT PAID: `SUPERSEDED` finally in the `ActionFailed` enum it has emitted
 into since v7 (schema was FALSE about the wire), + 7 skill-local codes;
 `ABORTED` joined `_PLUMBING_CODES` in the same commit that let it reach the
-wire. Suites: minecraft 753, agent 246, memory 51, contracts 25, `task test`
-exit 0. TWO REAL BUGS the work caught: (a) `chest` was not craftable, so
+wire. Suites: minecraft 753, agent 246, memory 51, bench 25 (CORRECTION
+2026-08-07: earlier written "contracts 25" here and below — the 25-test
+pytest suite is bench; contracts is the validate.mjs fixture gate, not a
+counted pytest suite), `task test` exit 0. TWO REAL BUGS the work caught: (a) `chest` was not craftable, so
 `CONTAINER_NOT_FOUND`'s prescribed recovery ("craft+place a chest") was advice
 no villager could take — added to the craft enum, and `crafting.test.ts`'s
 `CRAFTABLE_ITEMS` assertion fired LOUD the instant the schema grew, exactly as
@@ -66,7 +96,7 @@ had raced under v8 yet, so it was free) — both ranges are now integer enums
 1..8, `clampRange` backs them in the executor, the SYSTEM_TEMPLATE line states
 the default and warns that a large range cancels the walk, and
 `test_arrival_ranges_are_bounded_enums` + 8 executor cases pin it shut.
-Suites after: minecraft 761, agent 247, memory 51, contracts 25, exit 0.
+Suites after: minecraft 761, agent 247, memory 51, bench 25, exit 0.
 
 **OWNER DECISION OPEN: the verb NAMES.** The design doc listed them DRAFT
 ("names settle at PR time with the owner"); they shipped as designed. Renaming
@@ -166,9 +196,13 @@ v3 re-baseline (llama3.1:8b, gemma3:12b, gemma4:latest, N=5) plus the
 free `/api/show` probe on lfm2.5 before writing it off.
 
 **Update (2026-07-26, 3b RESULTS — llama3.1:8b, N=5, all v3):** Both
-axes DONE, 30 kept honest rows, zero dirty (`bench/results/
-AXIS_REPORT.md`, commit `1cd1eff` on `v3-protocol`). num_ctx 4096/8192/
-16384: all 5/5, overlapping CIs — INSENSITIVE (prompts fit in 4096).
+axes DONE, 25 kept honest rows (`bench/results/AXIS_REPORT.md`, commit
+`1cd1eff` on `v3-protocol`). num_ctx 4096/8192: 5/5 each, overlapping
+CIs — INSENSITIVE (prompts fit in 4096). (CORRECTION 2026-08-07: this
+paragraph originally claimed 30 kept and "4096/8192/16384 all 5/5" —
+the whole 16384 arm was retro-discarded as fleet-contaminated, manifest
+outcomes `contaminated` ×5 + `block-setup-failed` ×1, AXIS_REPORT N=0;
+the ctx-insensitivity conclusion rests on two arms, not three.)
 Tick: 15s = 533.1±152.6 (no real gain), 30s = 608.6±136.7, 60s =
 1181.1±1077.4 **and 3/5 with honest DNFs at r2/r4** — asymmetric cliff;
 cadence starves the race, context does not. Mid-sweep power loss

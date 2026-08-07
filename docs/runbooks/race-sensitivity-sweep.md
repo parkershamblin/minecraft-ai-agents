@@ -138,13 +138,19 @@ cut N per arm and say so in the report.
 
 ## Results, and why the axes are closed (2026-07-26)
 
-Both runnable axes are DONE for `llama3.1:8b` at N=5, all v3, 30 kept honest
-rows (`bench/results/AXIS_REPORT.md`):
+Both runnable axes are DONE for `llama3.1:8b` at N=5, all v3, 25 kept honest
+rows (`bench/results/AXIS_REPORT.md`). (CORRECTION 2026-08-07: this section
+originally said 30 kept and "4096 / 8192 / 16384 all went 5/5" — the entire
+16384 arm was later retro-discarded as fleet-contaminated (manifest: five
+`contaminated` rows plus one `block-setup-failed`; AXIS_REPORT correctly
+shows N=0) and this prose was never updated. The generated report was right;
+the narrative drifted.)
 
-- **`OLLAMA_NUM_CTX` is a null with a mechanism.** 4096 / 8192 / 16384 all went
-  5/5 with overlapping CIs. Deliberations cost ~2.4k tokens, so the prompt fits
-  in 4096 and extra window is dead weight. The 16384 arm's −224 s is one tight
-  block measured against a baseline arm whose CI is ±636 s — noise, not signal.
+- **`OLLAMA_NUM_CTX` is a null with a mechanism — on two arms, not three.**
+  4096 / 8192 went 5/5 with overlapping CIs; the 16384 arm has ZERO kept rows.
+  Deliberations cost ~2.4k tokens, so the prompt fits in 4096 and extra window
+  is dead weight. (The previously-quoted "16384 arm's −224 s" came from the
+  since-discarded rows and is withdrawn.)
 - **`TICK_INTERVAL_SECONDS` has an asymmetric cliff.** 15 s buys ~75 s (inside
   noise); 60 s costs +572 s *and* drops the win rate to 3/5 with honest DNFs at
   runs 2 and 4. Cadence starves the race long before context does.

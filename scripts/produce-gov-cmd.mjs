@@ -32,7 +32,7 @@ const envelope = {
 }
 execFileSync(
   'docker',
-  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.government', '-k', villagerId],
+  ['exec', '-i', containerName('redpanda'), 'rpk', 'topic', 'produce', 'commands.government', '-z', 'none', '-k', villagerId],
   { input: JSON.stringify(envelope) + '\n' },
 )
 console.log(`${action} command ${commandId} -> ${villagerId}`)
