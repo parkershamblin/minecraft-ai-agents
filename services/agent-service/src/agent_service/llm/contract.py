@@ -170,6 +170,106 @@ def _normalize_params(action: str, params: dict[str, Any]) -> tuple[dict[str, An
     return normalized, changed
 
 
+# ------------------------------------------------------- bounds repair (R4/R5)
+# Rules R4/R5 put bounds in the schema source, but NEITHER decode channel can
+# close them where they actually live: `params` is free-form in
+# DECISION_SCHEMA by design (strict mode dislikes conditionals), so the Ollama
+# grammar never sees MoveParams.range's enum, and _STRICT_UNSUPPORTED_KEYWORDS
+# strips maxLength/minimum/maximum for the frontier wire. The bound was
+# therefore enforced only post-parse — and post-parse enforcement REJECTED the
+# whole decision, throwing away a sound action, its reasoning and a full
+# deliberation over one out-of-range scalar.
+#
+# Measured live 2026-08-07 (6h, gemma3:12b, 6 villagers): 191 of 1758
+# deliberations discarded = 10.86%, of which 133 were `range` outside 1-8
+# (the model emitting 10, 16, 20, 100, 1000 despite the prompt stating the
+# bound) and 55 were chat messages over the 256-char cap. Each cost ~4s of
+# GPU and booked an idle tick.
+#
+# So repair instead of reject, in the same tolerant-reader spirit as the alias
+# table above: clamp a number into its bound, truncate an over-long string,
+# and let the tick proceed. Repairs are counted per field
+# (civ_llm_repaired_total) so the model's true violation rate stays visible —
+# the point is to stop paying for the violation, not to stop seeing it.
+#
+# Deliberately NOT repaired: wrong TYPES (range: "ten"), missing required
+# params, and empty strings under minLength. Those are real misunderstandings
+# of the verb rather than a scalar landing outside a window the model was
+# never shown, and inventing a value would put words in the villager's mouth.
+def _clamp_to_enum(value: float, members: list[Any]) -> Any | None:
+    """Nearest enum member; ties go to the smaller (a range of 0 means 1)."""
+    ints = [m for m in members if isinstance(m, int) and not isinstance(m, bool)]
+    if not ints or value in ints:
+        return None
+    return min(ints, key=lambda member: (abs(member - value), member))
+
+
+def _truncate(text: str, cap: int) -> str:
+    """Cut to the cap on a word boundary where one is close enough, so a
+    clipped chat line still reads as a sentence on camera rather than mid-word.
+    The ellipsis is part of the budget, never an overflow of it."""
+    head = text[: cap - 1]
+    boundary = head.rfind(" ")
+    if boundary >= (cap - 1) * 0.6:
+        head = head[:boundary]
+    return head.rstrip(" ,;:.!?-—") + "…"
+
+
+def _repair_value(value: Any, spec: dict[str, Any]) -> Any | None:
+    """The repaired value, or None when the value is already in bounds or is
+    of a kind we refuse to invent."""
+    kind = spec.get("type")
+    is_number = isinstance(value, (int, float)) and not isinstance(value, bool)
+
+    if kind == "integer" and is_number and (members := spec.get("enum")):
+        return _clamp_to_enum(value, members)
+
+    if kind in ("number", "integer") and is_number and "enum" not in spec:
+        low, high = spec.get("minimum"), spec.get("maximum")
+        clamped = value
+        if low is not None:
+            clamped = max(clamped, low)
+        if high is not None:
+            clamped = min(clamped, high)
+        return clamped if clamped != value else None
+
+    if kind == "string" and isinstance(value, str) and (cap := spec.get("maxLength")):
+        return _truncate(value, cap) if len(value) > cap else None
+
+    return None
+
+
+@cache
+def _bounded_props(action: str) -> tuple[tuple[str, dict[str, Any]], ...]:
+    """The params of one verb that carry a repairable bound, read from the
+    contract $defs — so a bound added to the schema later is repaired without
+    touching this module, and no hand-kept list can drift from it."""
+    def_name = _PARAMS_DEF_BY_ACTION.get(action)
+    if def_name is None:
+        return ()
+    defs = _action_defs()
+    resolved = _resolve_refs(defs[def_name], defs)
+    return tuple(
+        (name, spec)
+        for name, spec in resolved.get("properties", {}).items()
+        if isinstance(spec, dict)
+        and ({"enum", "minimum", "maximum", "maxLength"} & spec.keys())
+    )
+
+
+def _repair_bounds(action: str, params: dict[str, Any]) -> tuple[str, ...]:
+    """Repair out-of-bounds params IN PLACE; returns the names repaired."""
+    repaired: list[str] = []
+    for name, spec in _bounded_props(action):
+        if name not in params:
+            continue
+        fixed = _repair_value(params[name], spec)
+        if fixed is not None:
+            params[name] = fixed
+            repaired.append(name)
+    return tuple(repaired)
+
+
 @dataclass(frozen=True)
 class RelationshipUpdate:
     villager_id: str
@@ -313,6 +413,13 @@ def validate_decision(raw_text: str) -> Decision:
         from agent_service.metrics import llm_normalized_total
 
         llm_normalized_total.inc()
+    # After aliasing (so a repaired param is counted under its contract name)
+    # and before validation (so the repair is what gets validated — a repair
+    # that does not satisfy the schema must still fail loudly).
+    for repaired_param in _repair_bounds(action, params):
+        from agent_service.metrics import llm_repaired_total
+
+        llm_repaired_total.labels(action=action, param=repaired_param).inc()
     params_validator = per_action.get(action)
     if params_validator:  # idle legitimately takes {}
         param_errors = sorted(params_validator.iter_errors(params), key=lambda e: e.json_path)

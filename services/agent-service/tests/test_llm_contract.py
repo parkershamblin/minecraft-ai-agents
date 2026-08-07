@@ -241,3 +241,112 @@ class TestToleranReaderNormalization:
         # stripping turns a null message into a MISSING message — still caught.
         with pytest.raises(MalformedDecision, match="params invalid for chat"):
             validate_decision(decision(action="chat", params={"message": None}))
+
+
+class TestBoundsRepair:
+    """Bounds live in the schema but no decode channel can close them: params
+    is free-form in DECISION_SCHEMA, and the strict wire strips min/max/
+    maxLength. Post-parse rejection therefore threw away 10.86% of live
+    deliberations (191/1758 over 6h on 2026-08-07) over one out-of-range
+    scalar. These pin the repair — and, just as load-bearing, pin what is
+    still REFUSED so the tolerance can't quietly grow into inventing params.
+    """
+
+    # The exact values gemma3:12b emitted live, with their observed counts.
+    @pytest.mark.parametrize("emitted", [10, 100, 16, 1000, 20])
+    def test_move_range_above_the_enum_clamps_to_8(self, emitted):
+        parsed = validate_decision(
+            decision(action="move", params={"to": {"x": 1, "y": 64, "z": -3}, "range": emitted})
+        )
+        assert parsed.action == "move", "the tick must survive, not fall back to idle"
+        assert parsed.params["range"] == 8
+
+    def test_range_below_the_enum_clamps_up_to_1(self):
+        parsed = validate_decision(
+            decision(action="move", params={"to": {"x": 1, "y": 64, "z": -3}, "range": 0})
+        )
+        assert parsed.params["range"] == 1
+
+    def test_follow_range_clamps_on_the_same_rule(self):
+        parsed = validate_decision(
+            decision(action="follow", params={"targetVillagerId": "abc", "range": 50})
+        )
+        assert parsed.params["range"] == 8
+
+    def test_in_bounds_values_are_left_exactly_alone(self):
+        parsed = validate_decision(
+            decision(action="move", params={"to": {"x": 1, "y": 64, "z": -3}, "range": 3})
+        )
+        assert parsed.params["range"] == 3
+
+    def test_min_max_numbers_clamp_too(self):
+        # R5 class (cardinality > 16): gather.maxDistance is 4..64.
+        parsed = validate_decision(decision(action="gather", params={"resource": "wood", "maxDistance": 500}))
+        assert parsed.params["maxDistance"] == 64
+        parsed = validate_decision(decision(action="gather", params={"resource": "wood", "maxDistance": 1}))
+        assert parsed.params["maxDistance"] == 4
+
+    def test_over_long_chat_is_truncated_to_the_cap(self):
+        long_line = "Hah! " + ("the forge runs hot and the iron runs thin " * 12)
+        assert len(long_line) > 256
+        parsed = validate_decision(decision(action="chat", params={"message": long_line}))
+        assert len(parsed.params["message"]) <= 256
+        assert parsed.params["message"].endswith("…")
+        assert parsed.params["message"].startswith("Hah! the forge")
+
+    def test_truncation_lands_on_a_word_boundary(self):
+        parsed = validate_decision(decision(action="chat", params={"message": "word " * 200}))
+        assert "  " not in parsed.params["message"]
+        assert parsed.params["message"].endswith("word…")
+
+    def test_message_exactly_at_the_cap_is_untouched(self):
+        exact = "x" * 256
+        parsed = validate_decision(decision(action="chat", params={"message": exact}))
+        assert parsed.params["message"] == exact
+
+    # --- what repair must NEVER do -------------------------------------
+    def test_wrong_type_is_still_malformed(self):
+        # "ten" is a misunderstanding of the verb, not a scalar outside a
+        # window — coercing it would invent an intent the model never had.
+        with pytest.raises(MalformedDecision, match="params invalid for move"):
+            validate_decision(decision(action="move", params={"to": {"x": 1, "y": 64, "z": -3}, "range": "ten"}))
+
+    def test_empty_message_is_still_malformed(self):
+        # minLength 1 — there is no honest repair for "said nothing".
+        with pytest.raises(MalformedDecision, match="params invalid for chat"):
+            validate_decision(decision(action="chat", params={"message": ""}))
+
+    def test_missing_required_param_is_still_malformed(self):
+        with pytest.raises(MalformedDecision, match="params invalid for move"):
+            validate_decision(decision(action="move", params={"range": 2}))
+
+    def test_repair_does_not_rescue_an_unknown_param(self):
+        with pytest.raises(MalformedDecision):
+            validate_decision(decision(params={"message": "hi", "flightSpeed": 9000}))
+
+
+def test_every_bounded_contract_param_is_repairable():
+    """Drift tripwire. The repair table is DERIVED from the contract $defs, so
+    a bound added to the schema later is repaired for free — this asserts that
+    derivation actually reaches every bounded param of every verb, and fails
+    loud if a verb's params stop resolving (a $ref rename, a moved $def)."""
+    from agent_service.llm.contract import (
+        _PARAMS_DEF_BY_ACTION,
+        _action_defs,
+        _bounded_props,
+        _resolve_refs,
+    )
+
+    defs = _action_defs()
+    for action, def_name in _PARAMS_DEF_BY_ACTION.items():
+        resolved = _resolve_refs(defs[def_name], defs)
+        expected = {
+            name
+            for name, spec in resolved.get("properties", {}).items()
+            if isinstance(spec, dict) and ({"enum", "minimum", "maximum", "maxLength"} & spec.keys())
+        }
+        assert {name for name, _ in _bounded_props(action)} == expected, action
+
+    # The two that cost the live ticks must be in there by name.
+    assert "range" in {name for name, _ in _bounded_props("move")}
+    assert "message" in {name for name, _ in _bounded_props("chat")}
