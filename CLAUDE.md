@@ -1,5 +1,43 @@
 ## HANDOFF (current session)
 
+**Update (2026-08-07, branch `conformance-round-2` — THE LAST FOUR OPEN
+VIOLATIONS CLOSED, AND THE BIGGEST ONE WAS BIGGER THAN FILED):** Re-audit
+found the `INTERNAL` carve-out (V1) understated. A full ledger count (event_db,
+all history — the doc's 4,361/4,905 was ONE bench window) shows **12,067
+`Took to long to decide path to goal!` + 2,278 `No path to the goal!` + 332
+cancellations, ~14.6k events, all arriving as INTERNAL = SUBSTANTIVE**, i.e.
+mineflayer-pathfinder's own compute budget was booking abandonment streaks
+against intents the world never refused. Shipped `src/world/pathfinderErrors.ts`
+— a pure classifier at the executor's SINGLE catch-all (not the ten `goto`
+call sites, so new call sites are covered for free). The load-bearing
+asymmetry: **`PATH_SEARCH_EXHAUSTED` (new enum member, PLUMBING, retryable)
+vs `PATH_NOT_FOUND` (existing, SUBSTANTIVE, not retryable)** — a search budget
+can come out differently next tick; the world's "no route exists" cannot. Two
+of the four classes needed no new vocabulary at all: they were honest codes
+never mapped. Unknown throws still become INTERNAL.
+**V2 was misdiagnosed for weeks in the doc.** The drift gate did NOT miss the
+`56823ad` revert: PR #109's `contracts` check concluded **`failure`** and the
+PR merged **18 seconds later** — `main` had NO branch protection (404), so
+every gate in the repo was advisory. Protection now requires `contracts` +
+`ci / test` (admins exempt, non-strict — escape hatch preserved). Permanent
+lesson, now in the contract-change skill: *a gate whose result nothing
+consumes is a report, not a gate.*
+V5 closed by BUILDING the CI gate R1 claimed existed (`skillSchemaStubs.test.ts`
+— R2 closure, R3, failure-code reachability over all 17 stubs; byte-equality
+clause self-activates when a stub name becomes a verb). V16 closed by reading
+each file and deciding on its merits: the event-driven A/B script committed
+(it imports `_PLUMBING_CODES` live, so the new code flows into it), papers via
+LFS, `.vscode/`+`.idea/` gitignored. NEW find V17: `stats.ts PLUMBING_CODES`
+was missing `ABORTED` since unit-10 — the body counted as skill failures what
+the brain called plumbing — and the guarding test never caught it because it
+asserted membership for six HARDCODED codes instead of set equality; replaced
+with a parse-and-compare tripwire. V18: the audit's own C1 command false-
+positived on Windows CRLF; now `git diff --numstat`. Suites: minecraft **845**
+(+81) + tsc clean, agent **250**, memory 51, bench 25, `task test` exit 0.
+NOTE: the typecheck added to `task test` yesterday caught two real type errors
+in this round's new test — it has already paid for itself.
+**Baseline is now ZERO open violations (V1-V18 all FIXED).**
+
 **Update (2026-08-07, branch `best-practices-skills` — PROJECT SKILLS +
 CONFORMANCE PASS):** Ten Claude Code project skills now live in
 `.claude/skills/` (contract-change, deploy-service, mineflayer-runtime,

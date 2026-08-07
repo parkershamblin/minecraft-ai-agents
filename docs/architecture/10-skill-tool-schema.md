@@ -205,12 +205,27 @@ the union), but the model still reads it, so its guidance belongs here:
 | `INVALID_PARAMS` | executor-side param rejection | should be unreachable from a validated decision; reaching the model means schema drift — fix the contract, not the prompt | substantive |
 | `INTERNAL` | executor fault, not the idea's fault | retry once, then change task | substantive (see caveat) |
 
-Caveat on `INTERNAL`: it is substantive today by omission from
-`_PLUMBING_CODES`, but the corpus shows ~4,361 of its 4,905 occurrences are
-one pathfinder-timeout infrastructure string (`docs/CONTEXT-agent-brief.md:40–41`)
-— punishing an intent for infrastructure is wrong. The v-next PR should
-carve that subclass out (either a new plumbing code or reclassification);
-flagged here, not designed here.
+**RESOLVED 2026-08-07 — the `INTERNAL` carve-out shipped.** It was flagged
+here as substantive-by-omission from `_PLUMBING_CODES` while ~4,361 of 4,905
+occurrences in the §3.1 window were one pathfinder-timeout string. A full
+ledger count (event_db, all history) made the case larger than the flag:
+
+| pathfinder string | events | landed as | now |
+|---|---|---|---|
+| `Took to long to decide path to goal!` | 12,067 | INTERNAL | `PATH_SEARCH_EXHAUSTED` (new, PLUMBING) |
+| `No path to the goal!` | 2,278 | INTERNAL | `PATH_NOT_FOUND` (existing, substantive) |
+| `Digging aborted` | 207 | INTERNAL | `ABORTED` (existing, PLUMBING) |
+| `The goal was changed before…` | 125 | INTERNAL | `ABORTED` (existing, PLUMBING) |
+
+Design as shipped: `src/world/pathfinderErrors.ts` is a pure classifier at the
+executor's catch-all — ONE choke point instead of ten `goto` call sites, so a
+new call site is covered the day it is written. The split's load-bearing
+asymmetry is that **`PATH_SEARCH_EXHAUSTED` is plumbing and retryable while
+`PATH_NOT_FOUND` stays substantive and non-retryable**: a compute budget can
+come out differently next tick, the world's "no route exists" verdict cannot.
+Anything unrecognised still becomes `INTERNAL` — a real executor bug must
+never wear a tidy code. Note two of the four classes needed no new vocabulary
+at all; they were honest codes that were simply never mapped.
 
 **Skill-local codes (join the wire enum in the v-next PR):**
 
@@ -254,7 +269,17 @@ are normative for every stub written in `library/*.ts`.
   must be byte-equal to the `$defs` entry the v-next PR proposes (the
   validate.mjs fixture discipline: fixtures are held to the per-action $defs,
   validate.mjs:34–57). The stub is the design artifact; the contract is the
-  shipped truth. Divergence is a CI failure, same as generated-type drift.
+  shipped truth. Divergence is a CI failure, same as generated-type drift —
+  enforced since 2026-08-07 by
+  `services/minecraft-service/test/skillSchemaStubs.test.ts`, which loads every
+  `*Schema` export in `skills/library/` and asserts R2 closure, R3 (no optional
+  properties; nullable enums as `anyOf(enum, null)`), and that every declared
+  `failureCode` exists in the committed `ActionFailed` enum. The byte-equality
+  clause is written and self-activating: it compares a stub to its `$defs` the
+  moment a stub name appears in the contract's `action` enum, and asserts the
+  set is empty today so the dormancy is a stated fact rather than a silent
+  skip. (Before that date this paragraph described a gate that did not exist;
+  the gate caught an R3 shape error on its first run.)
 - **R2 — closed objects everywhere.** `additionalProperties: false`, every
   property listed. No free-form `{type: object}` — that is the M1-3 latent
   400 (`DECISION_SCHEMA`'s outer `params` is the one legacy exception, and it
@@ -454,9 +479,29 @@ declares `ITEM_NOT_CARRIED`/`PLACE_FAILED`/`CONTAINER_NOT_FOUND`/
 `world/ActionFailed_v1_schema.py:28`). Nothing imports the phantom members
 today, but any consumer typed against them would compile against verbs the
 executor answers with `UNKNOWN_ACTION`. The v-next `task gen` rewrites these
-files anyway; the PR should also answer *why the CI drift gate did not catch
-a revert-shaped divergence* — a gate that misses reverts will miss the next
-one too.
+files anyway.
+
+**ANSWERED 2026-08-07 — the gate did not miss it. Nothing required it to
+pass.** Evidence, all from the GitHub API:
+
+- `56823ad` itself has **zero check runs** — it is an intermediate commit on a
+  branch, and GitHub only checks a PR's head and a push's tip. Expected.
+- PR #109 (`demo-sprint` → `main`), head `a6f2d88`, ran the gate and its
+  `contracts` check concluded **`failure`**. The PR was merged 18 seconds
+  later anyway, at 2026-07-28T18:40:29Z.
+- `main` had **no branch protection at all** (`GET /branches/main/protection`
+  → 404), so a red required-looking check blocked nothing.
+- The follow-up PR #110 (`fix-contracts-job-failure`, commit `3f06e61`
+  "Regenerate stale event contract types") is the repair, arriving ~44 min
+  after the bad merge.
+
+So the failure mode is not detection, it is **enforcement**: the gate was
+advisory. Fixed the same day by enabling branch protection on `main` requiring
+the `contracts` and `ci / test` checks (admins exempt, so the owner keeps an
+escape hatch; non-strict, so an out-of-date branch is not blocked). The
+generalisable lesson, now carried in the `contract-change` skill: *a gate
+whose result nothing consumes is a report, not a gate* — check enforcement,
+not just the workflow file.
 
 ## 7. Retrieval priority — how the exposed set is chosen and ordered
 
@@ -518,8 +563,8 @@ surface big enough to need them.
 | Pinned by this doc | Left open (owner / PR time) |
 |---|---|
 | Exposure rule (§1), namespace set + ratchet gating signal (§2) | exact per-phase milestone predicates beyond nether/stronghold/end sketches |
-| Failure vocabulary, per-code guidance, plumbing additions (§3) | the `INTERNAL` pathfinder-subclass carve-out design |
+| Failure vocabulary, per-code guidance, plumbing additions (§3) | ~~the `INTERNAL` pathfinder-subclass carve-out design~~ — SHIPPED 2026-08-07 (§3.1) |
 | Params rules R1–R9 + importance/sentiment enum rider (§4) | final verb names + enum member lists in §5.1 (DRAFT) |
 | One-PR/one-bump rule + the 6-seam checklist (§5) | PR timing — it is a configVersion event and the owner sequences those |
-| `SUPERSEDED` enum fix + `task gen` re-run (§6) | why the drift gate missed the revert (investigate in-PR) |
+| `SUPERSEDED` enum fix + `task gen` re-run (§6) | ~~why the drift gate missed the revert~~ — ANSWERED 2026-08-07 (§6.2): it didn't; nothing enforced it |
 | UCB cap ≈30, pinned core 7, superseded-drops-out-never-deleted, ε as config (§7) | the value of ε (bench axis) |

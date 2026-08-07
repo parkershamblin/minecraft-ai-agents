@@ -42,9 +42,45 @@ def test_streak_stays_hot_on_a_tick_with_no_new_outcome():
 
 def test_plumbing_failures_never_count():
     a = ActionAwareness(abandon_after=1)
-    for code in ("SUPERSEDED", "STALE_COMMAND", "BODY_BUSY", "BOT_DISCONNECTED"):
+    for code in ("SUPERSEDED", "STALE_COMMAND", "BODY_BUSY", "BOT_DISCONNECTED", "ABORTED"):
         a.remember(VILLAGER, "gather", {"resource": "coal"})
         assert a.note_outcomes(VILLAGER, [failed("gather", code)]) == []
+
+
+def test_path_search_exhausted_is_plumbing_but_path_not_found_is_not():
+    """The 2026-08-07 INTERNAL carve-out, both halves.
+
+    12,067 'Took to long to decide path to goal!' events reached the ledger as
+    INTERNAL — substantive — so A*'s own compute budget was abandoning intents
+    the world never refused. The split is only correct if the WORLD's verdict
+    still counts: 'No path to the goal!' (PATH_NOT_FOUND) must keep booking a
+    streak, because repeating that command verbatim cannot help.
+    """
+    a = ActionAwareness(abandon_after=1)
+    a.remember(VILLAGER, "gather", {"resource": "iron_ore"})
+    assert a.note_outcomes(VILLAGER, [failed("gather", "PATH_SEARCH_EXHAUSTED")]) == []
+
+    b = ActionAwareness(abandon_after=1)
+    b.remember(VILLAGER, "gather", {"resource": "iron_ore"})
+    assert b.note_outcomes(VILLAGER, [failed("gather", "PATH_NOT_FOUND")]) != []
+
+
+def test_every_plumbing_code_is_on_the_wire():
+    """A plumbing code the schema cannot carry is dead vocabulary; a wire code
+    misspelled here silently reverts to substantive. Both directions bite."""
+    import json
+    from pathlib import Path
+
+    from agent_service.brain.awareness import _PLUMBING_CODES
+
+    schema = json.loads(
+        (
+            Path(__file__).resolve().parents[3]
+            / "packages/events/schemas/world/ActionFailed.v1.schema.json"
+        ).read_text(encoding="utf-8")
+    )
+    wire = set(schema["properties"]["errorCode"]["enum"])
+    assert _PLUMBING_CODES <= wire, _PLUMBING_CODES - wire
 
 
 def test_success_clears_the_streak():

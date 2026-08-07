@@ -32,6 +32,13 @@ _PLUMBING_CODES = {
     # the unit-10 rule: a plumbing code must never arrive at awareness before
     # its classification does, or it books streaks against innocent intents.
     "ABORTED",
+    # mineflayer-pathfinder's A* ran out of its own thinking budget. Added in
+    # the same commit that lets it reach the wire (the ABORTED rule). Before
+    # the split these arrived as INTERNAL — 12,067 of them in the ledger, each
+    # one counting toward an abandonment streak against an intent the world
+    # never refused. PATH_NOT_FOUND (no route exists) stays SUBSTANTIVE: that
+    # one is the world's verdict and repeating it verbatim cannot help.
+    "PATH_SEARCH_EXHAUSTED",
 }
 
 # A streak that goes this many note_outcomes() calls (≈ ticks) without a fresh

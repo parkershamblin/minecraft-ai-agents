@@ -29,13 +29,17 @@ committed generated types, and the body/brain seams (full walk: the
 contract-change skill).
 
 ```powershell
-task gen; git status --porcelain packages/events   # dirty => generated-type drift
-npm test --workspace @civ/events                   # the fixture/validate.mjs gate
+task gen; git diff --numstat -- packages/events/generated   # non-empty => real drift
+npm test --workspace @civ/events                            # the fixture/validate.mjs gate
 ```
 
-- Dirty output after `task gen` = uncommitted codegen. Known blind spot: the
-  gate has missed a revert-shaped divergence (doc `docs/architecture/10-skill-tool-schema.md`
-  §6.2 — the WHY is still unanswered), so a clean gate on a revert PR proves less.
+- Use `git diff --numstat`, NOT `git status`: on Windows `task gen` rewrites
+  files with CRLF, so `git status` reports files whose content is identical
+  (`.gitattributes` normalizes them to LF on add). `--numstat` shows the real
+  line delta and skips that false positive.
+- Non-empty output = uncommitted codegen. The gate's historical blind spot
+  (doc §6.2) was ENFORCEMENT, not detection — it fired and was merged past.
+  Verify enforcement with C10, not just the workflow file.
 - Grep the diff: a schema enum/verb change with no matching edit in
   `services/agent-service/src/agent_service/llm/contract.py` or
   `services/minecraft-service/src/world/` is an incomplete seam walk.
@@ -125,6 +129,38 @@ hits (produce-cmd, produce-gov-cmd, spawn-fleet, despawn-fleet, spawn-teams,
 drill-rb1, drill-rb2) gained the flag 2026-08-07 (V9 fixed) — the check
 remains for NEW scripts that produce onto live topics.
 
+### C10 — gates are ENFORCED, not merely present (domain: CI)
+
+A workflow file proves a gate RUNS; only branch protection proves it BLOCKS.
+This distinction cost the repo a stale-generated-types merge (V2): the
+contracts check went red on PR #109 and the PR merged 18 seconds later.
+
+```powershell
+gh api repos/parkershamblin/minecraft-ai-agents/branches/main/protection -q '.required_status_checks.contexts'
+```
+
+Expect `contracts` and `ci / test`. A 404 means every gate in the repo is
+advisory. Also spot-check that a recently-merged PR's checks were green:
+
+```powershell
+gh pr list --state merged --limit 5 --json number,headRefOid | ConvertFrom-Json | ForEach-Object { $_ } | ForEach-Object { "PR $($_.number)"; gh api "repos/parkershamblin/minecraft-ai-agents/commits/$($_.headRefOid)/check-runs" -q '.check_runs[] | select(.conclusion=="failure") | .name' }
+```
+
+### C11 — the two plumbing mirrors agree (domain: contracts/brain)
+
+`_PLUMBING_CODES` (awareness.py) and `PLUMBING_CODES` (skills/stats.ts) are
+the same vocabulary in two languages. `ABORTED` sat in one and not the other
+from unit-10 until 2026-08-07 because the test asserted membership for a
+hardcoded list instead of set equality (V17).
+
+```powershell
+npx vitest run test/skillsStats.test.ts --root services/minecraft-service
+```
+
+The test now parses awareness.py and asserts equality both directions; a
+green run IS the check. Any new hardcoded-list test of a mirrored vocabulary
+is itself a finding — assert set equality against the canonical source.
+
 ### C9 — failure-code classification is TRUE about the wire (domain: contracts/brain)
 
 Every code the executor emits must be in the ActionFailed enum, and every
@@ -134,19 +170,22 @@ commit that lets it reach the wire. Check: grep new `errorCode` emissions in
 the diff against both tables, plus `RETRYABLE_BY_CODE`
 (`services/minecraft-service/src/world/skillVerbs.ts`).
 
-## B. Violations baseline — found 2026-08-07, dispositions updated 2026-08-07
+## B. Violations baseline — V1–V16 found 2026-08-07, V17–V18 in the round-2
+## re-audit the same day. ALL EIGHTEEN are FIXED.
 
-Twelve of sixteen were fixed the same day (branch `best-practices-skills`).
-Re-verify every disposition before reporting (section C) — FIXED items can
-regress and OPEN items can have been fixed since.
+There is no open violation as of 2026-08-07. That is a snapshot, not a
+guarantee: re-verify every disposition before reporting (section C) — a FIXED
+item can regress, and a green baseline is exactly when an audit gets lazy.
+When every item below still checks out, say so in one line and spend the
+effort on section A's checks against the CURRENT diff instead.
 Format: V# (check that finds it) [disposition] — location: finding.
 
 **Contracts / tripwires**
-- V1 (C9) [OPEN — design decision, owner territory] — `docs/architecture/10-skill-tool-schema.md` §3.1 vs `awareness.py:23`: INTERNAL is substantive-by-omission from `_PLUMBING_CODES`, yet that doc's own corpus (§3.1's bench window) counts ~4,361 of 4,905 INTERNAL occurrences as one pathfinder-timeout infrastructure string; carve-out flagged, designed nowhere. (The 4,399/4,280 pair quoted in bench-report comes from the narrative report's different window — two measurements, not a disagreement; don't cross-correct.)
-- V2 (C1) [OPEN — needs investigation] — same doc §6.2: WHY the drift gate missed a revert-shaped divergence is unanswered; a gate that misses reverts will miss the next one.
+- V1 (C9) [FIXED 2026-08-07] — the INTERNAL pathfinder carve-out shipped. `src/world/pathfinderErrors.ts` classifies bare pathfinder rejections at the executor's single catch-all: `PATH_SEARCH_EXHAUSTED` (NEW code, plumbing, retryable) for the 12,067-event search-budget string, `PATH_NOT_FOUND` (existing, substantive, non-retryable) for the 2,278 "No path to the goal!", `ABORTED` for the 332 cancellations. Unknown throws still become INTERNAL. Ledger-counted from event_db, all history — the doc's older 4,361/4,905 figure was one bench window, not the corpus.
+- V2 (C1) [FIXED 2026-08-07] — ANSWERED then closed: the gate never missed the revert. PR #109's `contracts` check concluded `failure` and the PR merged 18s later because `main` had NO branch protection (404). Protection now requires `contracts` + `ci / test` (admins exempt, non-strict). See C10 — check enforcement, not just the workflow.
 - V3 (C2) [FIXED 2026-08-07] — `skillVerbs.test.ts` "contract tripwire (schema-read)" now pins STORAGE_FAMILIES (+food) to the Store/Retrieve item enums.
 - V4 (C2) [FIXED 2026-08-07] — same describe block asserts every `PlaceParams.item` member is craftable (the CONTAINER_NOT_FOUND recovery invariant).
-- V5 (C2) [OPEN — doc overclaims] — doc rule R1 claims stub-params-vs-$defs divergence "is a CI failure", but no test compares `SkillSchemaStub.params` to the schema $defs; either build the test or soften the doc.
+- V5 (C2) [FIXED 2026-08-07] — the gate R1 claimed now exists: `test/skillSchemaStubs.test.ts` loads every `*Schema` export in `skills/library/` and asserts R2 closure, R3 (no optional properties; nullable enums as `anyOf`), and failure-code reachability against the committed ActionFailed enum. The byte-equality clause is written and self-activates when a stub name enters the contract's action enum; it asserts the promoted set is empty today, so the dormancy is stated rather than skipped.
 
 **Deploy / compose**
 - V6–V8 (C3) [FIXED 2026-08-07] — `MOVE_MAX_DISTANCE`, the five `PLUGIN_*` flags, and `COMMAND_MAX_AGE_SECONDS` now forwarded in the minecraft-service compose block with code-default values.
@@ -164,7 +203,11 @@ Format: V# (check that finds it) [disposition] — location: finding.
 - V14/V15 (C6) [FIXED 2026-08-07] — `RESOURCE_BLOCKS.wood` now derives from `WOOD_LOGS` (bamboo_block filtered as a non-world block), so STORAGE_FAMILIES inherits pale oak; regression test "pale oak counts as wood end-to-end" in skillVerbs.test.ts.
 
 **Session hygiene**
-- V16 (session-handoff skill) [OPEN — owner's files] — tree held uncommitted work at 2026-08-07 session start (untracked .vscode/, demos/event-driven-vs-wallclock/, papers/Many-agentSimulationsTowardAICivilization.pdf; modified papers/MineLand.pdf) against the green-boundary push rule. Not committed by the audit session: they are the owner's working files. Re-check: `git status --porcelain`.
+- V16 (session-handoff skill) [FIXED 2026-08-07] — tree cleared, each item on its merits after reading it: `demos/event-driven-vs-wallclock/compute_metrics.py` committed (real A/B analysis for the event-driven arc, and it imports `_PLUMBING_CODES` live so contract changes flow into it); both papers committed via LFS; `.vscode/` + `.idea/` gitignored rather than tracked (auto-written by the VS Code Java extension, and this repo has never tracked IDE config). Re-check: `git status --porcelain`.
+
+**Found in round 2 (2026-08-07)**
+- V17 (C11) [FIXED 2026-08-07] — `skills/stats.ts` `PLUMBING_CODES` was missing `ABORTED`, which joined `awareness.py` in unit-10: the mastery table booked skill failures the brain had already ruled plumbing. The guarding test asserted membership for six hardcoded codes instead of set equality, so it stayed green through the drift. Test replaced with a parse-and-compare tripwire.
+- V18 (C1) [FIXED 2026-08-07] — the local C1 command produced a false positive on Windows (`git status` flags CRLF-only rewrites from `task gen`); check now uses `git diff --numstat`.
 
 ## C. Audit procedure
 

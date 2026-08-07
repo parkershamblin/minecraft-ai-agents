@@ -14,6 +14,9 @@ export type SkillFailureCode =
   // shared with the ActionFailed enum
   | 'RESOURCE_NOT_FOUND'
   | 'PATH_NOT_FOUND'
+  // A* exhausted its own thinking budget — infrastructure, not a verdict on
+  // the target (see world/pathfinderErrors.ts for the ledger evidence).
+  | 'PATH_SEARCH_EXHAUSTED'
   | 'TOOL_REQUIRED'
   | 'TOOL_TIER_REQUIRED'
   | 'TIMEOUT'
