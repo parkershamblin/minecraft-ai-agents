@@ -7,8 +7,15 @@ on:
   push:
     branches: [main]
     paths: ["packages/events/**", "package-lock.json", ".github/workflows/events-contracts.yml"]
+  # DELIBERATELY UNFILTERED on pull_request (2026-08-07). `contracts` is a
+  # REQUIRED status check on main, and a required check that is skipped by a
+  # paths filter never reports at all — GitHub leaves it pending forever, so a
+  # docs-only PR can never merge. (Found the same day by a docs-only PR going
+  # BLOCKED with "no checks reported".) The job is ~40s, so running it on every
+  # PR is cheaper than the class of bug it prevents: this is the gate that the
+  # 56823ad stale-types merge got past. The push trigger stays filtered — it
+  # gates nothing, so noise there is pure cost.
   pull_request:
-    paths: ["packages/events/**", "package-lock.json", ".github/workflows/events-contracts.yml"]
 
 concurrency:
   group: events-contracts-${{ github.ref }}

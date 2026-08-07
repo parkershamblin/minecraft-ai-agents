@@ -140,6 +140,12 @@ every boot, 2026-07-22 (`services/agent-service/pyproject.toml` pins the codecs)
 ## 8. Post-deploy health: silence is not health
 
 - [ ] Bring services up with `--wait` (every service except redpanda-console has a healthcheck — `--wait` still covers it via running state; Paper's mc-health has `start_period: 90s` for first-boot world-gen)
+- [ ] **After any host reboot / Docker restart: recreate, don't restart.** App
+      containers rejoin a stale network and fail DNS (`socket.gaierror
+      [Errno -2]` on `postgres`); `up --wait` reports only "dependency failed
+      to start", never the cause. `up -d --force-recreate --no-deps <service>`
+      fixes it. A four-digit `RestartCount` is the fingerprint of this loop
+      running for days (2044 seen 2026-08-07), not of a code bug.
 - [ ] Read restart COUNTS, not "Up" status — both Kafka consumers exit(1) on unrecoverable crash with `restart: on-failure` precisely so failure is visible here:
 
 ```powershell
