@@ -1,5 +1,57 @@
 ## HANDOFF (current session)
 
+**Update (2026-08-07, branch `fix/bounds-repair` — 10.86% OF EVERY
+DELIBERATION WAS BEING THROWN AWAY OVER ONE SCALAR):** Found by sweeping the
+LIVE stack, not the repo. Rules R4/R5 put bounds in the schema, but NEITHER
+decode channel can close them where they live: `params` is free-form in
+DECISION_SCHEMA by design, so the Ollama grammar never sees
+`MoveParams.range`'s enum, and `_STRICT_UNSUPPORTED_KEYWORDS` strips
+`maxLength`/`minimum`/`maximum` for the frontier wire. Post-parse validation
+was the ONLY gate — and it rejected the ENTIRE decision, discarding a sound
+action, its reasoning and ~4s of GPU because one number sat outside a window
+the model was never shown. **Baseline (6h ledger window ending 12:25:53Z,
+gemma3:12b, 6 villagers): 191/1758 = 10.86% malformed, of which 133 `range`
+outside 1-8 (the model emitting 10, 16, 20, 100, 1000 despite the prompt
+stating the bound), 55 chat over the 256-char cap, and 3 everything else —
+so 98.4% of discarded ticks were bounds violations.** Fix: repair, not
+reject, in the same tolerant-reader seam as the existing alias table. The
+repair table is DERIVED from the contract `$defs` (tripwire:
+`test_every_bounded_contract_param_is_repairable`), so a bound added later
+is repaired without touching the module.
+**THE LOAD-BEARING JUDGEMENT — out-of-enum resolves to the schema's DECLARED
+DEFAULT, not the nearest member.** Nearest-member maps every absurd `range`
+to 8, the MAXIMUM, and a move is satisfied the moment the body is already
+within range — so 8 is the most no-op-prone value the verb can carry, and
+clamping 1000->8 would have preserved a weakened form of the exact bug
+PR #113 fixed. The contract already declares what to do with a field the
+model did not understand, and every R4 enum has one: move 1, follow 2,
+gather count 1, store/retrieve count 16. It reads correctly on the others
+rather than by luck (gather 50->1 dodges the 60s trip budget; store 999->16
+is "as much as fits"). R5 min/max still clamps to the boundary — a larger
+`maxDistance` is a genuine intent merely capped. Still REFUSED and pinned by
+tests: wrong types (`range: "ten"`), missing required params, empty strings
+under minLength — inventing those would put words in the villager's mouth.
+**DEPLOYED AND VERIFIED LIVE (12:33:58Z boot, marker-grepped in-container).
+25-minute window: 1/271 = 0.37% malformed, and the BOUNDS class is ZERO —
+the single survivor is `not JSON: Unterminated string`, a truncated
+generation, a different failure entirely. 47 ticks saved
+(`civ_llm_repaired_total` move.range 35, chat.message 12).** Note the
+honesty signal working as designed: repairs ran at ~17% of decisions, i.e.
+models violate bounds at least as often as before — the counter keeps that
+visible now that it no longer costs a tick. CAVEAT: decision volume in the
+post window (~10.8/min) ran about double the 6h baseline (~4.9/min), so
+compare the RATES, not the raw counts. configVersion FOLDS into v8, no bump
+— the manifest carries zero v8 rows, nothing has ever raced under it.
+Suites: agent-service **268** (+18), contracts green, no codegen drift.
+ALSO CORRECTED IN PLACE: the "OpenAI `params` strict-mode reshape still
+open" line was stale for weeks — unit-10 shipped it; `decision_tool_schema()`
+is an anyOf union of 10 `$defs` with no bare `{type: object}` anywhere
+(recursive probe). Only the OpenAI live smoke is still pending (no key).
+NOT DONE, and the next thing worth doing: the fleet still spends 66% of its
+intents on `move`, many to targets it is already standing on (completions in
+8-31ms) or ~942 blocks away; only 3 `ResourceGathered` in 30 minutes. That
+is a separate bug from this one and is where the footage problem lives.
+
 **Update (2026-08-07, branch `conformance-round-2` — THE LAST FOUR OPEN
 VIOLATIONS CLOSED, AND THE BIGGEST ONE WAS BIGGER THAN FILED):** Re-audit
 found the `INTERNAL` carve-out (V1) understated. A full ledger count (event_db,
@@ -448,8 +500,11 @@ No benchmark work is queued. Open items carried forward, none blocking:
   config (`docs/runbooks/race-sensitivity-sweep.md`).
 - Stale: the Elara persona×model finding was computed on pre-v6 data;
   recompute before citing it.
-- Still open: the OpenAI `params` strict-mode reshape before any OpenAI
-  filming run. SV-14 row unchanged.
+- CLOSED, was stale for weeks (verified 2026-08-07): the OpenAI `params`
+  strict-mode reshape. unit-10 shipped it — `decision_tool_schema()` emits
+  `params` as an `anyOf` union of the 10 real per-verb `$defs`, and a
+  recursive probe finds NO bare `{type: object}` anywhere in the tool
+  schema. What IS still pending is only the OpenAI live smoke (no key).
 - Decision worth making: the published table moved twice in two days
   because every executor fix bumped `configVersion`. If that churn is
   unwanted, batch executor fixes behind one bump instead.
@@ -588,12 +643,23 @@ else fake), `OPENAI_API_KEY` (optional — never required).
 - OpenAI strict structured outputs reject optional schema properties — new
   decision-contract fields must be **required-nullable** (`type: ["x","null"]`).
   Corollary (M2-7 structural audit): strict mode ALSO rejects free-form
-  objects (`{type: object}` with no properties/additionalProperties:false) —
-  DECISION_SCHEMA's world `params` is exactly that, so the OpenAI provider
-  path 400s TODAY, latent since M1-3 (every run so far was Ollama).
-  governanceAction was built flat + strict-safe for this reason. Reshape
-  `params` (superset-with-nullables) BEFORE any OpenAI filming run — and
-  re-verify llama behavior after, since llama sees the same schema.
+  objects (`{type: object}` with no properties/additionalProperties:false).
+  DECISION_SCHEMA's world `params` is exactly that — but that is NO LONGER
+  the OpenAI blocker it was from M1-3: since unit-10 the frontier providers
+  are handed `decision_tool_schema()`, whose `params` is an `anyOf` union of
+  the real per-verb `$defs`, while DECISION_SCHEMA stays free-form on
+  purpose for the Ollama decode grammar. Verified 2026-08-07 by recursive
+  probe: no bare `{type: object}` survives anywhere in the tool schema.
+  governanceAction was built flat + strict-safe for the same reason.
+  **The live consequence of that deliberate split** (found 2026-08-07): a
+  bound written in the schema is closed by NEITHER channel — the Ollama
+  grammar never sees inside free-form `params`, and
+  `_STRICT_UNSUPPORTED_KEYWORDS` strips min/max/maxLength for the wire — so
+  bounds are enforced ONLY post-parse. That gate used to reject the whole
+  decision; it now REPAIRS to the schema's declared default/boundary
+  (`_repair_bounds`), because rejection was discarding 10.86% of live
+  deliberations. Anything new you bound in `params` inherits this: state it
+  in SYSTEM_TEMPLATE prose (R7), and expect the model to violate it anyway.
 - `LLM_DAILY_TOKEN_BUDGET=2000000` is sized for PAID providers. On free local
   Ollama, 20 villagers burn it in ~30 minutes and the breaker silently flips
   deliberation to the FakeProvider — whose scripted chat + relationshipUpdates

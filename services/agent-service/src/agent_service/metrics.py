@@ -31,6 +31,17 @@ llm_malformed_total = Counter(
     "LLM responses that failed decision-contract validation (tick fell back to idle)",
 )
 
+# Bounds violations are REPAIRED rather than rejected (see contract.py
+# _repair_bounds), so they no longer show up in the ledger as malformed
+# decisions. This counter is the replacement honesty signal: it keeps the
+# model's true violation rate measurable per field instead of hiding it
+# behind a decision that now succeeds.
+llm_repaired_total = Counter(
+    "civ_llm_repaired_total",
+    "Params repaired to their contract bounds so the tick could proceed (clamped enum/range, truncated string)",
+    ["action", "param"],
+)
+
 llm_governance_dropped_total = Counter(
     "civ_llm_governance_dropped_total",
     "governanceAction fields dropped for failing the GovernanceRequested contract (tick proceeded without the civic action)",
