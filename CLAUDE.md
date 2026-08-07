@@ -37,6 +37,16 @@ positived on Windows CRLF; now `git diff --numstat`. Suites: minecraft **845**
 NOTE: the typecheck added to `task test` yesterday caught two real type errors
 in this round's new test — it has already paid for itself.
 **Baseline is now ZERO open violations (V1-V18 all FIXED).**
+**DEPLOYED AND VERIFIED LIVE (2026-08-07, after PR #116 merged):** stack
+rebuilt from main, marker-grepped in both containers, fleet re-seeded and
+gated per name. In the first 15-minute window the ledger shows **`INTERNAL`
+absent entirely** and four `PATH_NOT_FOUND` carrying the classifier's
+prescriptive prose verbatim ("no walkable route to that spot — it may be
+across water, underground, walled in, or off a cliff") with
+`retryable: false`. Before the change those four were `INTERNAL` +
+`"No path to the goal!"` and were counting toward abandonment streaks. The
+whole path — pathfinder throw -> classifier -> coded ActionFailed -> ledger —
+is proven end-to-end on real villagers, not just in tests.
 
 **Update (2026-08-07, branch `best-practices-skills` — PROJECT SKILLS +
 CONFORMANCE PASS):** Ten Claude Code project skills now live in
@@ -534,6 +544,18 @@ else fake), `OPENAI_API_KEY` (optional — never required).
   distro stuck `Stopped` (`wsl -l -v`), a `com.docker.diagnose` process, and
   the GUI polling `ErrorReportAPI /diagnostics/status` in a loop. Same
   ritual fixes it (that day: first try, no zombie race).
+- **After a host reboot (or any Docker Desktop restart), app containers come
+  back attached to a STALE network and fail DNS**: asyncpg dies with
+  `socket.gaierror: [Errno -2] Name or service not known` resolving `postgres`,
+  the healthcheck never passes, and `up --wait` aborts the whole command with
+  "dependency failed to start" — naming the dependent service, never the DNS
+  cause. `restart: on-failure` then loops the container quietly. Fix is a
+  RECREATE, not a restart: `up -d --force-recreate --no-deps <service>`, then
+  re-run the profile `up`. Diagnostic tell: a container whose `Created` date is
+  far older than the current network's. This is also the explanation for
+  absurd `RestartCount` values (2044 seen on 2026-08-07) — app containers left
+  running while infra was down crash-loop for days. **Read restart counts, and
+  read `docker logs` for the DNS error rather than trusting "unhealthy".**
 - Bare `python` on this box is a stale 3.8 — always `uv run` / `uvx` / `py`.
 - New `gradlew` files need `git update-index --chmod=+x` (Windows can't store
   the exec bit; Linux CI fails without it).
